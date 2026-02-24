@@ -1,0 +1,195 @@
+body
+    !-- TELA PRINCIPAL --
+    div id=main-screen class=container
+        header
+            h1i class=fas fa-clipboard-listi Painel de Acessosh1
+        header
+
+        !-- Seus botões antigos (mantidos exatamente iguais) --
+        a class=button href=httpsgruponso-my.sharepoint.compersonalcristiano_santos_urubupunga_com_br_layouts15onedrive.aspxid=%2Fpersonal%2Fcristiano%5Fsantos%5Furubupunga%5Fcom%5Fbr%2FDocuments%2FRelat%C3%B3rios%20de%20ponto%5Fexcel%2FREL%5FFISCAIS%5FAVUL%28EM%20USO%29&ga=1
+            i class=fas fa-file-exceli IR PARA RELATÓRIOS DE FISCAL
+        a
+
+        a class=button id=btn-ideias href=httpsforms.office.comrDFBt9eC2pX
+            i class=fas fa-lightbulbi USINA DE IDEIAS
+            span class=tooltipRegistre sua ideia e concorra a prêmiosspan
+        a
+
+        a class=button id=btn-telefones href=httpsforms.office.comrVr3tWmLyv2
+            i class=fas fa-phonei ATUALIZAÇÃO DE TELEFONES
+            span class=tooltipAtualize seus dados de contatospan
+        a
+
+        a class=button id=btn-clandestinos-rto href=#
+            i class=fas fa-bani CLANDESTINOS OSASCO e CAJAMAR
+        a
+
+        a class=button id=btn-inspecoes-5s href=#
+            i class=fas fa-clipboard-checki INSPEÇÕES DE 5S
+        a
+
+        a class=button disabled href=#
+            i class=fas fa-bullhorni COMUNICAÇÃO INTERNA (EM CONSTRUÇÃO)
+        a
+
+        !-- Botão que abre o login --
+        a class=button id=btn-segunda-tela href=#
+            i class=fas fa-locki INSPETORES 
+        a
+    div
+
+    !-- ====================== TELA DE INSPETORES ====================== --
+    div id=inspector-screen class=container style=display none;
+        header style=width 100%; display flex; justify-content space-between; align-items center; flex-wrap wrap; gap 15px;
+            h1i class=fas fa-user-shieldi Tela de Inspetoresh1
+            
+            div style=display flex; gap 10px;
+                button onclick=voltarParaMain() class=button 
+                        style=background-color#666; min-width auto; padding 12px 20px;
+                    ← Voltar ao Painel
+                button
+                button onclick=logoutInspector() class=button 
+                        style=background-color#d11a2d; min-width auto; padding 12px 20px;
+                    Sair
+                button
+            div
+        header
+
+        p style=text-aligncenter; color#333; font-size18px; margin 20px 0;
+            Bem-vindo, Inspetor!
+        p
+
+        !-- === COLOQUE AQUI TODOS OS LINKS QUE OS INSPETORES PRECISAM === --
+        a class=button href=httpsforms.office.com...📋 Checklist de Inspeção Diáriaa
+        a class=button href=#📸 Enviar Fotos de Veículosa
+        a class=button href=#📊 Relatórios de Ocorrênciasa
+        a class=button href=#🚨 Notificar Irregularidadesa
+        !-- Adicione quantos quiser --
+    div
+
+    !-- ====================== MODAL LOGIN (SÓ SENHA) ====================== --
+    div id=modal-login class=modal
+        div class=modal-content
+            span class=close onclick=closeModal('modal-login')&times;span
+            h2 style=text-aligncenter; margin-bottom20px;🔐 Acesso Inspetoresh2
+            
+            form id=login-form
+                input type=password id=password placeholder=Digite a senha required autofocus
+                button type=submit class=button style=width100%; margin-top15px;
+                    Entrar
+                button
+            form
+            
+            p id=login-error style=colorred; text-aligncenter; displaynone; margin-top10px;
+                Senha incorreta!
+            p
+        div
+    div
+
+    script
+         ==================== SEU CÓDIGO ANTIGO (mantenha tudo isso) ====================
+        const disableDates = {
+            'btn-osasco' new Date('2026-02-19'),
+            'btn-santana' new Date('2026-02-03')
+        };
+
+        const now = new Date();
+        for (const [id, date] of Object.entries(disableDates)) {
+            const btn = document.getElementById(id);
+            if (btn && now  date) {
+                btn.classList.add('disabled');
+                btn.setAttribute('href', '#');
+                btn.setAttribute('title', `Disponível após ${date.toLocaleDateString()}`);
+            }
+        }
+
+         Touch support, modais de clandestinos e 5S (seu código original continua aqui)
+        const tooltipBtn = document.getElementById('btn-ideias');
+        if (tooltipBtn) {
+            tooltipBtn.addEventListener('touchstart', () = {
+                tooltipBtn.classList.add('touch');
+                setTimeout(() = tooltipBtn.classList.remove('touch'), 2000);
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) = {
+            e.preventDefault(); openModal('modal-clandestinos-rto');
+        });
+
+        document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) = {
+            e.preventDefault(); openModal('modal-inspecoes-5s');
+        });
+
+        window.addEventListener('click', (e) = {
+            if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+        });
+
+         ==================== NOVO CÓDIGO - LOGIN COM LOCALSTORAGE ====================
+        const SENHA_CORRETA = 123456;    ← TROQUE AQUI pela senha que quiser
+
+         Verifica se já está logado ao carregar a página
+        function checkLoginStatus() {
+            if (localStorage.getItem('inspectorLoggedIn') === 'true') {
+                document.getElementById('main-screen').style.display = 'none';
+                document.getElementById('inspector-screen').style.display = 'flex';
+            } else {
+                document.getElementById('main-screen').style.display = 'flex';
+                document.getElementById('inspector-screen').style.display = 'none';
+            }
+        }
+
+         Abre o modal de login
+        document.getElementById('btn-segunda-tela').addEventListener('click', (e) = {
+            e.preventDefault();
+            openModal('modal-login');
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('password').focus();
+        });
+
+         Validação da senha
+        document.getElementById('login-form').addEventListener('submit', (e) = {
+            e.preventDefault();
+            const senha = document.getElementById('password').value.trim();
+
+            if (senha === SENHA_CORRETA) {
+                localStorage.setItem('inspectorLoggedIn', 'true');
+                closeModal('modal-login');
+                document.getElementById('main-screen').style.display = 'none';
+                document.getElementById('inspector-screen').style.display = 'flex';
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('password').value = '';
+            }
+        });
+
+         Voltar (faz logout)
+        function voltarParaMain() {
+            logoutInspector();
+        }
+
+         Logout explícito
+        function logoutInspector() {
+            localStorage.removeItem('inspectorLoggedIn');
+            document.getElementById('inspector-screen').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'flex';
+        }
+
+         Executa ao carregar
+        window.addEventListener('load', checkLoginStatus);
+
+         Fechar com ESC
+        document.addEventListener('keydown', (e) = {
+            if (e.key === Escape) {
+                document.querySelectorAll('.modal').forEach(m = m.style.display = 'none');
+            }
+        });
+    script
+body
