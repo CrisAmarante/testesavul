@@ -12,60 +12,103 @@
 </head>
 <body>
 
-    <!-- TELA PRINCIPAL -->
+    <!-- ====================== TELA PRINCIPAL ====================== -->
     <div id="main-screen" class="container">
         <header>
             <h1><i class="fas fa-clipboard-list"></i> Painel de Acessos</h1>
         </header>
 
-        <a class="button" href="https://gruponso-my.sharepoint.com/..."> <!-- seu link original --></a>
-        <a class="button" id="btn-ideias" href="https://forms.office.com/r/DFBt9eC2pX">...</a>
-        <a class="button" id="btn-telefones" href="https://forms.office.com/r/Vr3tWmLyv2">...</a>
-        <a class="button" id="btn-clandestinos-rto" href="#">...</a>
-        <a class="button" id="btn-inspecoes-5s" href="#">...</a>
-        <a class="button disabled" href="#">...</a>
+        <a class="button" href="https://gruponso-my.sharepoint.com/personal/cristiano_santos_urubupunga_com_br/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcristiano%5Fsantos%5Furubupunga%5Fcom%5Fbr%2FDocuments%2FRelat%C3%B3rios%20de%20ponto%5Fexcel%2FREL%5FFISCAIS%5FAVUL%28EM%20USO%29&ga=1">
+            <i class="fas fa-file-excel"></i> IR PARA RELATÓRIOS DE FISCAL
+        </a>
+
+        <a class="button" id="btn-ideias" href="https://forms.office.com/r/DFBt9eC2pX">
+            <i class="fas fa-lightbulb"></i> USINA DE IDEIAS
+            <span class="tooltip">Registre sua ideia e concorra a prêmios</span>
+        </a>
+
+        <a class="button" id="btn-telefones" href="https://forms.office.com/r/Vr3tWmLyv2">
+            <i class="fas fa-phone"></i> ATUALIZAÇÃO DE TELEFONES
+            <span class="tooltip">Atualize seus dados de contato</span>
+        </a>
+
+        <a class="button" id="btn-clandestinos-rto" href="#">
+            <i class="fas fa-ban"></i> CLANDESTINOS OSASCO e CAJAMAR
+        </a>
+
+        <a class="button" id="btn-inspecoes-5s" href="#">
+            <i class="fas fa-clipboard-check"></i> INSPEÇÕES DE 5S
+        </a>
+
+        <a class="button disabled" href="#">
+            <i class="fas fa-bullhorn"></i> COMUNICAÇÃO INTERNA (EM CONSTRUÇÃO)
+        </a>
 
         <a class="button" id="btn-segunda-tela" href="#">
             <i class="fas fa-lock"></i> INSPETORES >>>>
         </a>
     </div>
 
-    <!-- TELA DE INSPETORES -->
+    <!-- ====================== TELA DE INSPETORES ====================== -->
     <div id="inspector-screen" class="container" style="display: none;">
         <header style="width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h1><i class="fas fa-user-shield"></i> Tela de Inspetores</h1>
             <div style="display: flex; gap: 10px;">
-                <button onclick="voltarParaMain()" class="button" style="background-color:#666; min-width:auto; padding:12px 20px;">
+                <button onclick="voltarParaMain()" class="button" 
+                        style="background-color:#666; min-width: auto; padding: 12px 20px;">
                     ← Voltar ao Painel
                 </button>
-                <button onclick="logoutInspector()" class="button" style="background-color:#d11a2d; min-width:auto; padding:12px 20px;">
+                <button onclick="logoutInspector()" class="button" 
+                        style="background-color:#d11a2d; min-width: auto; padding: 12px 20px;">
                     Sair
                 </button>
             </div>
         </header>
 
-        <p style="text-align:center; color:#333; font-size:20px; margin: 25px 0;">
-            Bem-vindo, <strong id="inspector-name"></strong>!
+        <p style="text-align:center; color:#333; font-size:18px; margin: 20px 0;">
+            Bem-vindo, Inspetor!
         </p>
 
-        <!-- Seus links de inspetores aqui -->
+        <!-- COLOQUE AQUI OS LINKS DOS INSPETORES -->
         <a class="button" href="#">📋 Checklist de Inspeção Diária</a>
         <a class="button" href="#">📸 Enviar Fotos de Veículos</a>
         <a class="button" href="#">📊 Relatórios de Ocorrências</a>
         <a class="button" href="#">🚨 Notificar Irregularidades</a>
     </div>
 
-    <!-- Seus modais antigos (clandestinos e 5S) permanecem iguais -->
-    <!-- ... (mantive eles no código completo que você vai copiar) ... -->
+    <!-- ====================== MODAL CLANDESTINOS ====================== -->
+    <div id="modal-clandestinos-rto" class="modal">
+        <div class="modal-content">
+            <a class="button" href="https://forms.office.com/r/v4BMhNHbSR">
+                <i class="fas fa-ban"></i> RUA MELVIN JONES - CLANDESTINOS
+            </a>
+            <a class="button" href="https://forms.office.com/r/JF8tPFysX6">
+                <i class="fas fa-ban"></i> CLANDESTINOS - CAJAMAR
+            </a>
+        </div>
+    </div>
 
-    <!-- MODAL LOGIN -->
+    <!-- ====================== MODAL INSPEÇÕES 5S ====================== -->
+    <div id="modal-inspecoes-5s" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-inspecoes-5s')">&times;</span>
+            <a class="button" id="btn-osasco" href="https://forms.office.com/r/bkeF1EwmNC">
+                <i class="fas fa-clipboard-check"></i> 5S - FROTA DE OSASCO
+            </a>
+            <a class="button" id="btn-santana" href="https://forms.office.com/r/dhibquxks5">
+                <i class="fas fa-clipboard-check"></i> 5S - FROTA SANTANA DE PARNAÍBA
+            </a>
+        </div>
+    </div>
+
+    <!-- ====================== MODAL LOGIN (SÓ SENHA) ====================== -->
     <div id="modal-login" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-login')">&times;</span>
             <h2 style="text-align:center; margin-bottom:20px;">🔐 Acesso Inspetores</h2>
             
             <form id="login-form">
-                <input type="password" id="password" placeholder="Digite sua senha" required autofocus>
+                <input type="password" id="password" placeholder="Digite a senha" required autofocus>
                 <button type="submit" class="button" style="width:100%; margin-top:15px;">
                     Entrar
                 </button>
@@ -78,37 +121,57 @@
     </div>
 
     <script>
-        // ==================== SEU CÓDIGO ANTIGO (desativação + modais) ====================
-        // (mantive exatamente como estava funcionando)
-
-        const disableDates = { /* seu código de datas */ };
-        // ... todo o resto do seu código antigo de modais, tooltip, etc. ...
-
-        // ==================== LOGIN COM 15 INSPETORES ====================
-        const inspetores = {
-            "32082": "França",
-            "95142": "Ernes",
-            "47612": "Ildefonso",
-            "07963": "D. Alcides",
-            "14903": "H. Lima",
-            "23223": "O. Mario",
-            "20343": "Thiago",
-            "75672": "P. Alex",
-            "96972": "C. Peres",
-            "16503": "M. Osiel",
-            "99662": "L. Adilson",
-            "32213": "G. Sampaio",
-            "96362": "O. Anderson",
-            "76102": "Cristiano",
-            "100015": "Thiago Barbosa"
-            // ← AQUI VOCÊ TROCA as senhas (lado esquerdo) e os nomes (lado direito)
-            // Exemplo: "123456": "Seu Nome Completo",
+        // ==================== CÓDIGO ANTIGO (desativação de botões + modais) ====================
+        const disableDates = {
+            'btn-osasco': new Date('2026-02-19'),
+            'btn-santana': new Date('2026-02-03')
         };
+
+        const now = new Date();
+        for (const [id, date] of Object.entries(disableDates)) {
+            const btn = document.getElementById(id);
+            if (btn && now < date) {
+                btn.classList.add('disabled');
+                btn.setAttribute('href', '#');
+                btn.setAttribute('title', `Disponível após ${date.toLocaleDateString()}`);
+            }
+        }
+
+        const tooltipBtn = document.getElementById('btn-ideias');
+        if (tooltipBtn) {
+            tooltipBtn.addEventListener('touchstart', () => {
+                tooltipBtn.classList.add('touch');
+                setTimeout(() => tooltipBtn.classList.remove('touch'), 2000);
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('modal-clandestinos-rto');
+        });
+
+        document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('modal-inspecoes-5s');
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+        });
+
+        // ==================== LOGIN COM LOCALSTORAGE (SÓ SENHA) ====================
+        const SENHA_CORRETA = "123456";   // ← TROQUE AQUI pela senha desejada
 
         function checkLoginStatus() {
             if (localStorage.getItem('inspectorLoggedIn') === 'true') {
-                const nome = localStorage.getItem('inspectorName') || 'Inspetor';
-                document.getElementById('inspector-name').textContent = nome;
                 document.getElementById('main-screen').style.display = 'none';
                 document.getElementById('inspector-screen').style.display = 'flex';
             } else {
@@ -127,13 +190,10 @@
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const senha = document.getElementById('password').value.trim();
-            const nome = inspetores[senha];
 
-            if (nome) {
+            if (senha === SENHA_CORRETA) {
                 localStorage.setItem('inspectorLoggedIn', 'true');
-                localStorage.setItem('inspectorName', nome);
                 closeModal('modal-login');
-                document.getElementById('inspector-name').textContent = nome;
                 document.getElementById('main-screen').style.display = 'none';
                 document.getElementById('inspector-screen').style.display = 'flex';
             } else {
@@ -142,21 +202,25 @@
             }
         });
 
-        function voltarParaMain() { logoutInspector(); }
+        function voltarParaMain() {
+            logoutInspector();
+        }
 
         function logoutInspector() {
             localStorage.removeItem('inspectorLoggedIn');
-            localStorage.removeItem('inspectorName');
             document.getElementById('inspector-screen').style.display = 'none';
             document.getElementById('main-screen').style.display = 'flex';
         }
 
+        // Executa ao carregar a página
         window.addEventListener('load', checkLoginStatus);
 
+        // Fechar modal com tecla ESC
         document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape") document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            if (e.key === "Escape") {
+                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            }
         });
     </script>
 </body>
 </html>
-
