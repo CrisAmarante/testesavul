@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzzcOujA4G5S0E5Vu6iVRrf8f9d8F_uU6p7X-0MGxeNtOO1ayz_-Rq2jiaFyh5S3G0/exec"; // URL gerada no Google Apps Script
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbw0JR--eavuUYN5LM1prpI7gWKnqNgMb7A260-dnP-YL4cuTdBeIXOKdeDmRjgyeCrF/exec"; 
 let INSPETORES = {};
 
 // Datas de bloqueio para os botões de 5S
@@ -11,22 +11,22 @@ const disableDates = {
 };
 
 // ==========================================================================
-// 1. INTEGRAÇÃO COM GOOGLE SHEETS
+// 1. INTEGRAÇÃO COM GOOGLE SHEETS (API)
 // ==========================================================================
 async function carregarInspetores() {
     try {
         const response = await fetch(URL_PLANILHA);
         INSPETORES = await response.json();
-        console.log("Lista de inspetores sincronizada com a planilha.");
+        console.log("Lista de inspetores sincronizada com sucesso.");
     } catch (error) {
-        console.error("Erro ao carregar inspetores:", error);
-        // Backup de segurança para acesso administrativo
+        console.error("Erro ao carregar inspetores via API:", error);
+        // Backup de segurança
         INSPETORES = { "Admin": "123456" };
     }
 }
 
 // ==========================================================================
-// 2. SISTEMA DE LOGIN E CONTROLE DE TELAS
+// 2. SISTEMA DE LOGIN E CONTROLE DE ACESSO
 // ==========================================================================
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
@@ -35,7 +35,6 @@ function checkLoginStatus() {
     if (logado === 'true') {
         document.getElementById('main-screen').style.display = 'none';
         document.getElementById('inspector-screen').style.display = 'flex';
-        // Atualiza a saudação personalizada
         const welcomeMsg = document.getElementById('welcome-msg');
         if (welcomeMsg) welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
     } else {
@@ -48,7 +47,7 @@ function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
     
-    // Verifica se a senha corresponde a algum inspetor na lista da planilha
+    // Busca o nome correspondente à senha na lista vinda da planilha
     const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
     if (nomeEncontrado) {
@@ -69,7 +68,7 @@ function logoutInspector() {
 }
 
 // ==========================================================================
-// 3. GERENCIAMENTO DE MODAIS E BOTÕES
+// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BOTÕES)
 // ==========================================================================
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
@@ -79,7 +78,6 @@ function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-// Lógica de desativação de botões baseada em data
 function aplicarBloqueioDeDatas() {
     const now = new Date();
     for (const [id, date] of Object.entries(disableDates)) {
@@ -93,7 +91,7 @@ function aplicarBloqueioDeDatas() {
 }
 
 // ==========================================================================
-// 4. INICIALIZAÇÃO E EVENTOS
+// 4. INICIALIZAÇÃO DE EVENTOS
 // ==========================================================================
 window.addEventListener('load', () => {
     carregarInspetores();
@@ -101,11 +99,12 @@ window.addEventListener('load', () => {
     aplicarBloqueioDeDatas();
 });
 
-// Eventos de Clique
+// Eventos de Clique Principais
 document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
     e.preventDefault();
     openModal('modal-login');
     document.getElementById('login-error').style.display = 'none';
+    document.getElementById('password').value = '';
     document.getElementById('password').focus();
 });
 
@@ -121,7 +120,7 @@ document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
     openModal('modal-inspecoes-5s');
 });
 
-// Fechar modais ao clicar fora ou ESC
+// Fechamento de Modais (Clique fora ou Tecla ESC)
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) e.target.style.display = 'none';
 });
@@ -131,12 +130,3 @@ document.addEventListener('keydown', (e) => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 });
-
-// Tooltip para dispositivos touch
-const tooltipBtn = document.getElementById('btn-ideias');
-if (tooltipBtn) {
-    tooltipBtn.addEventListener('touchstart', () => {
-        tooltipBtn.classList.add('touch');
-        setTimeout(() => tooltipBtn.classList.remove('touch'), 2000);
-    });
-}
