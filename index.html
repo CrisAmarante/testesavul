@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PENSO - Prancheta eletrônica</title>
-    <link rel="icon" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" href="icon.jpg">
+    <link rel="apple-touch-icon" href="icon.jpg">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- ====================== TELA PRINCIPAL ====================== -->
     <div id="main-screen" class="container">
         <header>
             <h1><i class="fas fa-clipboard-list"></i> Painel de Acessos</h1>
@@ -49,15 +48,10 @@
         </a>
     </div>
 
-    <!-- ====================== TELA DE INSPETORES ====================== -->
     <div id="inspector-screen" class="container" style="display: none;">
         <header style="width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h1><i class="fas fa-user-shield"></i> Tela de Inspetores</h1>
             <div style="display: flex; gap: 10px;">
-                <button onclick="voltarParaMain()" class="button" 
-                        style="background-color:#666; min-width: auto; padding: 12px 20px;">
-                    ← Voltar ao Painel
-                </button>
                 <button onclick="logoutInspector()" class="button" 
                         style="background-color:#d11a2d; min-width: auto; padding: 12px 20px;">
                     Sair
@@ -65,20 +59,19 @@
             </div>
         </header>
 
-        <p style="text-align:center; color:#333; font-size:18px; margin: 20px 0;">
+        <p id="welcome-msg" style="text-align:center; color:#333; font-size:18px; margin: 20px 0;">
             Bem-vindo, Inspetor!
         </p>
 
-        <!-- COLOQUE AQUI OS LINKS DOS INSPETORES -->
         <a class="button" href="#">📋 Checklist de Inspeção Diária</a>
         <a class="button" href="#">📸 Enviar Fotos de Veículos</a>
         <a class="button" href="#">📊 Relatórios de Ocorrências</a>
         <a class="button" href="#">🚨 Notificar Irregularidades</a>
     </div>
 
-    <!-- ====================== MODAL CLANDESTINOS ====================== -->
     <div id="modal-clandestinos-rto" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-clandestinos-rto')">&times;</span>
             <a class="button" href="https://forms.office.com/r/v4BMhNHbSR">
                 <i class="fas fa-ban"></i> RUA MELVIN JONES - CLANDESTINOS
             </a>
@@ -88,7 +81,6 @@
         </div>
     </div>
 
-    <!-- ====================== MODAL INSPEÇÕES 5S ====================== -->
     <div id="modal-inspecoes-5s" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-inspecoes-5s')">&times;</span>
@@ -101,126 +93,24 @@
         </div>
     </div>
 
-    <!-- ====================== MODAL LOGIN (SÓ SENHA) ====================== -->
     <div id="modal-login" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-login')">&times;</span>
             <h2 style="text-align:center; margin-bottom:20px;">🔐 Acesso Inspetores</h2>
             
             <form id="login-form">
-                <input type="password" id="password" placeholder="Digite a senha" required autofocus>
+                <input type="password" id="password" placeholder="Digite sua senha exclusiva" required autofocus>
                 <button type="submit" class="button" style="width:100%; margin-top:15px;">
                     Entrar
                 </button>
             </form>
             
             <p id="login-error" style="color:red; text-align:center; display:none; margin-top:10px;">
-                Senha incorreta!
+                Senha não reconhecida!
             </p>
         </div>
     </div>
 
-    <script>
-        // ==================== CÓDIGO ANTIGO (desativação de botões + modais) ====================
-        const disableDates = {
-            'btn-osasco': new Date('2026-02-19'),
-            'btn-santana': new Date('2026-02-03')
-        };
-
-        const now = new Date();
-        for (const [id, date] of Object.entries(disableDates)) {
-            const btn = document.getElementById(id);
-            if (btn && now < date) {
-                btn.classList.add('disabled');
-                btn.setAttribute('href', '#');
-                btn.setAttribute('title', `Disponível após ${date.toLocaleDateString()}`);
-            }
-        }
-
-        const tooltipBtn = document.getElementById('btn-ideias');
-        if (tooltipBtn) {
-            tooltipBtn.addEventListener('touchstart', () => {
-                tooltipBtn.classList.add('touch');
-                setTimeout(() => tooltipBtn.classList.remove('touch'), 2000);
-            });
-        }
-
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) => {
-            e.preventDefault();
-            openModal('modal-clandestinos-rto');
-        });
-
-        document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
-            e.preventDefault();
-            openModal('modal-inspecoes-5s');
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) e.target.style.display = 'none';
-        });
-
-        // ==================== LOGIN COM LOCALSTORAGE (SÓ SENHA) ====================
-        const SENHA_CORRETA = "123456";   // ← TROQUE AQUI pela senha desejada
-
-        function checkLoginStatus() {
-            if (localStorage.getItem('inspectorLoggedIn') === 'true') {
-                document.getElementById('main-screen').style.display = 'none';
-                document.getElementById('inspector-screen').style.display = 'flex';
-            } else {
-                document.getElementById('main-screen').style.display = 'flex';
-                document.getElementById('inspector-screen').style.display = 'none';
-            }
-        }
-
-        document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
-            e.preventDefault();
-            openModal('modal-login');
-            document.getElementById('login-error').style.display = 'none';
-            document.getElementById('password').focus();
-        });
-
-        document.getElementById('login-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const senha = document.getElementById('password').value.trim();
-
-            if (senha === SENHA_CORRETA) {
-                localStorage.setItem('inspectorLoggedIn', 'true');
-                closeModal('modal-login');
-                document.getElementById('main-screen').style.display = 'none';
-                document.getElementById('inspector-screen').style.display = 'flex';
-            } else {
-                document.getElementById('login-error').style.display = 'block';
-                document.getElementById('password').value = '';
-            }
-        });
-
-        function voltarParaMain() {
-            logoutInspector();
-        }
-
-        function logoutInspector() {
-            localStorage.removeItem('inspectorLoggedIn');
-            document.getElementById('inspector-screen').style.display = 'none';
-            document.getElementById('main-screen').style.display = 'flex';
-        }
-
-        // Executa ao carregar a página
-        window.addEventListener('load', checkLoginStatus);
-
-        // Fechar modal com tecla ESC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape") {
-                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            }
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
