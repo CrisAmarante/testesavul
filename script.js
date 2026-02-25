@@ -1,4 +1,4 @@
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxYiDuvEsbojgv3nlPTbxIm4PaQ5q8OZGWB4UkfjeVFtd8KdlQItUdzBQiuOSGX-gQb/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzzi7kSwwn8G6BfE8nGjEIGtLkcRXobzxs5UcRkV58kROPOMbOyk-IbiVSHIaou2pLA/exec"; 
 let INSPETORES = {};
 
 // Datas de bloqueio para os botões de 5S
