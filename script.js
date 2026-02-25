@@ -1,7 +1,4 @@
-// ==========================================================================
-// CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
-// ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycby1pSBCXVnrLuQMuLOV6tU1x4dCLy3PMZoFIXQl3BIF7w6K5k0ZX-OQ65v84cPnI-tu/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxYiDuvEsbojgv3nlPTbxIm4PaQ5q8OZGWB4UkfjeVFtd8KdlQItUdzBQiuOSGX-gQb/exec"; 
 let INSPETORES = {};
 
 // Datas de bloqueio para os botões de 5S
@@ -10,25 +7,19 @@ const disableDates = {
     'btn-santana': new Date('2026-02-03')
 };
 
-// ==========================================================================
-// 1. INTEGRAÇÃO COM GOOGLE SHEETS (API)
-// ==========================================================================
-// Função global que receberá os dados da planilha
+// --- CARREGAMENTO DOS DADOS ---
 function processarDadosPlanilha(dados) {
     INSPETORES = dados;
-    console.log("Inspetores carregados com sucesso!");
+    console.log("Login restaurado: Lista carregada.");
 }
 
 function carregarInspetores() {
     const script = document.createElement('script');
-    // Adicionamos o parâmetro ?callback=processarDadosPlanilha ao final da sua URL
-    script.src = URL_PLANILHA + "?callback=processarDadosPlanilha";
+    script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha`;
     document.body.appendChild(script);
 }
 
-// ==========================================================================
-// 2. SISTEMA DE LOGIN E CONTROLE DE ACESSO
-// ==========================================================================
+// --- LÓGICA DE LOGIN ---
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
     const nomeInspetor = localStorage.getItem('inspectorName');
@@ -47,8 +38,6 @@ function checkLoginStatus() {
 function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
-    
-    // Busca o nome correspondente à senha na lista vinda da planilha
     const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
     if (nomeEncontrado) {
@@ -68,9 +57,7 @@ function logoutInspector() {
     checkLoginStatus();
 }
 
-// ==========================================================================
-// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BOTÕES)
-// ==========================================================================
+// --- INTERFACE ---
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -86,21 +73,17 @@ function aplicarBloqueioDeDatas() {
         if (btn && now < date) {
             btn.classList.add('disabled');
             btn.setAttribute('href', '#');
-            btn.setAttribute('title', `Disponível após ${date.toLocaleDateString()}`);
         }
     }
 }
 
-// ==========================================================================
-// 4. INICIALIZAÇÃO DE EVENTOS
-// ==========================================================================
+// --- INICIALIZAÇÃO ---
 window.addEventListener('load', () => {
     carregarInspetores();
     checkLoginStatus();
     aplicarBloqueioDeDatas();
 });
 
-// Eventos de Clique Principais
 document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
     e.preventDefault();
     openModal('modal-login');
@@ -121,7 +104,6 @@ document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
     openModal('modal-inspecoes-5s');
 });
 
-// Fechamento de Modais (Clique fora ou Tecla ESC)
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) e.target.style.display = 'none';
 });
