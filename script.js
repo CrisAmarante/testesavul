@@ -13,16 +13,17 @@ const disableDates = {
 // ==========================================================================
 // 1. INTEGRAÇÃO COM GOOGLE SHEETS (API)
 // ==========================================================================
-async function carregarInspetores() {
-    try {
-        const response = await fetch(URL_PLANILHA);
-        INSPETORES = await response.json();
-        console.log("Lista de inspetores sincronizada com sucesso.");
-    } catch (error) {
-        console.error("Erro ao carregar inspetores via API:", error);
-        // Backup de segurança
-        INSPETORES = { "Admin": "123456" };
-    }
+// Função global que receberá os dados da planilha
+function processarDadosPlanilha(dados) {
+    INSPETORES = dados;
+    console.log("Inspetores carregados com sucesso!");
+}
+
+function carregarInspetores() {
+    const script = document.createElement('script');
+    // Adicionamos o parâmetro ?callback=processarDadosPlanilha ao final da sua URL
+    script.src = URL_PLANILHA + "?callback=processarDadosPlanilha";
+    document.body.appendChild(script);
 }
 
 // ==========================================================================
