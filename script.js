@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzs6EQgYNr0Ylho4KvTBlpRdup7meZ3FhgeYPc-y-jeDWU_w61UvwBIViFPkII6gl59/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbw0JR--eavuUYN5LM1prpI7gWKnqNgMb7A260-dnP-YL4cuTdBeIXOKdeDmRjgyeCrF/exec"; 
 let INSPETORES = {};
 
 // Datas de bloqueio para os botões de 5S
@@ -11,24 +11,34 @@ const disableDates = {
 };
 
 // ==========================================================================
-// 1. INTEGRAÇÃO COM GOOGLE SHEETS (API)
+// 1. INTEGRAÇÃO COM GOOGLE SHEETS (JSONP)
 // ==========================================================================
-// Função global que receberá os dados da planilha
+
+// Função global de retorno para carregar inspetores
 function processarDadosPlanilha(dados) {
     INSPETORES = dados;
-    console.log("Inspetores carregados com sucesso!");
+    console.log("Lista de inspetores sincronizada com a planilha.");
 }
 
+// Carrega os dados da planilha como um script externo
 function carregarInspetores() {
     const script = document.createElement('script');
-    // Adicionamos o parâmetro ?callback=processarDadosPlanilha ao final da sua URL
-    script.src = URL_PLANILHA + "?callback=processarDadosPlanilha";
+    script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha`;
+    document.body.appendChild(script);
+}
+
+// Envia o log de acesso para a aba LOGS na planilha
+function registrarLog(nome) {
+    const script = document.createElement('script');
+    // Utilizamos o console.log como callback apenas para cumprir o requisito do JSONP
+    script.src = `${URL_PLANILHA}?callback=console.log&acao=log&nome=${encodeURIComponent(nome)}`;
     document.body.appendChild(script);
 }
 
 // ==========================================================================
-// 2. SISTEMA DE LOGIN E CONTROLE DE ACESSO
+// 2. SISTEMA DE LOGIN E CONTROLE DE TELAS
 // ==========================================================================
+
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
     const nomeInspetor = localStorage.getItem('inspectorName');
@@ -54,6 +64,10 @@ function login(e) {
     if (nomeEncontrado) {
         localStorage.setItem('inspectorLoggedIn', 'true');
         localStorage.setItem('inspectorName', nomeEncontrado);
+        
+        // Registra o acesso na aba LOGS antes de trocar de tela
+        registrarLog(nomeEncontrado);
+
         closeModal('modal-login');
         checkLoginStatus();
     } else {
@@ -69,8 +83,9 @@ function logoutInspector() {
 }
 
 // ==========================================================================
-// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BOTÕES)
+// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BLOQUEIOS)
 // ==========================================================================
+
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -94,13 +109,14 @@ function aplicarBloqueioDeDatas() {
 // ==========================================================================
 // 4. INICIALIZAÇÃO DE EVENTOS
 // ==========================================================================
+
 window.addEventListener('load', () => {
     carregarInspetores();
     checkLoginStatus();
     aplicarBloqueioDeDatas();
 });
 
-// Eventos de Clique Principais
+// Eventos de clique para abrir modais
 document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
     e.preventDefault();
     openModal('modal-login');
@@ -121,7 +137,7 @@ document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
     openModal('modal-inspecoes-5s');
 });
 
-// Fechamento de Modais (Clique fora ou Tecla ESC)
+// Fechamento de modais (Clique fora ou tecla ESC)
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) e.target.style.display = 'none';
 });
@@ -131,37 +147,12 @@ document.addEventListener('keydown', (e) => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 });
-// Função para enviar o log para a planilha
-async function registrarLog(nome) {
-    try {
-        await fetch(URL_PLANILHA, {
-            method: 'POST',
-            mode: 'no-cors', // Necessário para evitar erros de segurança do Google
-            body: JSON.stringify({ nome: nome })
-        });
-        console.log("Log de acesso enviado.");
-    } catch (error) {
-        console.error("Erro ao registrar log:", error);
-    }
-}
 
-// Atualize a sua função login existente:
-function login(e) {
-    e.preventDefault();
-    const senhaDigitada = document.getElementById('password').value.trim();
-    const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
-
-    if (nomeEncontrado) {
-        localStorage.setItem('inspectorLoggedIn', 'true');
-        localStorage.setItem('inspectorName', nomeEncontrado);
-        
-        // CHAMADA DO LOG AQUI
-        registrarLog(nomeEncontrado); 
-
-        closeModal('modal-login');
-        checkLoginStatus();
-    } else {
-        document.getElementById('login-error').style.display = 'block';
-        document.getElementById('password').value = '';
-    }
+// Tooltip para dispositivos touch (Usina de Ideias)
+const tooltipBtn = document.getElementById('btn-ideias');
+if (tooltipBtn) {
+    tooltipBtn.addEventListener('touchstart', () => {
+        tooltipBtn.classList.add('touch');
+        setTimeout(() => tooltipBtn.classList.remove('touch'), 2000);
+    });
 }
