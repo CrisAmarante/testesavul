@@ -58,16 +58,18 @@ function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
     
-    // Busca o nome correspondente à senha na lista vinda da planilha
+    // 1. Primeiro verificamos se a senha existe na lista que já foi carregada
     const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
     if (nomeEncontrado) {
+        // 2. Se achou, salva no navegador imediatamente
         localStorage.setItem('inspectorLoggedIn', 'true');
         localStorage.setItem('inspectorName', nomeEncontrado);
         
-        // Registra o acesso na aba LOGS antes de trocar de tela
+        // 3. Tenta registrar o log (se falhar, não trava o usuário)
         registrarLog(nomeEncontrado);
 
+        // 4. Entra na tela de inspetores
         closeModal('modal-login');
         checkLoginStatus();
     } else {
@@ -75,7 +77,6 @@ function login(e) {
         document.getElementById('password').value = '';
     }
 }
-
 function logoutInspector() {
     localStorage.removeItem('inspectorLoggedIn');
     localStorage.removeItem('inspectorName');
