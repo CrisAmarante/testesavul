@@ -131,3 +131,37 @@ document.addEventListener('keydown', (e) => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 });
+// Função para enviar o log para a planilha
+async function registrarLog(nome) {
+    try {
+        await fetch(URL_PLANILHA, {
+            method: 'POST',
+            mode: 'no-cors', // Necessário para evitar erros de segurança do Google
+            body: JSON.stringify({ nome: nome })
+        });
+        console.log("Log de acesso enviado.");
+    } catch (error) {
+        console.error("Erro ao registrar log:", error);
+    }
+}
+
+// Atualize a sua função login existente:
+function login(e) {
+    e.preventDefault();
+    const senhaDigitada = document.getElementById('password').value.trim();
+    const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
+
+    if (nomeEncontrado) {
+        localStorage.setItem('inspectorLoggedIn', 'true');
+        localStorage.setItem('inspectorName', nomeEncontrado);
+        
+        // CHAMADA DO LOG AQUI
+        registrarLog(nomeEncontrado); 
+
+        closeModal('modal-login');
+        checkLoginStatus();
+    } else {
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('password').value = '';
+    }
+}
