@@ -7,7 +7,7 @@ let INSPETORES = {};
 // Datas de bloqueio para os botões de 5S
 const disableDates = {
     'btn-osasco': new Date('2026-02-19'),
-    'btn-santana': new Date('2026-02-03')
+    'btn-santana': new Date('2026-06-03')
 };
 
 // ==========================================================================
