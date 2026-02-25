@@ -1,6 +1,3 @@
-// ==========================================================================
-// CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
-// ==========================================================================
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzzi7kSwwn8G6BfE8nGjEIGtLkcRXobzxs5UcRkV58kROPOMbOyk-IbiVSHIaou2pLA/exec"; 
 let INSPETORES = {};
 
@@ -10,31 +7,19 @@ const disableDates = {
     'btn-santana': new Date('2026-02-03')
 };
 
-// ==========================================================================
-// 1. INTEGRAÇÃO COM GOOGLE SHEETS (JSONP)
-// ==========================================================================
-
-// Função global de retorno que recebe os dados da planilha
+// --- CARREGAMENTO DOS DADOS ---
 function processarDadosPlanilha(dados) {
-    if (dados && !dados.erro) {
-        INSPETORES = dados;
-        console.log("Conexão estabelecida: Lista de inspetores carregada.");
-    } else {
-        console.error("Erro retornado pela planilha:", dados ? dados.erro : "Erro desconhecido");
-    }
+    INSPETORES = dados;
+    console.log("Login restaurado: Lista carregada.");
 }
 
-// Faz a chamada para a URL da sua implantação
 function carregarInspetores() {
     const script = document.createElement('script');
     script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha`;
     document.body.appendChild(script);
 }
 
-// ==========================================================================
-// 2. SISTEMA DE LOGIN E CONTROLE DE TELAS
-// ==========================================================================
-
+// --- LÓGICA DE LOGIN ---
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
     const nomeInspetor = localStorage.getItem('inspectorName');
@@ -53,8 +38,6 @@ function checkLoginStatus() {
 function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
-    
-    // Procura na lista carregada da Coluna D
     const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
     if (nomeEncontrado) {
@@ -74,10 +57,7 @@ function logoutInspector() {
     checkLoginStatus();
 }
 
-// ==========================================================================
-// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BOTÕES)
-// ==========================================================================
-
+// --- INTERFACE ---
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -97,10 +77,7 @@ function aplicarBloqueioDeDatas() {
     }
 }
 
-// ==========================================================================
-// 4. INICIALIZAÇÃO E EVENTOS
-// ==========================================================================
-
+// --- INICIALIZAÇÃO ---
 window.addEventListener('load', () => {
     carregarInspetores();
     checkLoginStatus();
