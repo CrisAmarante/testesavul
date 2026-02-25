@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxbX5zvoxicBQMGEv1bQsDZ3uMi9zmmN4e_FZcNB5Y5rgPAE354NF3hBHpl0fg49KK0/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzs6EQgYNr0Ylho4KvTBlpRdup7meZ3FhgeYPc-y-jeDWU_w61UvwBIViFPkII6gl59/exec"; 
 let INSPETORES = {};
 
 // Datas de bloqueio para os botões de 5S
