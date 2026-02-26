@@ -1,49 +1,79 @@
 // ==========================================================================
 // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 // ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzzi7kSwwn8G6BfE8nGjEIGtLkcRXobzxs5UcRkV58kROPOMbOyk-IbiVSHIaou2pLA/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbz1ebxMTHunYR5u1kj5YlYfgh5xnbcpwpNV2qfBwTnGmY2IkY1nQl7sZBeL22SKCTR9/exec"; 
+// ← COLE AQUI A NOVA URL DO DEPLOY
+
+// URL para log (mesma do carregamento)
+const URL_LOG = URL_PLANILHA;
+
 let INSPETORES = {};
 
-// Datas de bloqueio para os botões de 5S
+// Datas de bloqueio
 const disableDates = {
     'btn-osasco': new Date('2026-02-19'),
     'btn-santana': new Date('2026-06-03')
 };
 
 // ==========================================================================
-// 1. INTEGRAÇÃO COM GOOGLE SHEETS (JSONP)
+// LOADING + CACHE OFFLINE
 // ==========================================================================
+function showLoading(show) {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = show ? 'flex' : 'none';
+}
 
-// Função global de retorno que recebe os dados da planilha
-function processarDadosPlanilha(dados) {
-    if (dados && !dados.erro) {
+function saveCache(dados) {
+    localStorage.setItem('inspetoresCache', JSON.stringify(dados));
+    localStorage.setItem('lastSync', new Date().toISOString());
+}
+
+function loadFromCache() {
+    const cached = localStorage.getItem('inspetoresCache');
+    if (cached) {
+        INSPETORES = JSON.parse(cached);
+        console.log("✅ Usando cache offline");
+        return true;
+    }
+    return false;
+}
+
+// ==========================================================================
+// CARREGAR INSPETORES (FETCH + OFFLINE)
+// ==========================================================================
+async function carregarInspetores() {
+    showLoading(true);
+    try {
+        const response = await fetch(URL_PLANILHA);
+        if (!response.ok) throw new Error('Erro na conexão');
+
+        const dados = await response.json();
+        if (dados.erro) throw new Error(dados.erro);
+
         INSPETORES = dados;
-        console.log("Conexão estabelecida: Lista de inspetores carregada.");
-    } else {
-        console.error("Erro retornado pela planilha:", dados ? dados.erro : "Erro desconhecido");
+        saveCache(dados);
+        console.log(`✅ ${Object.keys(dados).length} inspetores carregados com sucesso!`);
+    } catch (err) {
+        console.warn("⚠️ Sem internet ou erro na planilha → usando cache");
+        loadFromCache();
+    } finally {
+        showLoading(false);
     }
 }
 
-// Faz a chamada para a URL da sua implantação
-function carregarInspetores() {
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha`;
-    document.body.appendChild(script);
-}
-
 // ==========================================================================
-// 2. SISTEMA DE LOGIN E CONTROLE DE TELAS
+// LOGIN E CONTROLE DE TELAS
 // ==========================================================================
-
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
     const nomeInspetor = localStorage.getItem('inspectorName');
 
-    if (logado === 'true') {
+    if (logado === 'true' && nomeInspetor) {
         document.getElementById('main-screen').style.display = 'none';
         document.getElementById('inspector-screen').style.display = 'flex';
+        
         const welcomeMsg = document.getElementById('welcome-msg');
-        if (welcomeMsg) welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
+        if (welcomeMsg) welcomeMsg.innerHTML = `Bem-vindo, <strong>${nomeInspetor}</strong>!`;
     } else {
         document.getElementById('main-screen').style.display = 'flex';
         document.getElementById('inspector-screen').style.display = 'none';
@@ -54,7 +84,6 @@ function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
     
-    // Procura na lista carregada da Coluna D
     const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
     if (nomeEncontrado) {
@@ -74,10 +103,31 @@ function logoutInspector() {
     checkLoginStatus();
 }
 
-// ==========================================================================
-// 3. GERENCIAMENTO DE INTERFACE (MODAIS E BOTÕES)
-// ==========================================================================
+// ====================== REGISTRO DE LOG NO GOOGLE SHEETS ======================
+function registrarLog(nome) {
+    fetch(URL_LOG, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome })
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log(`✅ Log registrado: ${nome}`);
+        } else {
+            console.warn("Log não registrado (status HTTP):", response.status);
+        }
+    })
+    .catch(err => {
+        console.warn("❌ Não foi possível registrar log (offline ou erro):", err);
+        // O login continua mesmo sem log
+    });
+}
 
+
+
+// ==========================================================================
+// MODAIS E BLOQUEIOS
+// ==========================================================================
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -98,15 +148,15 @@ function aplicarBloqueioDeDatas() {
 }
 
 // ==========================================================================
-// 4. INICIALIZAÇÃO E EVENTOS
+// INICIALIZAÇÃO
 // ==========================================================================
-
-window.addEventListener('load', () => {
-    carregarInspetores();
+window.addEventListener('load', async () => {
+    await carregarInspetores();
     checkLoginStatus();
     aplicarBloqueioDeDatas();
 });
 
+// Eventos
 document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
     e.preventDefault();
     openModal('modal-login');
@@ -118,13 +168,11 @@ document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
 document.getElementById('login-form').addEventListener('submit', login);
 
 document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-clandestinos-rto');
+    e.preventDefault(); openModal('modal-clandestinos-rto');
 });
 
 document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-inspecoes-5s');
+    e.preventDefault(); openModal('modal-inspecoes-5s');
 });
 
 window.addEventListener('click', (e) => {
