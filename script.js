@@ -1,11 +1,8 @@
 // ==========================================================================
-// CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
+// CONFIGURAÇÕES
 // ==========================================================================
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbz1ebxMTHunYR5u1kj5YlYfgh5xnbcpwpNV2qfBwTnGmY2IkY1nQl7sZBeL22SKCTR9/exec"; 
-// ← COLE AQUI A NOVA URL DO DEPLOY
-
-// URL para log (mesma do carregamento)
-const URL_LOG = URL_PLANILHA;
+// ← COLE AQUI A NOVA URL DO DEPLOY (a que você acabou de copiar)
 
 let INSPETORES = {};
 
@@ -19,13 +16,11 @@ const disableDates = {
 // LOADING + CACHE OFFLINE
 // ==========================================================================
 function showLoading(show) {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.style.display = show ? 'flex' : 'none';
+    document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
 }
 
 function saveCache(dados) {
     localStorage.setItem('inspetoresCache', JSON.stringify(dados));
-    localStorage.setItem('lastSync', new Date().toISOString());
 }
 
 function loadFromCache() {
@@ -39,22 +34,22 @@ function loadFromCache() {
 }
 
 // ==========================================================================
-// CARREGAR INSPETORES (FETCH + OFFLINE)
+// CARREGAR INSPETORES (FETCH)
 // ==========================================================================
 async function carregarInspetores() {
     showLoading(true);
     try {
         const response = await fetch(URL_PLANILHA);
-        if (!response.ok) throw new Error('Erro na conexão');
+        if (!response.ok) throw new Error('Falha na conexão');
 
         const dados = await response.json();
         if (dados.erro) throw new Error(dados.erro);
 
         INSPETORES = dados;
         saveCache(dados);
-        console.log(`✅ ${Object.keys(dados).length} inspetores carregados com sucesso!`);
+        console.log(`✅ ${Object.keys(dados).length} inspetores carregados!`);
     } catch (err) {
-        console.warn("⚠️ Sem internet ou erro na planilha → usando cache");
+        console.warn("⚠️ Sem internet → usando cache");
         loadFromCache();
     } finally {
         showLoading(false);
@@ -62,7 +57,7 @@ async function carregarInspetores() {
 }
 
 // ==========================================================================
-// LOGIN E CONTROLE DE TELAS
+// LOGIN + LOG
 // ==========================================================================
 function checkLoginStatus() {
     const logado = localStorage.getItem('inspectorLoggedIn');
@@ -71,9 +66,7 @@ function checkLoginStatus() {
     if (logado === 'true' && nomeInspetor) {
         document.getElementById('main-screen').style.display = 'none';
         document.getElementById('inspector-screen').style.display = 'flex';
-        
-        const welcomeMsg = document.getElementById('welcome-msg');
-        if (welcomeMsg) welcomeMsg.innerHTML = `Bem-vindo, <strong>${nomeInspetor}</strong>!`;
+        document.getElementById('welcome-msg').innerHTML = `Bem-vindo, <strong>${nomeInspetor}</strong>!`;
     } else {
         document.getElementById('main-screen').style.display = 'flex';
         document.getElementById('inspector-screen').style.display = 'none';
@@ -89,6 +82,9 @@ function login(e) {
     if (nomeEncontrado) {
         localStorage.setItem('inspectorLoggedIn', 'true');
         localStorage.setItem('inspectorName', nomeEncontrado);
+        
+        registrarLog(nomeEncontrado);   // ← grava na aba Log_Entradas
+        
         closeModal('modal-login');
         checkLoginStatus();
     } else {
@@ -97,33 +93,19 @@ function login(e) {
     }
 }
 
+function registrarLog(nome) {
+    fetch(URL_PLANILHA, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome })
+    }).catch(() => {}); // não trava o login se estiver offline
+}
+
 function logoutInspector() {
     localStorage.removeItem('inspectorLoggedIn');
     localStorage.removeItem('inspectorName');
     checkLoginStatus();
 }
-
-// ====================== REGISTRO DE LOG NO GOOGLE SHEETS ======================
-function registrarLog(nome) {
-    fetch(URL_LOG, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome })
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log(`✅ Log registrado: ${nome}`);
-        } else {
-            console.warn("Log não registrado (status HTTP):", response.status);
-        }
-    })
-    .catch(err => {
-        console.warn("❌ Não foi possível registrar log (offline ou erro):", err);
-        // O login continua mesmo sem log
-    });
-}
-
-
 
 // ==========================================================================
 // MODAIS E BLOQUEIOS
@@ -180,7 +162,5 @@ window.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    }
+    if (e.key === "Escape") document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 });
