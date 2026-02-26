@@ -1,0 +1,26 @@
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const callback = (e && e.parameter) ? e.parameter.callback : "teste";
+  try {
+    // IMPORTANTE: Verifique se o nome da aba é exatamente "login" (minúsculo)
+    const sheetLogin = ss.getSheetByName("login"); 
+    const data = sheetLogin.getDataRange().getValues();
+    const usuarios = {};
+    
+    for (let i = 1; i < data.length; i++) {
+      const nome = data[i][2];  // Coluna C
+      const senha = String(data[i][3]); // Coluna D
+      if (nome && senha) {
+        usuarios[nome] = senha;
+      }
+    }
+    
+    const saida = callback + "(" + JSON.stringify(usuarios) + ")";
+    return ContentService.createTextOutput(saida)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+
+  } catch (err) {
+    return ContentService.createTextOutput(callback + '({"erro":"Verifique se a aba se chama login"})')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+}

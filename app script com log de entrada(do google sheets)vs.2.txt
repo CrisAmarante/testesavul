@@ -1,0 +1,53 @@
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const callback = (e && e.parameter) ? e.parameter.callback : "teste";
+  try {
+    const sheetLogin = ss.getSheetByName("login"); 
+    const data = sheetLogin.getDataRange().getValues();
+    const usuarios = {};
+    
+    for (let i = 1; i < data.length; i++) {
+      const nome = String(data[i][2] || '').trim();   // Coluna C
+      const senha = String(data[i][3] || '').trim();  // Coluna D
+      if (nome && senha) {
+        usuarios[nome] = senha;
+      }
+    }
+    
+    const saida = callback + "(" + JSON.stringify(usuarios) + ")";
+    return ContentService.createTextOutput(saida)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+
+  } catch (err) {
+    return ContentService.createTextOutput(callback + '({"erro":"Verifique se a aba se chama login"})')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+}
+
+// ====================== NOVO: REGISTRO DE LOG ======================
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  try {
+    let sheet = ss.getSheetByName("Log_Entradas");
+    
+    // Cria a aba automaticamente se não existir
+    if (!sheet) {
+      sheet = ss.insertSheet("Log_Entradas");
+      sheet.appendRow(["DATA/Hora", "Nome Inspetor"]);
+    }
+
+    const parametros = JSON.parse(e.postData.getDataAsString());
+    const nome = parametros.nome || "Desconhecido";
+
+    // Hora no fuso de Brasília
+    const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+
+    sheet.appendRow([agora, nome]);
+
+    return ContentService.createTextOutput(JSON.stringify({status: "OK"}));
+
+  } catch (err) {
+    console.error("Erro no log:", err);
+    return ContentService.createTextOutput(JSON.stringify({erro: err.message}));
+  }
+}
