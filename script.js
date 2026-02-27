@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURAÇÕES
 // ==========================================================================
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxlIZIVJsjb_EXOS9Se5b2yMduJIWC1ZNFBBoXPLFY98CGlffQchdgldUUp574ntzQ/exec"; 
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbyNBj_KzDZASRM2qWkXrKijFzy9PXinFXAQbisasLneJYsR4VnJowfFMPFUt0EgL6Mp/exec"; 
 // ← COLE AQUI A NOVA URL DO DEPLOY (a que você acabou de copiar)
 
 let INSPETORES = {};
