@@ -9,7 +9,26 @@ const disableDates = {
     'btn-osasco': new Date('2026-02-19'),
     'btn-santana': new Date('2026-02-03')
 };
-
+// ==========================================================================
+// DEBUG: Mostrar o que está chegando da planilha
+// ==========================================================================
+const originalProcessarDados = processarDadosPlanilha;
+processarDadosPlanilha = function(dados) {
+    console.log("🔥 Dados CRUOS recebidos da planilha:", dados);
+    console.log("🔥 Tipo dos dados:", typeof dados);
+    console.log("🔥 É um objeto?", dados !== null && typeof dados === 'object');
+    console.log("🔥 Chaves recebidas:", Object.keys(dados));
+    
+    // Mostrar o primeiro inspetor como exemplo
+    const primeiraChave = Object.keys(dados)[0];
+    if (primeiraChave) {
+        console.log(`🔥 Exemplo: ${primeiraChave} -> ${dados[primeiraChave]}`);
+        console.log(`🔥 Tamanho do hash: ${dados[primeiraChave].length} caracteres`);
+    }
+    
+    // Chamar a função original
+    originalProcessarDados(dados);
+};
 // ==========================================================================
 // FUNÇÃO HASH SHA-256 (nova segurança)
 // ==========================================================================
@@ -25,7 +44,7 @@ async function sha256(message) {
 // ==========================================================================
 function processarDadosPlanilha(dados) {
   if (dados && !dados.erro) {
-    INSPETORES = dados;
+    
     console.log("✅ Lista de inspetores com hashes carregada com segurança.");
   } else {
     console.error("Erro ao carregar inspetores:", dados);
@@ -41,6 +60,9 @@ function carregarInspetores() {
 // ==========================================================================
 // 2. LOGIN SEGURO + LOG AUTOMÁTICO
 // ==========================================================================
+// ==========================================================================
+// FUNÇÃO DE LOGIN COM DEBUG DETALHADO
+// ==========================================================================
 async function login(e) {
   e.preventDefault();
   const senhaDigitada = document.getElementById("password").value.trim();
@@ -50,16 +72,49 @@ async function login(e) {
     return;
   }
 
+  console.log("🔍 Tentando login com senha:", senhaDigitada);
+  
   const hashDigitado = await sha256(senhaDigitada);
-
-  // Procura pelo hash (não mais pela senha em claro)
-  const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === hashDigitado);
-
-  if (nomeEncontrado) {
-    // === REGISTRA O LOG AUTOMATICAMENTE ===
+  console.log("🔐 Hash gerado:", hashDigitado);
+  console.log("🔐 Tamanho do hash gerado:", hashDigitado.length);
+  
+  console.log("📋 INSPETORES carregados:", INSPETORES);
+  console.log("📋 Total de inspetores:", Object.keys(INSPETORES).length);
+  
+  if (Object.keys(INSPETORES).length === 0) {
+    console.error("❌ ERRO CRÍTICO: INSPETORES está vazio!");
+    mostrarErro("Erro no sistema. Contate o suporte.");
+    return;
+  }
+  
+  // Listar todos os hashes para comparação
+  console.log("📋 Hashes disponíveis na planilha:");
+  for (let [nome, hash] of Object.entries(INSPETORES)) {
+    console.log(`   ${nome}: ${hash} (${hash.length} caracteres)`);
+  }
+  
+  // Procurar match
+  let encontrado = false;
+  let nomeEncontrado = null;
+  
+  for (let [nome, hash] of Object.entries(INSPETORES)) {
+    console.log(`🔍 Comparando: ${hash} com ${hashDigitado}`);
+    console.log(`   São iguais? ${hash === hashDigitado}`);
+    
+    if (hash === hashDigitado) {
+      console.log(`✅ MATCH ENCONTRADO: ${nome}`);
+      encontrado = true;
+      nomeEncontrado = nome;
+      break;
+    }
+  }
+  
+  if (encontrado && nomeEncontrado) {
+    console.log("🎉 Login autorizado para:", nomeEncontrado);
+    
     try {
       await fetch(`${URL_PLANILHA}?action=log&nome=${encodeURIComponent(nomeEncontrado)}`);
-      console.log(`📝 Login registrado: ${nomeEncontrado}`);
+      console.log("📝 Log registrado com sucesso");
     } catch (err) {
       console.warn("Log não pôde ser gravado, mas login foi efetuado.");
     }
@@ -69,17 +124,15 @@ async function login(e) {
     closeModal("modal-login");
     checkLoginStatus();
   } else {
+    console.log("❌ Nenhum match encontrado");
+    console.log("🔎 Possíveis causas:");
+    console.log("   1. A senha na planilha não é um hash SHA-256 válido");
+    console.log("   2. A coluna de hash na planilha está vazia ou incorreta");
+    console.log("   3. O formato do hash (maiúsculas/minúsculas) não corresponde");
     mostrarErro("Senha não reconhecida!");
     document.getElementById("password").value = "";
   }
 }
-
-function mostrarErro(msg) {
-  const erroEl = document.getElementById("login-error");
-  erroEl.textContent = msg;
-  erroEl.style.display = "block";
-}
-
 // ==========================================================================
 // Funções existentes (checkLoginStatus, logout, modais, etc.) — mantidas iguais
 // ==========================================================================
