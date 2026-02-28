@@ -34,26 +34,14 @@ function loadFromCache() {
 }
 
 // ==========================================================================
-// CARREGAR INSPETORES (FETCH)
+// CARREGAR INSPETORES 
 // ==========================================================================
-async function carregarInspetores() {
-    showLoading(true);
-    try {
-        const response = await fetch(URL_PLANILHA);
-        if (!response.ok) throw new Error('Falha na conexão');
-
-        const dados = await response.json();
-        if (dados.erro) throw new Error(dados.erro);
-
-        INSPETORES = dados;
-        saveCache(dados);
-        console.log(`✅ ${Object.keys(dados).length} inspetores carregados!`);
-    } catch (err) {
-        console.warn("⚠️ Sem internet → usando cache");
-        loadFromCache();
-    } finally {
-        showLoading(false);
-    }
+function carregarInspetores() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+    const script = document.createElement('script');
+    // Adicionamos um timestamp (t=...) para evitar cache
+    script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha&t=${new Date().getTime()}`;
+    document.body.appendChild(script);
 }
 
 // ==========================================================================
@@ -94,11 +82,9 @@ function login(e) {
 }
 
 function registrarLog(nome) {
-    fetch(URL_PLANILHA, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome })
-    }).catch(() => {}); // não trava o login se estiver offline
+    const script = document.createElement('script');
+    script.src = `${URL_PLANILHA}?callback=console.log&acao=log&nome=${encodeURIComponent(nome)}`;
+    document.body.appendChild(script);
 }
 
 function logoutInspector() {
