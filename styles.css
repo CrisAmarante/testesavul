@@ -124,3 +124,9 @@ header h1 {
     color: #000000;
     background-color: #00FA9A; /* verde claro */
 }
+/* Nova cor para o botão levantamentos */
+#btn-levantamentos {
+    font-size: 18px;
+    color: #000000;
+    background-color: #00FA9A; /* verde claro */
+}
