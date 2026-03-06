@@ -98,6 +98,10 @@ document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) =>
     e.preventDefault();
     openModal('modal-clandestinos-rto');
 });
+document.getElementById('btn-levantamentos').addEventListener('click', (e) => {
+    e.preventDefault();
+    openModal('modal-levantamentos');
+});
 
 document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
     e.preventDefault();
