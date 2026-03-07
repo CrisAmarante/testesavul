@@ -1,7 +1,7 @@
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxoKF1xIXO_OMy0EtxnqtIwyiKquld5VAh3vu2kYhnAcOikUjVG8f3NcEiEz1iX63o/exec";
 const URL_LOG = "https://script.google.com/macros/s/SEU_NOVO_ENDPOINT_DE_LOG/exec"; // Você criará este endpoint
 
-let USUARIOS = {};
+let INSPETORES = {};
 let currentUser = null;
 
 // Datas de bloqueio para os botões de 5S
@@ -12,7 +12,7 @@ const disableDates = {
 
 // --- CARREGAMENTO DOS DADOS ---
 function processarDadosPlanilha(dados) {
-    USUARIOS = dados;
+    INSPETORES = dados;
     console.log("Lista de usuários carregada.");
     hideLoading();
 }
@@ -81,7 +81,7 @@ function login(e) {
     const senhaDigitada = document.getElementById('password').value.trim();
     
     // Busca usuário pela senha (considerando que senha é única)
-    const usuarioEncontrado = Object.values(USUARIOS).find(u => u.senha === senhaDigitada);
+    const usuarioEncontrado = Object.values(INSPETORES).find(u => u.senha === senhaDigitada);
     
     if (usuarioEncontrado) {
         // Login bem-sucedido
