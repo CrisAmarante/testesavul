@@ -1,23 +1,10 @@
- const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbz1furBNDhQrJeRSOLX8o9MUuUbSEETTkoaViCCCw-0DShhZX0oTRvfhI267kygajaq/exec"; 
-let INSPETORES = {};
+const URL_LOGIN = "https://script.google.com/macros/s/AKfycbz1furBNDhQrJeRSOLX8o9MUuUbSEETTkoaViCCCw-0DShhZX0oTRvfhI267kygajaq/exec"; 
 
 // Datas de bloqueio para os botões de 5S
 const disableDates = {
     'btn-osasco': new Date('2026-02-19'),
     'btn-santana': new Date('2026-02-03')
 };
-
-// --- CARREGAMENTO DOS DADOS ---
-function processarDadosPlanilha(dados) {
-    INSPETORES = dados;
-    console.log("Login restaurado: Lista carregada.");
-}
-
-function carregarInspetores() {
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?callback=processarDadosPlanilha`;
-    document.body.appendChild(script);
-}
 
 // --- LÓGICA DE LOGIN ---
 function checkLoginStatus() {
@@ -38,17 +25,31 @@ function checkLoginStatus() {
 function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
-    const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
 
-    if (nomeEncontrado) {
-        localStorage.setItem('inspectorLoggedIn', 'true');
-        localStorage.setItem('inspectorName', nomeEncontrado);
-        closeModal('modal-login');
-        checkLoginStatus();
-    } else {
+    // Envia POST para o Apps Script
+    fetch(URL_LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: senhaDigitada })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem('inspectorLoggedIn', 'true');
+            localStorage.setItem('inspectorName', data.name);
+            closeModal('modal-login');
+            checkLoginStatus();
+        } else {
+            document.getElementById('login-error').innerText = data.error || 'Senha não reconhecida!';
+            document.getElementById('login-error').style.display = 'block';
+            document.getElementById('password').value = '';
+        }
+    })
+    .catch(err => {
+        console.error('Erro no login:', err);
+        document.getElementById('login-error').innerText = 'Erro de conexão. Tente novamente.';
         document.getElementById('login-error').style.display = 'block';
-        document.getElementById('password').value = '';
-    }
+    });
 }
 
 function logoutInspector() {
@@ -79,7 +80,6 @@ function aplicarBloqueioDeDatas() {
 
 // --- INICIALIZAÇÃO ---
 window.addEventListener('load', () => {
-    carregarInspetores();
     checkLoginStatus();
     aplicarBloqueioDeDatas();
 });
