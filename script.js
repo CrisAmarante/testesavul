@@ -32,7 +32,20 @@ function carregarInspetores() {
 }
 
 // --- LÓGICA DE LOGIN (ALTERADA) ---
-function checkLoginStatus() { ... } // (mantido igual)
+function checkLoginStatus() {
+    const logado = localStorage.getItem('inspectorLoggedIn');
+    const nomeInspetor = localStorage.getItem('inspectorName');
+
+    if (logado === 'true') {
+        document.getElementById('main-screen').style.display = 'none';
+        document.getElementById('inspector-screen').style.display = 'flex';
+        const welcomeMsg = document.getElementById('welcome-msg');
+        if (welcomeMsg) welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
+    } else {
+        document.getElementById('main-screen').style.display = 'flex';
+        document.getElementById('inspector-screen').style.display = 'none';
+    }
+}
 
 function login(e) {
   e.preventDefault();
