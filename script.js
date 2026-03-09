@@ -1,28 +1,40 @@
+// ====================================================================
+// CONFIGURAÇÃO - URL do novo deployment
+// ====================================================================
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzDzqC5d30qOfp-2_8jYwnklvspOStsm1lHCOwBOqzxSIfCEuhwbx2MCBrCcuCNMezK/exec";
 
 let INSPETORES = {};
 
-// === FUNÇÃO NOVA: REGISTRA O LOG NO GOOGLE SHEETS ===
+// ====================================================================
+// FUNÇÃO PARA REGISTRAR LOG DE ACESSO (via POST)
+// ====================================================================
 async function registrarLog(nomeApelido) {
   try {
     const formData = new URLSearchParams();
     formData.append("nome", nomeApelido);
     formData.append("acao", "Login bem-sucedido");
 
-    await fetch(URL_PLANILHA, {
+    const response = await fetch(URL_PLANILHA, {
       method: "POST",
-      body: formData
+      body: formData,
+      mode: "no-cors"   // importante para evitar problemas de CORS em PWAs
     });
-    // Não precisa esperar resposta (fire-and-forget)
+
+    console.log("Log de acesso enviado para:", nomeApelido);
   } catch (err) {
-    console.warn("Log não registrado (sem internet ou erro):", err);
+    console.warn("Não foi possível registrar o log:", err);
+    // Não bloqueia o login — apenas avisa no console
   }
 }
 
-// --- CARREGAMENTO DOS DADOS ---
+// ====================================================================
+// CARREGAMENTO DA LISTA DE USUÁRIOS (JSONP)
+// ====================================================================
 function processarDadosPlanilha(dados) {
   INSPETORES = dados;
-  console.log("Login restaurado: Lista carregada.");
+  console.log("Lista de inspetores carregada com sucesso.");
+  // Opcional: remover o overlay de loading se você quiser
+  // document.getElementById('loading-overlay').style.display = 'none';
 }
 
 function carregarInspetores() {
@@ -31,105 +43,146 @@ function carregarInspetores() {
   document.body.appendChild(script);
 }
 
-// --- LÓGICA DE LOGIN (ALTERADA) ---
+// ====================================================================
+// VERIFICA SE JÁ ESTÁ LOGADO (localStorage)
+// ====================================================================
 function checkLoginStatus() {
-    const logado = localStorage.getItem('inspectorLoggedIn');
-    const nomeInspetor = localStorage.getItem('inspectorName');
+  const logado = localStorage.getItem('inspectorLoggedIn');
+  const nomeInspetor = localStorage.getItem('inspectorName');
 
-    if (logado === 'true') {
-        document.getElementById('main-screen').style.display = 'none';
-        document.getElementById('inspector-screen').style.display = 'flex';
-        const welcomeMsg = document.getElementById('welcome-msg');
-        if (welcomeMsg) welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
-    } else {
-        document.getElementById('main-screen').style.display = 'flex';
-        document.getElementById('inspector-screen').style.display = 'none';
+  if (logado === 'true' && nomeInspetor) {
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('inspector-screen').style.display = 'flex';
+    
+    const welcomeMsg = document.getElementById('welcome-msg');
+    if (welcomeMsg) {
+      welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
     }
+  } else {
+    document.getElementById('main-screen').style.display = 'flex';
+    document.getElementById('inspector-screen').style.display = 'none';
+  }
 }
 
+// ====================================================================
+// PROCESSA O LOGIN
+// ====================================================================
 function login(e) {
   e.preventDefault();
+  
   const senhaDigitada = document.getElementById('password').value.trim();
-  const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaDigitada);
+  const nomeEncontrado = Object.keys(INSPETORES).find(
+    nome => INSPETORES[nome] === senhaDigitada
+  );
 
   if (nomeEncontrado) {
+    // Salva no localStorage
     localStorage.setItem('inspectorLoggedIn', 'true');
     localStorage.setItem('inspectorName', nomeEncontrado);
-    
-    // === NOVA LINHA: REGISTRA O LOG ===
+
+    // Registra o log de acesso
     registrarLog(nomeEncontrado);
 
+    // Fecha modal e atualiza tela
     closeModal('modal-login');
     checkLoginStatus();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('password').value = '';
+    document.getElementById('password').focus();
   }
 }
 
+// ====================================================================
+// LOGOUT
+// ====================================================================
 function logoutInspector() {
-    localStorage.removeItem('inspectorLoggedIn');
-    localStorage.removeItem('inspectorName');
-    checkLoginStatus();
+  localStorage.removeItem('inspectorLoggedIn');
+  localStorage.removeItem('inspectorName');
+  checkLoginStatus();
 }
 
-// --- INTERFACE ---
+// ====================================================================
+// FUNÇÕES DE MODAL
+// ====================================================================
 function openModal(modalId) {
-    document.getElementById(modalId).style.display = 'flex';
+  document.getElementById(modalId).style.display = 'flex';
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).style.display = 'none';
 }
+
+// ====================================================================
+// BLOQUEIO DE BOTÕES POR DATA (exemplo fixo)
+// ====================================================================
+const disableDates = {
+  'btn-osasco': new Date('2026-02-19'),
+  'btn-santana': new Date('2026-02-03')
+};
 
 function aplicarBloqueioDeDatas() {
-    const now = new Date();
-    for (const [id, date] of Object.entries(disableDates)) {
-        const btn = document.getElementById(id);
-        if (btn && now < date) {
-            btn.classList.add('disabled');
-            btn.setAttribute('href', '#');
-        }
+  const now = new Date();
+  for (const [id, date] of Object.entries(disableDates)) {
+    const btn = document.getElementById(id);
+    if (btn && now < date) {
+      btn.classList.add('disabled');
+      btn.setAttribute('href', '#');
+      btn.title = 'Disponível a partir de ' + date.toLocaleDateString('pt-BR');
     }
+  }
 }
 
-// --- INICIALIZAÇÃO ---
+// ====================================================================
+// INICIALIZAÇÃO
+// ====================================================================
 window.addEventListener('load', () => {
-    carregarInspetores();
-    checkLoginStatus();
-    aplicarBloqueioDeDatas();
+  // Mostra overlay enquanto carrega (opcional)
+  // document.getElementById('loading-overlay').style.display = 'flex';
+  
+  carregarInspetores();
+  checkLoginStatus();
+  aplicarBloqueioDeDatas();
 });
 
+// ====================================================================
+// EVENT LISTENERS
+// ====================================================================
 document.getElementById('btn-segunda-tela').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-login');
-    document.getElementById('login-error').style.display = 'none';
-    document.getElementById('password').value = '';
-    document.getElementById('password').focus();
+  e.preventDefault();
+  openModal('modal-login');
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('password').value = '';
+  document.getElementById('password').focus();
 });
 
 document.getElementById('login-form').addEventListener('submit', login);
 
 document.getElementById('btn-clandestinos-rto').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-clandestinos-rto');
+  e.preventDefault();
+  openModal('modal-clandestinos-rto');
 });
+
 document.getElementById('btn-levantamentos').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-levantamentos');
+  e.preventDefault();
+  openModal('modal-levantamentos');
 });
 
 document.getElementById('btn-inspecoes-5s').addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('modal-inspecoes-5s');
+  e.preventDefault();
+  openModal('modal-inspecoes-5s');
 });
 
+// Fecha modais ao clicar fora
 window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+  if (e.target.classList.contains('modal')) {
+    e.target.style.display = 'none';
+  }
 });
 
+// Fecha modais com ESC
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    }
+  if (e.key === "Escape") {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+  }
 });
