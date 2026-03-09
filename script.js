@@ -26,13 +26,19 @@ function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
 
-    // Envia POST para o Apps Script
+    // Envia POST para o Apps Script com ajustes para CORS e redirect
     fetch(URL_LOGIN, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',  // Segue redirecionamentos automáticos
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // Evita pré-voo CORS
         body: JSON.stringify({ senha: senhaDigitada })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Resposta da rede não foi ok: ' + response.status);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             localStorage.setItem('inspectorLoggedIn', 'true');
@@ -47,7 +53,7 @@ function login(e) {
     })
     .catch(err => {
         console.error('Erro no login:', err);
-        document.getElementById('login-error').innerText = 'Erro de conexão. Tente novamente.';
+        document.getElementById('login-error').innerText = 'Erro de conexão ou CORS. Verifique a implantação do Apps Script e tente novamente.';
         document.getElementById('login-error').style.display = 'block';
     });
 }
