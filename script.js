@@ -1,4 +1,4 @@
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxfROa0Z49M1QcSxRywqOpZZ1tr1TkLhD6hRiRxwhP34tFVszq52Rk8GspEEMVnyRHP/exec";
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzDzqC5d30qOfp-2_8jYwnklvspOStsm1lHCOwBOqzxSIfCEuhwbx2MCBrCcuCNMezK/exec";
 
 let INSPETORES = {};
 
