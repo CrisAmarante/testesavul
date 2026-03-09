@@ -1,4 +1,4 @@
-const URL_LOGIN = "https://script.google.com/macros/s/AKfycbz1furBNDhQrJeRSOLX8o9MUuUbSEETTkoaViCCCw-0DShhZX0oTRvfhI267kygajaq/exec"; 
+const URL_LOGIN = "https://script.google.com/macros/s/AKfycbxQL1dUQhb6Zt-Aek6SNHX5YE7Of54bF9P5X18Eo0CepuzHWw5gg0hUvqw04hpHOuVL/exec"; 
 
 // Datas de bloqueio para os botões de 5S
 const disableDates = {
@@ -22,40 +22,40 @@ function checkLoginStatus() {
     }
 }
 
+// Função global para lidar com a resposta JSONP
+function handleLoginResponse(data) {
+    if (data.success) {
+        localStorage.setItem('inspectorLoggedIn', 'true');
+        localStorage.setItem('inspectorName', data.name);
+        closeModal('modal-login');
+        checkLoginStatus();
+    } else {
+        document.getElementById('login-error').innerText = data.error || 'Senha não reconhecida!';
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('password').value = '';
+    }
+}
+
 function login(e) {
     e.preventDefault();
     const senhaDigitada = document.getElementById('password').value.trim();
 
-    // Envia POST para o Apps Script com ajustes para CORS e redirect
-    fetch(URL_LOGIN, {
-        method: 'POST',
-        redirect: 'follow',  // Segue redirecionamentos automáticos
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // Evita pré-voo CORS
-        body: JSON.stringify({ senha: senhaDigitada })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Resposta da rede não foi ok: ' + response.status);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            localStorage.setItem('inspectorLoggedIn', 'true');
-            localStorage.setItem('inspectorName', data.name);
-            closeModal('modal-login');
-            checkLoginStatus();
-        } else {
-            document.getElementById('login-error').innerText = data.error || 'Senha não reconhecida!';
-            document.getElementById('login-error').style.display = 'block';
-            document.getElementById('password').value = '';
-        }
-    })
-    .catch(err => {
-        console.error('Erro no login:', err);
-        document.getElementById('login-error').innerText = 'Erro de conexão ou CORS. Verifique a implantação do Apps Script e tente novamente.';
+    // Cria um script dinâmico para chamada JSONP via GET
+    const script = document.createElement('script');
+    script.src = `${URL_LOGIN}?callback=handleLoginResponse&senha=${encodeURIComponent(senhaDigitada)}`;
+    document.body.appendChild(script);
+
+    // Remove o script após carregar (opcional, para limpar)
+    script.onload = () => {
+        document.body.removeChild(script);
+    };
+
+    script.onerror = () => {
+        console.error('Erro no login: Falha ao carregar script');
+        document.getElementById('login-error').innerText = 'Erro de conexão. Tente novamente.';
         document.getElementById('login-error').style.display = 'block';
-    });
+        document.body.removeChild(script);
+    };
 }
 
 function logoutInspector() {
