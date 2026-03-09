@@ -120,7 +120,3 @@ document.addEventListener('keydown', (e) => {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 });
-
-
-// O resto do arquivo (modais, bloqueio de datas, etc.) fica IGUAL
-// ... (cole o resto do seu script.js aqui, a partir da linha 60 em diante)
