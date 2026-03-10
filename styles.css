@@ -172,8 +172,6 @@ header h1 {
         border-width: 2px;
     }
 }
-/* Adicione este CSS no seu arquivo styles.css */
-
 .botao-fechar-banner {
     position: absolute;
     top: 15px;
@@ -193,19 +191,40 @@ header h1 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
     z-index: 10;
+    overflow: hidden;
+}
+
+.botao-fechar-banner .icone {
+    transition: opacity 0.2s ease;
+}
+
+.botao-fechar-banner .texto {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: normal;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+}
+
+.botao-fechar-banner:hover .icone {
+    opacity: 0;
+}
+
+.botao-fechar-banner:hover .texto {
+    opacity: 1;
 }
 
 .botao-fechar-banner:hover {
     background-color: #a01624;
     transform: scale(1.1);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+    width: 80px;
 }
 
 .botao-fechar-banner:active {
     transform: scale(0.95);
-}
-
-/* Garante que o conteúdo do banner tenha posição relativa para o botão ficar correto */
-.aviso-conteudo {
-    position: relative;
 }
