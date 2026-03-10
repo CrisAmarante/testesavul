@@ -130,3 +130,52 @@ header h1 {
     color: #000000;
     background-color: #00FA9A; /* verde claro */
 }
+.aviso-banner {
+    display: none;           /* começa escondido — JS decide se mostra */
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.aviso-conteudo {
+    background: linear-gradient(135deg, #ffffff, #fff5f5);
+    color: #d11a2d;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+    max-width: 90%;
+    width: 420px;
+    border: 3px solid #d11a2d;
+}
+
+.aviso-conteudo h2 {
+    margin: 0 0 18px;
+    font-size: 2.1rem;
+}
+
+.aviso-conteudo p {
+    margin: 12px 0;
+    font-size: 1.15rem;
+    line-height: 1.4;
+}
+
+/* Responsividade básica */
+@media (max-width: 480px) {
+    .aviso-conteudo {
+        padding: 24px 28px;
+        width: 88%;
+    }
+    
+    .aviso-conteudo h2 {
+        font-size: 1.7rem;
+    }
+    
+    .aviso-conteudo p {
+        font-size: 1rem;
+    }
+}
