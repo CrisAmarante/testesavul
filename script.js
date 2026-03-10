@@ -163,7 +163,7 @@ function mostrarBannerAviso() {
                 console.log("Banner fechado automaticamente após 12s");
             }
             banner.removeEventListener('click', fecharAoClicar);
-        }, 12000);
+        }, 3000);
     } else {
         console.log("→ Banner fora do período → escondido");
         banner.style.display = 'none';
