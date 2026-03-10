@@ -151,26 +151,27 @@ function mostrarBannerAviso() {
         console.log("→ Banner deve aparecer");
         banner.style.display = 'flex';
 
-        // Adiciona evento de clique no documento inteiro
-        const fecharAoClicarFora = (e) => {
-            // Verifica se o clique foi fora do conteúdo do banner
-            if (!e.target.closest('.aviso-conteudo')) {
-                banner.style.display = 'none';
-                console.log("Banner fechado por clique fora");
-                // Remove o evento para não interferir em outros cliques
-                document.removeEventListener('click', fecharAoClicarFora);
-            }
-        };
+        // Faz o conteúdo do banner receber todos os eventos de clique
+        const conteudo = banner.querySelector('.aviso-conteudo');
+        if (conteudo) {
+            conteudo.style.pointerEvents = 'auto';
+        }
         
-        // Adiciona o evento no documento
-        document.addEventListener('click', fecharAoClicarFora);
+        banner.style.pointerEvents = 'auto';
+        
+        // Adiciona evento de clique no banner
+        banner.addEventListener('click', function(e) {
+            // Se o clique foi no banner mas não no conteúdo, fecha
+            if (e.target === banner || e.target.classList.contains('aviso-banner')) {
+                banner.style.display = 'none';
+                console.log("Banner fechado por clique no fundo");
+            }
+        });
 
         setTimeout(() => {
             if (banner.style.display === 'flex') {
                 banner.style.display = 'none';
                 console.log("Banner fechado automaticamente após 3s");
-                // Remove o evento quando o tempo expirar
-                document.removeEventListener('click', fecharAoClicarFora);
             }
         }, 3000);
     } else {
