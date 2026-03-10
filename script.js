@@ -132,35 +132,40 @@ function aplicarBloqueioDeDatas() {
     }
   }
 }
-// Período do banner (horário local do navegador)
-const dataInicio = new Date('2026-03-09T00:01:00');
+// Período do banner — ajuste conforme necessário
+const dataInicio = new Date('2026-03-10T00:00:00');  // ← temporário para teste HOJE
 const dataFim    = new Date('2026-03-21T00:01:00');
 
 function mostrarBannerAviso() {
     const agora = new Date();
     const banner = document.getElementById('aviso-temporario');
     
-    if (!banner) return;
+    if (!banner) {
+        console.warn("Elemento #aviso-temporario não encontrado");
+        return;
+    }
+
+    console.log("Verificando banner:", agora.toLocaleString('pt-BR')); // ← ajuda no debug
 
     if (agora >= dataInicio && agora < dataFim) {
+        console.log("→ Banner deve aparecer");
         banner.style.display = 'flex';
 
-        // Fecha ao clicar em qualquer lugar
         const fecharAoClicar = () => {
             banner.style.display = 'none';
+            console.log("Banner fechado por clique");
         };
         banner.addEventListener('click', fecharAoClicar, { once: true });
 
-        // Fecha automaticamente após 12 segundos (12000 ms)
         setTimeout(() => {
-            // Só fecha se ainda estiver visível (evita tentar esconder algo já escondido)
             if (banner.style.display === 'flex') {
                 banner.style.display = 'none';
+                console.log("Banner fechado automaticamente após 12s");
             }
-            // Opcional: remove o listener para evitar memory leak (boa prática)
             banner.removeEventListener('click', fecharAoClicar);
-        }, 12000);   // ← aqui está o setTimeout – mude o tempo se quiser (ex: 8000 = 8 segundos)
+        }, 12000);
     } else {
+        console.log("→ Banner fora do período → escondido");
         banner.style.display = 'none';
     }
 }
