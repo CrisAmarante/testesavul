@@ -136,6 +136,14 @@ function aplicarBloqueioDeDatas() {
 const dataInicio = new Date('2026-03-10T00:00:00');  // ← temporário para teste HOJE
 const dataFim    = new Date('2026-03-21T00:01:00');
 
+function fecharBanner() {
+    const banner = document.getElementById('aviso-temporario');
+    if (banner) {
+        banner.style.display = 'none';
+        console.log("Banner fechado pelo botão");
+    }
+}
+
 function mostrarBannerAviso() {
     const agora = new Date();
     const banner = document.getElementById('aviso-temporario');
@@ -151,34 +159,20 @@ function mostrarBannerAviso() {
         console.log("→ Banner deve aparecer");
         banner.style.display = 'flex';
 
-        // Faz o conteúdo do banner receber todos os eventos de clique
-        const conteudo = banner.querySelector('.aviso-conteudo');
-        if (conteudo) {
-            conteudo.style.pointerEvents = 'auto';
-        }
-        
-        banner.style.pointerEvents = 'auto';
-        
-        // Adiciona evento de clique no banner
-        banner.addEventListener('click', function(e) {
-            // Se o clique foi no banner mas não no conteúdo, fecha
-            if (e.target === banner || e.target.classList.contains('aviso-banner')) {
-                banner.style.display = 'none';
-                console.log("Banner fechado por clique no fundo");
-            }
-        });
-
+        // Timeout para fechar automaticamente
         setTimeout(() => {
-            if (banner.style.display === 'flex') {
+            if (banner.style.display !== 'none') {
                 banner.style.display = 'none';
                 console.log("Banner fechado automaticamente após 3s");
             }
         }, 3000);
+
     } else {
         console.log("→ Banner fora do período → escondido");
         banner.style.display = 'none';
     }
 }
+
 // ====================================================================
 // INICIALIZAÇÃO
 // ====================================================================
