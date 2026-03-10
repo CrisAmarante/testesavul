@@ -145,24 +145,33 @@ function mostrarBannerAviso() {
         return;
     }
 
-    console.log("Verificando banner:", agora.toLocaleString('pt-BR')); // ← ajuda no debug
+    console.log("Verificando banner:", agora.toLocaleString('pt-BR'));
 
     if (agora >= dataInicio && agora < dataFim) {
         console.log("→ Banner deve aparecer");
         banner.style.display = 'flex';
 
-        const fecharAoClicar = () => {
-            banner.style.display = 'none';
-            console.log("Banner fechado por clique");
+        // Adiciona evento de clique no documento inteiro
+        const fecharAoClicarFora = (e) => {
+            // Verifica se o clique foi fora do conteúdo do banner
+            if (!e.target.closest('.aviso-conteudo')) {
+                banner.style.display = 'none';
+                console.log("Banner fechado por clique fora");
+                // Remove o evento para não interferir em outros cliques
+                document.removeEventListener('click', fecharAoClicarFora);
+            }
         };
-        banner.addEventListener('click', fecharAoClicar, { once: true });
+        
+        // Adiciona o evento no documento
+        document.addEventListener('click', fecharAoClicarFora);
 
         setTimeout(() => {
             if (banner.style.display === 'flex') {
                 banner.style.display = 'none';
-                console.log("Banner fechado automaticamente após 12s");
+                console.log("Banner fechado automaticamente após 3s");
+                // Remove o evento quando o tempo expirar
+                document.removeEventListener('click', fecharAoClicarFora);
             }
-            banner.removeEventListener('click', fecharAoClicar);
         }, 3000);
     } else {
         console.log("→ Banner fora do período → escondido");
