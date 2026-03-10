@@ -132,7 +132,27 @@ function aplicarBloqueioDeDatas() {
     }
   }
 }
+// Período do banner (horário local do navegador)
+const dataInicio = new Date('2026-03-10T00:01:00');
+const dataFim    = new Date('2026-03-21T00:01:00');
 
+function mostrarBannerAviso() {
+    const agora = new Date();
+    const banner = document.getElementById('aviso-temporario');
+    
+    if (!banner) return;
+
+    if (agora >= dataInicio && agora < dataFim) {
+        banner.style.display = 'flex';
+        
+        // Fecha ao clicar em qualquer lugar do banner
+        banner.addEventListener('click', () => {
+            banner.style.display = 'none';
+        }, { once: true });  // executa apenas uma vez
+    } else {
+        banner.style.display = 'none';
+    }
+}
 // ====================================================================
 // INICIALIZAÇÃO
 // ====================================================================
@@ -185,31 +205,4 @@ document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
   }
-});
-// Período do banner (horário local do navegador)
-const dataInicio = new Date('2026-03-10T00:01:00');
-const dataFim    = new Date('2026-03-21T00:01:00');
-
-function mostrarBannerAviso() {
-    const agora = new Date();
-    const banner = document.getElementById('aviso-temporario');
-    
-    if (!banner) return;
-
-    if (agora >= dataInicio && agora < dataFim) {
-        banner.style.display = 'flex';
-        
-        // Fecha ao clicar em qualquer lugar do banner
-        banner.addEventListener('click', () => {
-            banner.style.display = 'none';
-        }, { once: true });  // executa apenas uma vez
-    } else {
-        banner.style.display = 'none';
-    }
-}
-
-// Executa após o carregamento da página
-window.addEventListener('load', () => {
-    mostrarBannerAviso();
-    // ... seus outros códigos de load que já existem
 });
