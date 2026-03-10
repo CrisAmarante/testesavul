@@ -144,11 +144,22 @@ function mostrarBannerAviso() {
 
     if (agora >= dataInicio && agora < dataFim) {
         banner.style.display = 'flex';
-        
-        // Fecha ao clicar em qualquer lugar do banner
-        banner.addEventListener('click', () => {
+
+        // Fecha ao clicar em qualquer lugar
+        const fecharAoClicar = () => {
             banner.style.display = 'none';
-        }, { once: true });  // executa apenas uma vez
+        };
+        banner.addEventListener('click', fecharAoClicar, { once: true });
+
+        // Fecha automaticamente após 12 segundos (12000 ms)
+        setTimeout(() => {
+            // Só fecha se ainda estiver visível (evita tentar esconder algo já escondido)
+            if (banner.style.display === 'flex') {
+                banner.style.display = 'none';
+            }
+            // Opcional: remove o listener para evitar memory leak (boa prática)
+            banner.removeEventListener('click', fecharAoClicar);
+        }, 12000);   // ← aqui está o setTimeout – mude o tempo se quiser (ex: 8000 = 8 segundos)
     } else {
         banner.style.display = 'none';
     }
