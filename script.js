@@ -187,7 +187,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 // Período do banner (horário local do navegador)
-const dataInicio = new Date('2026-03-11T00:01:00');
+const dataInicio = new Date('2026-03-10T00:01:00');
 const dataFim    = new Date('2026-03-21T00:01:00');
 
 function mostrarBannerAviso() {
