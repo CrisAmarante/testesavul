@@ -69,30 +69,25 @@ function checkLoginStatus() {
 // ====================================================================
 function login(e) {
   e.preventDefault();
-  
   const senhaDigitada = document.getElementById('password').value.trim();
-  const nomeEncontrado = Object.keys(INSPETORES).find(
-    nome => INSPETORES[nome] === senhaDigitada
-  );
+  
+  // Converte a senha que o usuário digitou em SHA-256
+  const senhaHash = CryptoJS.SHA256(senhaDigitada).toString();
+
+  // Agora comparamos o HASH gerado com o HASH que veio da planilha
+  const nomeEncontrado = Object.keys(INSPETORES).find(nome => INSPETORES[nome] === senhaHash);
 
   if (nomeEncontrado) {
-    // Salva no localStorage
     localStorage.setItem('inspectorLoggedIn', 'true');
     localStorage.setItem('inspectorName', nomeEncontrado);
-
-    // Registra o log de acesso
     registrarLog(nomeEncontrado);
-
-    // Fecha modal e atualiza tela
-    closeModal('modal-login');
     checkLoginStatus();
+    closeModal('modal-login');
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('password').value = '';
-    document.getElementById('password').focus();
   }
 }
-
 // ====================================================================
 // LOGOUT
 // ====================================================================
