@@ -159,3 +159,14 @@ input[type="password"] {
   background: var(--bg);
   color: var(--text);
 }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("banner-home-frota.png") center/cover no-repeat;
+  filter: blur(8px) brightness(0.6);
+  z-index: -2;
+}
+body {
+  background: none;
+}
