@@ -231,3 +231,21 @@ button[type="submit"] {
 .no-scroll {
   overflow: hidden;
 }
+/* ============================================================
+   FUNDO COM IMAGEM DA FROTA
+============================================================ */
+body {
+  background: url("banner-home-frota.png") no-repeat center center fixed;
+  background-size: cover;
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* Camada de escurecimento para melhorar contraste */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45); /* ajuste conforme desejar */
+  z-index: -1;
+}
