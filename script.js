@@ -334,3 +334,26 @@ window.addEventListener('load', () => {
   aplicarBloqueioDeDatas();
   mostrarBannerAviso();
 });
+// ============================================================
+// TEMA ESCURO / CLARO
+// ============================================================
+const themeToggle = document.getElementById("theme-toggle");
+
+function applyTheme(theme) {
+  if (theme === "dark") {
+    document.body.classList.add("dark");
+    themeToggle.textContent = "☀️";
+  } else {
+    document.body.classList.remove("dark");
+    themeToggle.textContent = "🌙";
+  }
+}
+
+themeToggle.addEventListener("click", () => {
+  const current = localStorage.getItem("theme") === "dark" ? "light" : "dark";
+  localStorage.setItem("theme", current);
+  applyTheme(current);
+});
+
+// Carrega tema salvo
+applyTheme(localStorage.getItem("theme") || "light");
