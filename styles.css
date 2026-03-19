@@ -8,9 +8,24 @@
   font-family: "Inter", sans-serif;
 }
 
+/* ============================================================
+   FUNDO COM IMAGEM DA FROTA
+============================================================ */
 body {
-  background: #f4f6f8;
+  background: url("banner-home-frota.png") no-repeat center center fixed;
+  background-size: cover;
+  background-attachment: fixed;
+  position: relative;
   color: #222;
+}
+
+/* Camada de escurecimento para melhorar contraste */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: -1;
 }
 
 /* ============================================================
@@ -21,6 +36,7 @@ body {
   margin-top: 20px;
   font-size: 1.6rem;
   font-weight: 600;
+  color: #fff;
 }
 
 .screen {
@@ -32,12 +48,14 @@ body {
 ============================================================ */
 .banner {
   display: none;
-  background: #ffe9c7;
+  background: rgba(255, 233, 199, 0.9);
   border-left: 6px solid #ff9800;
   padding: 16px 50px 16px 16px;
   position: relative;
   font-size: 0.95rem;
   line-height: 1.4;
+  backdrop-filter: blur(3px);
+  color: #4a3a1a;
 }
 
 .banner-content {
@@ -65,8 +83,12 @@ body {
   margin-top: 20px;
 }
 
+/* ============================================================
+   CARD COM GLASSMORPHISM
+============================================================ */
 .card {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
   border-radius: 14px;
   padding: 20px 16px;
   text-align: center;
@@ -74,7 +96,7 @@ body {
   color: #222;
   font-weight: 500;
   font-size: 1rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   display: flex;
   flex-direction: column;
@@ -84,14 +106,14 @@ body {
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
 }
 
 .card-icon {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: #007bff15;
+  background: #007bff25;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -128,12 +150,13 @@ body {
 }
 
 .modal-content {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
   width: 90%;
   max-width: 380px;
   padding: 24px;
   border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   transform: translateY(20px) scale(0.96);
   opacity: 0;
   transition: transform 0.25s ease, opacity 0.25s ease;
@@ -172,88 +195,4 @@ body {
   color: white;
   text-align: center;
   border-radius: 8px;
-  margin-top: 10px;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.modal-btn:hover {
-  background: #005fcc;
-}
-
-/* ============================================================
-   FORMULÁRIO DE LOGIN
-============================================================ */
-#login-error {
-  display: none;
-  color: #d9534f;
-  font-size: 0.9rem;
-  margin-bottom: 10px;
-}
-
-input[type="password"] {
-  width: 100%;
-  padding: 12px 14px;
-  margin-top: 6px;
-  margin-bottom: 14px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-button[type="submit"] {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  cursor: pointer;
-}
-
-/* ============================================================
-   LOGOUT
-============================================================ */
-.logout-btn {
-  margin-top: 20px;
-  padding: 12px;
-  background: #d9534f;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  width: 100%;
-  font-size: 1rem;
-}
-
-/* ============================================================
-   BLOQUEIO DE SCROLL
-============================================================ */
-.no-scroll {
-  overflow: hidden;
-}
-/* ============================================================
-   FUNDO COM IMAGEM DA FROTA
-============================================================ */
-body {
-  background: url("banner-home-frota.png") no-repeat center center fixed;
-  background-size: cover;
-  background-attachment: fixed;
-  position: relative;
-}
-
-/* Camada de escurecimento para melhorar contraste */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45); /* ajuste conforme desejar */
-  z-index: -1;
-}
-.card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-}
-.banner {
-  background: rgba(255, 233, 199, 0.9);
-  backdrop-filter: blur(3px);
-}
+  margin
