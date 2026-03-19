@@ -9,6 +9,11 @@
 
 <body>
 
+<!-- BOTÃO DE TEMA -->
+<button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">
+  🌙
+</button>
+
 <!-- ============================================================
      BANNER DE AVISO
 ============================================================ -->
@@ -32,22 +37,30 @@
   <div class="cards-grid">
 
     <a href="#" id="btn-inspecoes-5s" class="card">
-      <div class="card-icon">📝</div>
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4zm0 4h10v2H4zm0 4h16v2H4zm0 4h10v2H4z"/></svg>
+      </div>
       Inspeções de 5S
     </a>
 
     <a href="#" id="btn-levantamentos" class="card">
-      <div class="card-icon">📊</div>
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 17h2v-7H3zm4 0h2V7H7zm4 0h2v-4h-2zm4 0h2V4h-2zm4 0h2v-9h-2z"/></svg>
+      </div>
       Levantamentos
     </a>
 
     <a href="#" id="btn-clandestinos-rto" class="card">
-      <div class="card-icon">🚨</div>
-      Clandestinos Osasco e Cajamar
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2 1 21h22zm0 4 7 13H5z"/></svg>
+      </div>
+      Clandestinos
     </a>
 
     <a href="#" id="btn-segunda-tela" class="card">
-      <div class="card-icon">👤</div>
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+      </div>
       Inspetores
     </a>
 
@@ -55,86 +68,61 @@
 </div>
 
 <!-- ============================================================
-     TELA DO INSPETOR (APÓS LOGIN)
+     TELA DO INSPETOR
 ============================================================ -->
 <div id="inspector-screen" class="screen" style="display:none;">
   <h2 id="welcome-msg"></h2>
-
   <button onclick="logoutInspector()" class="logout-btn">Sair</button>
 </div>
 
 <!-- ============================================================
-     MODAL DE LOGIN
+     MODAIS
 ============================================================ -->
 <div id="modal-login" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
-
     <div class="modal-header">
       <h2 class="modal-title">Acesso do Inspetor</h2>
-      <button class="modal-close" onclick="window.modals.login.close()" aria-label="Fechar">×</button>
+      <button class="modal-close" onclick="window.modals.login.close()">×</button>
     </div>
 
     <form id="login-form">
       <label for="password">Senha</label>
       <input type="password" id="password" autocomplete="off">
-
       <div id="login-error">Senha incorreta</div>
-
       <button type="submit">Entrar</button>
     </form>
-
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL INSPEÇÕES 5S
-============================================================ -->
 <div id="modal-inspecoes-5s" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
-
     <div class="modal-header">
       <h2 class="modal-title">Inspeções 5S</h2>
-      <button class="modal-close" onclick="window.modals.inspecoes5s.close()" aria-label="Fechar">×</button>
+      <button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button>
     </div>
-
-    <p>Selecione o formulário desejado:</p>
-
-    <a href="https://forms.gle/xxxx" class="modal-btn">Inspeção Osasco</a>
-    <a href="https://forms.gle/xxxx" class="modal-btn">Inspeção Cajamar</a>
-
+    <a href="#" class="modal-btn">Inspeção Osasco</a>
+    <a href="#" class="modal-btn">Inspeção Cajamar</a>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL LEVANTAMENTOS
-============================================================ -->
 <div id="modal-levantamentos" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
-
     <div class="modal-header">
       <h2 class="modal-title">Levantamentos</h2>
-      <button class="modal-close" onclick="window.modals.levantamentos.close()" aria-label="Fechar">×</button>
+      <button class="modal-close" onclick="window.modals.levantamentos.close()">×</button>
     </div>
-
-    <a href="https://forms.gle/xxxx" class="modal-btn">Levantamento de Frota</a>
-    <a href="https://forms.gle/xxxx" class="modal-btn">Levantamento de Equipamentos</a>
-
+    <a href="#" class="modal-btn">Levantamento de Frota</a>
+    <a href="#" class="modal-btn">Levantamento de Equipamentos</a>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL CLANDESTINOS
-============================================================ -->
 <div id="modal-clandestinos-rto" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
-
     <div class="modal-header">
       <h2 class="modal-title">Clandestinos</h2>
-      <button class="modal-close" onclick="window.modals.clandestinosRto.close()" aria-label="Fechar">×</button>
+      <button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button>
     </div>
-
-    <a href="https://forms.gle/xxxx" class="modal-btn">Registrar Clandestino</a>
-
+    <a href="#" class="modal-btn">Registrar Clandestino</a>
   </div>
 </div>
 
