@@ -1,80 +1,75 @@
 /* ============================================================
-   RESET
+   VARIÁVEIS DE TEMA
 ============================================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Inter", sans-serif;
+:root {
+  --bg: rgba(255,255,255,0.85);
+  --text: #222;
+  --card-bg: rgba(255,255,255,0.85);
+  --modal-bg: rgba(255,255,255,0.92);
+  --accent: #007bff;
+  --banner-bg: rgba(255,233,199,0.85);
+  --overlay: rgba(0,0,0,0.30);
+}
+
+body.dark {
+  --bg: rgba(20,20,20,0.85);
+  --text: #eee;
+  --card-bg: rgba(30,30,30,0.75);
+  --modal-bg: rgba(40,40,40,0.85);
+  --accent: #4da3ff;
+  --banner-bg: rgba(60,60,60,0.75);
+  --overlay: rgba(0,0,0,0.55);
 }
 
 /* ============================================================
-   FUNDO COM IMAGEM DA FROTA
+   FUNDO COM IMAGEM
 ============================================================ */
 body {
   background: url("banner-home-frota.png") no-repeat center center fixed;
   background-size: cover;
-  background-attachment: fixed;
-  position: relative;
-  color: #222;
+  color: var(--text);
 }
 
-/* Camada de escurecimento para melhorar contraste */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--overlay);
   z-index: -1;
 }
 
 /* ============================================================
-   TÍTULOS E LAYOUT
+   BOTÃO DE TEMA
 ============================================================ */
-.titulo {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.screen {
-  padding: 20px;
+.theme-toggle {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  background: var(--card-bg);
+  border: none;
+  padding: 10px 12px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 1000;
 }
 
 /* ============================================================
-   BANNER DE AVISO
+   BANNER
 ============================================================ */
 .banner {
   display: none;
-  background: rgba(255, 233, 199, 0.9);
+  background: var(--banner-bg);
   border-left: 6px solid #ff9800;
   padding: 16px 50px 16px 16px;
   position: relative;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  backdrop-filter: blur(3px);
-  color: #4a3a1a;
-}
-
-.banner-content {
-  max-width: 90%;
-}
-
-.banner-close {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  cursor: pointer;
-  color: #444;
+  backdrop-filter: blur(4px);
+  color: var(--text);
 }
 
 /* ============================================================
-   GRID DE CARDS
+   CARDS
 ============================================================ */
 .cards-grid {
   display: grid;
@@ -83,42 +78,22 @@ body::before {
   margin-top: 20px;
 }
 
-/* ============================================================
-   CARD COM GLASSMORPHISM
-============================================================ */
 .card {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card-bg);
   backdrop-filter: blur(6px);
   border-radius: 14px;
   padding: 20px 16px;
   text-align: center;
   text-decoration: none;
-  color: #222;
-  font-weight: 500;
-  font-size: 1rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
-}
-
-.card-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #007bff25;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.6rem;
-  color: #007bff;
+.card-icon svg {
+  width: 40px;
+  height: 40px;
+  fill: var(--accent);
 }
 
 /* ============================================================
@@ -130,7 +105,7 @@ body::before {
   display: none;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0,0,0,0.45);
   backdrop-filter: blur(4px);
   z-index: 999;
   opacity: 0;
@@ -144,19 +119,14 @@ body::before {
   pointer-events: auto;
 }
 
-.modal.is-closing {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .modal-content {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--modal-bg);
   backdrop-filter: blur(6px);
   width: 90%;
   max-width: 380px;
   padding: 24px;
   border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
   transform: translateY(20px) scale(0.96);
   opacity: 0;
   transition: transform 0.25s ease, opacity 0.25s ease;
@@ -167,32 +137,25 @@ body::before {
   opacity: 1;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.modal-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  cursor: pointer;
-  color: #666;
-}
-
 .modal-btn {
   display: block;
   width: 100%;
   padding: 12px;
-  background: #007bff;
+  background: var(--accent);
   color: white;
-  text-align: center;
   border-radius: 8px;
-  margin
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ============================================================
+   FORMULÁRIO DE LOGIN
+============================================================ */
+input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  background: var(--bg);
+  color: var(--text);
+}
