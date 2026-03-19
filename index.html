@@ -66,12 +66,12 @@
 <!-- ============================================================
      MODAL DE LOGIN
 ============================================================ -->
-<div id="modal-login" class="modal">
+<div id="modal-login" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
 
     <div class="modal-header">
       <h2 class="modal-title">Acesso do Inspetor</h2>
-      <button class="modal-close" onclick="window.modals.login.close()">×</button>
+      <button class="modal-close" onclick="window.modals.login.close()" aria-label="Fechar">×</button>
     </div>
 
     <form id="login-form">
@@ -89,46 +89,52 @@
 <!-- ============================================================
      MODAL INSPEÇÕES 5S
 ============================================================ -->
-<div id="modal-inspecoes-5s" class="modal">
+<div id="modal-inspecoes-5s" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
+
     <div class="modal-header">
       <h2 class="modal-title">Inspeções 5S</h2>
-      <button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button>
+      <button class="modal-close" onclick="window.modals.inspecoes5s.close()" aria-label="Fechar">×</button>
     </div>
 
     <p>Selecione o formulário desejado:</p>
 
     <a href="https://forms.gle/xxxx" class="modal-btn">Inspeção Osasco</a>
     <a href="https://forms.gle/xxxx" class="modal-btn">Inspeção Cajamar</a>
+
   </div>
 </div>
 
 <!-- ============================================================
      MODAL LEVANTAMENTOS
 ============================================================ -->
-<div id="modal-levantamentos" class="modal">
+<div id="modal-levantamentos" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
+
     <div class="modal-header">
       <h2 class="modal-title">Levantamentos</h2>
-      <button class="modal-close" onclick="window.modals.levantamentos.close()">×</button>
+      <button class="modal-close" onclick="window.modals.levantamentos.close()" aria-label="Fechar">×</button>
     </div>
 
     <a href="https://forms.gle/xxxx" class="modal-btn">Levantamento de Frota</a>
     <a href="https://forms.gle/xxxx" class="modal-btn">Levantamento de Equipamentos</a>
+
   </div>
 </div>
 
 <!-- ============================================================
      MODAL CLANDESTINOS
 ============================================================ -->
-<div id="modal-clandestinos-rto" class="modal">
+<div id="modal-clandestinos-rto" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
+
     <div class="modal-header">
       <h2 class="modal-title">Clandestinos</h2>
-      <button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button>
+      <button class="modal-close" onclick="window.modals.clandestinosRto.close()" aria-label="Fechar">×</button>
     </div>
 
     <a href="https://forms.gle/xxxx" class="modal-btn">Registrar Clandestino</a>
+
   </div>
 </div>
 
