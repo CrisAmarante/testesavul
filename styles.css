@@ -4,38 +4,47 @@
 :root {
   --bg: rgba(255,255,255,0.85);
   --text: #222;
-  --card-bg: rgba(255,255,255,0.85);
+  --card-bg: rgba(255,255,255,0.80);
   --modal-bg: rgba(255,255,255,0.92);
   --accent: #007bff;
-  --banner-bg: rgba(255,233,199,0.85);
+  --banner-bg: rgba(255,233,199,0.75);
   --overlay: rgba(0,0,0,0.30);
 }
 
 body.dark {
   --bg: rgba(20,20,20,0.85);
   --text: #eee;
-  --card-bg: rgba(30,30,30,0.75);
+  --card-bg: rgba(30,30,30,0.70);
   --modal-bg: rgba(40,40,40,0.85);
   --accent: #4da3ff;
-  --banner-bg: rgba(60,60,60,0.75);
+  --banner-bg: rgba(60,60,60,0.55);
   --overlay: rgba(0,0,0,0.55);
 }
 
 /* ============================================================
-   FUNDO COM IMAGEM
+   FUNDO COM IMAGEM (CORRIGIDO)
 ============================================================ */
+
+/* Removemos a imagem do body */
 body {
-  background: url("banner-home-frota.png") no-repeat center center fixed;
-  background-size: cover;
+  background: none !important;
+  position: relative;
   color: var(--text);
 }
 
+/* Criamos o fundo com blur + brilho controlado */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: var(--overlay);
-  z-index: -1;
+  background: url("banner-home-frota.png") center/cover no-repeat;
+  filter: blur(10px) brightness(0.65);
+  z-index: -2;
+}
+
+/* No modo escuro, clareamos o fundo (antes escurecia demais) */
+body.dark::before {
+  filter: blur(10px) brightness(0.85);
 }
 
 /* ============================================================
@@ -56,7 +65,31 @@ body::before {
 }
 
 /* ============================================================
-   BANNER
+   TÍTULO COM FAIXA DE LEITURA (CORRIGIDO)
+============================================================ */
+.titulo {
+  background: rgba(0,0,0,0.35);
+  padding: 12px 26px;
+  border-radius: 12px;
+  display: inline-block;
+  backdrop-filter: blur(4px);
+  color: #fff !important;
+  margin: 30px auto 25px auto; /* AFASTAMENTO DO MENU */
+  text-align: center;
+  font-size: 1.7rem;
+  font-weight: 600;
+}
+
+/* Centraliza corretamente */
+#main-screen .titulo {
+  display: block;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================================
+   BANNER (mais translúcido)
 ============================================================ */
 .banner {
   display: none;
@@ -88,6 +121,11 @@ body::before {
   color: var(--text);
   box-shadow: 0 4px 14px rgba(0,0,0,0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25);
 }
 
 .card-icon svg {
@@ -158,15 +196,4 @@ input[type="password"] {
   border: 1px solid #aaa;
   background: var(--bg);
   color: var(--text);
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: url("banner-home-frota.png") center/cover no-repeat;
-  filter: blur(8px) brightness(0.6);
-  z-index: -2;
-}
-body {
-  background: none;
 }
