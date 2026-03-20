@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PENSO - Prancheta Eletrônica</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png">
 </head>
 
 <body>
 
 <!-- BOTÃO DE TEMA -->
-<button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">
-  🌙
-</button>
+<button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">🌙</button>
 
 <!-- ============================================================
      BANNER DE AVISO
@@ -35,38 +35,54 @@
   <h1 class="titulo">Painel de Acessos</h1>
 
   <div class="cards-grid">
-    <a href="#" id="btn-relatorio-fiscais" class="card card-relatorio">
-  <div class="card-icon">
-    <svg viewBox="0 0 24 24">
-      <path d="M3 3h18v2H3zm0 4h12v2H3zm0 4h18v2H3zm0 4h12v2H3zm0 4h18v2H3z"/>
-    </svg>
-  </div>
-  Relatório de Fiscais
-</a>
+
+    <!-- CARD 5S -->
     <a href="#" id="btn-inspecoes-5s" class="card">
       <div class="card-icon">
-        <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4zm0 4h10v2H4zm0 4h16v2H4zm0 4h10v2H4z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2c-1.5 0-3 1.2-3 3v2l-2-1-2 1v2c0 3.3 2.7 6 6 6s6-2.7 6-6V7l-2-1-2 1V5c0-1.8-1.5-3-3-3zm-6 14c-1.1 0-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2H6z"/>
+        </svg>
       </div>
       Inspeções de 5S
     </a>
 
+    <!-- CARD LEVANTAMENTOS -->
     <a href="#" id="btn-levantamentos" class="card">
       <div class="card-icon">
-        <svg viewBox="0 0 24 24"><path d="M3 17h2v-7H3zm4 0h2V7H7zm4 0h2v-4h-2zm4 0h2V4h-2zm4 0h2v-9h-2z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M3 17h2v-7H3zm4 0h2V7H7zm4 0h2v-4h-2zm4 0h2V4h-2zm4 0h2v-9h-2z"/>
+        </svg>
       </div>
       Levantamentos
     </a>
 
+    <!-- CARD CLANDESTINOS -->
     <a href="#" id="btn-clandestinos-rto" class="card">
       <div class="card-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2 1 21h22zm0 4 7 13H5z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" fill="red"/>
+          <rect x="5" y="11" width="14" height="2" fill="white"/>
+        </svg>
       </div>
       Clandestinos
     </a>
 
+    <!-- CARD RELATÓRIO DE FISCAIS (ESPECIAL) -->
+    <a href="#" id="btn-relatorio-fiscais" class="card card-relatorio">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V7h4.5L14 3.5zM8 11h8v2H8zm0 4h8v2H8zm0-8h4v2H8z"/>
+        </svg>
+      </div>
+      Relatório de Fiscais
+    </a>
+
+    <!-- CARD INSPETORES (LOGIN) -->
     <a href="#" id="btn-segunda-tela" class="card">
       <div class="card-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
+        </svg>
       </div>
       Inspetores
     </a>
@@ -75,7 +91,7 @@
 </div>
 
 <!-- ============================================================
-     TELA DO INSPETOR
+     TELA DO INSPETOR (APÓS LOGIN)
 ============================================================ -->
 <div id="inspector-screen" class="screen" style="display:none;">
   <h2 id="welcome-msg"></h2>
@@ -83,7 +99,7 @@
 </div>
 
 <!-- ============================================================
-     MODAIS
+     MODAL LOGIN
 ============================================================ -->
 <div id="modal-login" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
@@ -101,34 +117,46 @@
   </div>
 </div>
 
+<!-- ============================================================
+     MODAL INSPEÇÕES 5S
+============================================================ -->
 <div id="modal-inspecoes-5s" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">Inspeções 5S</h2>
       <button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button>
     </div>
+
     <a href="#" class="modal-btn">Inspeção Osasco</a>
     <a href="#" class="modal-btn">Inspeção Cajamar</a>
   </div>
 </div>
 
+<!-- ============================================================
+     MODAL LEVANTAMENTOS
+============================================================ -->
 <div id="modal-levantamentos" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">Levantamentos</h2>
       <button class="modal-close" onclick="window.modals.levantamentos.close()">×</button>
     </div>
+
     <a href="#" class="modal-btn">Levantamento de Frota</a>
     <a href="#" class="modal-btn">Levantamento de Equipamentos</a>
   </div>
 </div>
 
+<!-- ============================================================
+     MODAL CLANDESTINOS
+============================================================ -->
 <div id="modal-clandestinos-rto" class="modal" role="dialog" aria-modal="true">
   <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">Clandestinos</h2>
       <button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button>
     </div>
+
     <a href="#" class="modal-btn">Registrar Clandestino</a>
   </div>
 </div>
