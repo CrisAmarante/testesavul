@@ -1,16 +1,9 @@
-
 // ====================================================================
 // CONFIGURAÇÕES GERAIS
 // ====================================================================
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzDzqC5d30qOfp-2_8jYwnklvspOStsm1lHCOwBOqzxSIfCEuhwbx2MCBrCcuCNMezK/exec";
 
 let INSPETORES = {};
-
-// Datas de bloqueio de botões
-const DISABLE_DATES = {
-  'btn-osasco': new Date('2026-02-19'),
-  'btn-santana': new Date('2026-02-03')
-};
 
 // Período do banner
 const DATA_INICIO_BANNER = new Date('2026-03-10T00:00:00');
@@ -20,7 +13,6 @@ const DATA_FIM_BANNER    = new Date('2026-03-21T00:01:00');
 // UTILITÁRIOS
 // ====================================================================
 function logDebug(...args) {
-  // Facilita desligar logs depois
   console.log('[PENSO]', ...args);
 }
 
@@ -34,10 +26,7 @@ function getEl(id) {
 class ModalController {
   constructor(modalId) {
     this.modal = getEl(modalId);
-    if (!this.modal) {
-      console.warn(`Modal com id "${modalId}" não encontrado.`);
-      return;
-    }
+    if (!this.modal) return;
 
     this.content = this.modal.querySelector('.modal-content');
     this.isOpen = false;
@@ -56,11 +45,8 @@ class ModalController {
     this.modal.addEventListener('click', this.handleBackgroundClick);
     document.addEventListener('keydown', this.handleEsc);
 
-    // Foco no primeiro input ou botão
     const firstFocusable = this.modal.querySelector('input, button, select, textarea');
-    if (firstFocusable) {
-      firstFocusable.focus();
-    }
+    if (firstFocusable) firstFocusable.focus();
 
     logDebug(`Modal "${this.modal.id}" aberto.`);
   }
@@ -70,7 +56,6 @@ class ModalController {
 
     this.modal.classList.add('is-closing');
 
-    // Tempo deve bater com a animação no CSS
     setTimeout(() => {
       this.modal.classList.remove('is-open', 'is-closing');
       document.body.classList.remove('no-scroll');
@@ -84,15 +69,11 @@ class ModalController {
   }
 
   handleBackgroundClick(e) {
-    if (e.target === this.modal) {
-      this.close();
-    }
+    if (e.target === this.modal) this.close();
   }
 
   handleEsc(e) {
-    if (e.key === 'Escape') {
-      this.close();
-    }
+    if (e.key === 'Escape') this.close();
   }
 }
 
@@ -111,9 +92,9 @@ async function registrarLog(nomeApelido) {
       mode: "no-cors"
     });
 
-    logDebug("Log de acesso enviado para:", nomeApelido);
+    logDebug("Log enviado:", nomeApelido);
   } catch (err) {
-    console.warn("Não foi possível registrar o log:", err);
+    console.warn("Falha ao registrar log:", err);
   }
 }
 
@@ -122,7 +103,7 @@ async function registrarLog(nomeApelido) {
 // ====================================================================
 function processarDadosPlanilha(dados) {
   INSPETORES = dados || {};
-  logDebug("Lista de inspetores carregada com sucesso.");
+  logDebug("Inspetores carregados.");
 }
 
 function carregarInspetores() {
@@ -136,24 +117,19 @@ function carregarInspetores() {
 // ====================================================================
 function checkLoginStatus() {
   const logado = localStorage.getItem('inspectorLoggedIn');
-  const nomeInspetor = localStorage.getItem('inspectorName');
+  const nome = localStorage.getItem('inspectorName');
 
-  const mainScreen = getEl('main-screen');
-  const inspectorScreen = getEl('inspector-screen');
-  const welcomeMsg = getEl('welcome-msg');
+  const main = getEl('main-screen');
+  const insp = getEl('inspector-screen');
+  const msg = getEl('welcome-msg');
 
-  if (!mainScreen || !inspectorScreen) return;
-
-  if (logado === 'true' && nomeInspetor) {
-    mainScreen.style.display = 'none';
-    inspectorScreen.style.display = 'flex';
-
-    if (welcomeMsg) {
-      welcomeMsg.innerText = `Bem-vindo, Inspetor ${nomeInspetor}!`;
-    }
+  if (logado === 'true' && nome) {
+    main.style.display = 'none';
+    insp.style.display = 'flex';
+    msg.textContent = `Bem-vindo, Inspetor ${nome}!`;
   } else {
-    mainScreen.style.display = 'flex';
-    inspectorScreen.style.display = 'none';
+    main.style.display = 'flex';
+    insp.style.display = 'none';
   }
 }
 
@@ -163,12 +139,10 @@ function login(e) {
   const senhaInput = getEl('password');
   const errorMsg = getEl('login-error');
 
-  if (!senhaInput) return;
-
-  const senhaDigitada = senhaInput.value.trim();
+  const senha = senhaInput.value.trim();
 
   const nomeEncontrado = Object.keys(INSPETORES).find(
-    nome => INSPETORES[nome] === senhaDigitada
+    nome => INSPETORES[nome] === senha
   );
 
   if (nomeEncontrado) {
@@ -177,15 +151,10 @@ function login(e) {
 
     registrarLog(nomeEncontrado);
 
-    if (window.modals && window.modals.login) {
-      window.modals.login.close();
-    }
-
+    window.modals.login.close();
     checkLoginStatus();
   } else {
-    if (errorMsg) {
-      errorMsg.style.display = 'block';
-    }
+    errorMsg.style.display = 'block';
     senhaInput.value = '';
     senhaInput.focus();
   }
@@ -198,58 +167,22 @@ function logoutInspector() {
 }
 
 // ====================================================================
-// BLOQUEIO DE BOTÕES POR DATA
-// ====================================================================
-function aplicarBloqueioDeDatas() {
-  const now = new Date();
-
-  Object.entries(DISABLE_DATES).forEach(([id, date]) => {
-    const btn = getEl(id);
-    if (!btn) return;
-
-    if (now < date) {
-      btn.classList.add('disabled');
-      btn.setAttribute('href', '#');
-      btn.setAttribute('aria-disabled', 'true');
-      btn.title = 'Disponível a partir de ' + date.toLocaleDateString('pt-BR');
-    }
-  });
-}
-
-// ====================================================================
 // BANNER TEMPORÁRIO
 // ====================================================================
 function fecharBanner() {
   const banner = getEl('aviso-temporario');
-  if (banner) {
-    banner.style.display = 'none';
-    logDebug("Banner fechado pelo botão.");
-  }
+  if (banner) banner.style.display = 'none';
 }
 
 function mostrarBannerAviso() {
   const agora = new Date();
   const banner = getEl('aviso-temporario');
 
-  if (!banner) {
-    console.warn("Elemento #aviso-temporario não encontrado");
-    return;
-  }
-
-  logDebug("Verificando banner:", agora.toLocaleString('pt-BR'));
+  if (!banner) return;
 
   if (agora >= DATA_INICIO_BANNER && agora < DATA_FIM_BANNER) {
-    logDebug("→ Banner deve aparecer");
     banner.style.display = 'flex';
-
-    setTimeout(() => {
-      if (banner.style.display !== 'none') {
-        banner.style.display = 'none';
-        logDebug("Banner fechado automaticamente após 3s");
-      }
-    }, 3000);
   } else {
-    logDebug("→ Banner fora do período → escondido");
     banner.style.display = 'none';
   }
 }
@@ -267,76 +200,56 @@ function initModals() {
 }
 
 function initEventListeners() {
-  // Botão que abre o modal de login
-  const btnSegundaTela = getEl('btn-segunda-tela');
-  if (btnSegundaTela && window.modals?.login) {
-    btnSegundaTela.addEventListener('click', (e) => {
+  // Login
+  const btnLogin = getEl('btn-segunda-tela');
+  if (btnLogin) {
+    btnLogin.addEventListener('click', (e) => {
       e.preventDefault();
-      const errorMsg = getEl('login-error');
-      const senhaInput = getEl('password');
-
-      if (errorMsg) errorMsg.style.display = 'none';
-      if (senhaInput) {
-        senhaInput.value = '';
-      }
-
+      getEl('login-error').style.display = 'none';
+      getEl('password').value = '';
       window.modals.login.open();
     });
   }
 
-  // Formulário de login
   const loginForm = getEl('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', login);
-  }
+  if (loginForm) loginForm.addEventListener('submit', login);
 
-  // Modais específicos
-  const btnClandestinos = getEl('btn-clandestinos-rto');
-  if (btnClandestinos && window.modals?.clandestinosRto) {
-    btnClandestinos.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.modals.clandestinosRto.open();
-    });
-  }
+  // Modais
+  getEl('btn-clandestinos-rto')?.addEventListener('click', e => {
+    e.preventDefault();
+    window.modals.clandestinosRto.open();
+  });
 
-  const btnLevantamentos = getEl('btn-levantamentos');
-  if (btnLevantamentos && window.modals?.levantamentos) {
-    btnLevantamentos.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.modals.levantamentos.open();
-    });
-  }
+  getEl('btn-levantamentos')?.addEventListener('click', e => {
+    e.preventDefault();
+    window.modals.levantamentos.open();
+  });
 
-  const btnInspecoes5s = getEl('btn-inspecoes-5s');
-  if (btnInspecoes5s && window.modals?.inspecoes5s) {
-    btnInspecoes5s.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.modals.inspecoes5s.open();
-    });
-  }
+  getEl('btn-inspecoes-5s')?.addEventListener('click', e => {
+    e.preventDefault();
+    window.modals.inspecoes5s.open();
+  });
 
-  // Fechar banner (se tiver botão de fechar)
-  const btnFecharBanner = getEl('btn-fechar-banner');
-  if (btnFecharBanner) {
-    btnFecharBanner.addEventListener('click', (e) => {
-      e.preventDefault();
-      fecharBanner();
-    });
-  }
+  // Relatório de Fiscais
+  getEl('btn-relatorio-fiscais')?.addEventListener('click', () => {
+    window.open("https://forms.gle/xxxxxxxxxxxx", "_blank");
+  });
+
+  // Banner
+  getEl('btn-fechar-banner')?.addEventListener('click', fecharBanner);
 }
 
 window.addEventListener('load', () => {
   initModals();
   initEventListeners();
-
   carregarInspetores();
   checkLoginStatus();
-  aplicarBloqueioDeDatas();
   mostrarBannerAviso();
 });
-// ============================================================
+
+// ====================================================================
 // TEMA ESCURO / CLARO
-// ============================================================
+// ====================================================================
 const themeToggle = document.getElementById("theme-toggle");
 
 function applyTheme(theme) {
@@ -355,5 +268,4 @@ themeToggle.addEventListener("click", () => {
   applyTheme(current);
 });
 
-// Carrega tema salvo
 applyTheme(localStorage.getItem("theme") || "light");
