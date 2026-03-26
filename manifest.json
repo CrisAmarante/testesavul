@@ -1,15 +1,26 @@
 {
-  "name": "Relatórios Urubupungá",
-  "short_name": "Relatórios",
+  "name": "Testes de campo",
+  "short_name": "PENSO",
+  "description": "Prancheta eletrônica -Testes de campo",
+  "id": "/testesavul/",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#d11a2d",
   "theme_color": "#d11a2d",
+  "orientation": "portrait-primary",
+  "version": "2026.03.26-v3",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
