@@ -1,247 +1,391 @@
 /* ============================================================
-   VARIÁVEIS DE TEMA
+   PENSO - Prancheta Eletrônica
+   CSS Completo - Versão FLEXBOX (sem Grid) - CORRIGIDO
 ============================================================ */
+
 :root {
-  --bg: rgba(255,255,255,0.85);
+  --bg: rgba(255,255,255,0.88);
   --text: #222;
-  --card-bg: rgba(255,255,255,0.80);
-  --modal-bg: rgba(255,255,255,0.92);
-  --accent: #007bff;
-  --banner-bg: rgba(255,233,199,0.75);
-  --overlay: rgba(0,0,0,0.30);
+  --card-bg: rgba(255,255,255,0.88);
+  --modal-bg: rgba(255,255,255,0.95);
+  --accent: #d11a2d;
+  --banner-bg: rgba(255, 233, 199, 0.95);
+  --overlay: rgba(0,0,0,0.40);
 }
 
 body.dark {
-  --bg: rgba(20,20,20,0.85);
+  --bg: rgba(18,18,18,0.90);
   --text: #eee;
-  --card-bg: rgba(30,30,30,0.70);
-  --modal-bg: rgba(40,40,40,0.85);
-  --accent: #4da3ff;
-  --banner-bg: rgba(60,60,60,0.55);
-  --overlay: rgba(0,0,0,0.55);
+  --card-bg: rgba(28,28,28,0.85);
+  --modal-bg: rgba(32,32,32,0.95);
+  --accent: #ff5252;
+  --banner-bg: rgba(55,55,55,0.80);
+  --overlay: rgba(0,0,0,0.65);
 }
 
-/* ============================================================
-   FUNDO COM IMAGEM (CORRIGIDO)
-============================================================ */
-body {
-  background: none !important;
-  position: relative;
+/* ====================== BASE GLOBAL ====================== */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
   color: var(--text);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
+
+* { box-sizing: border-box; }
 
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: url("banner-home-frota.png") center/cover no-repeat;
-  filter: blur(10px) brightness(0.65);
+  background: url('banner-home-frota.png') center/cover no-repeat;
+  filter: blur(10px) brightness(0.70);
   z-index: -2;
 }
 
-body.dark::before {
-  filter: blur(10px) brightness(0.85);
-}
-
-/* ============================================================
-   BOTÃO DE TEMA
-============================================================ */
-.theme-toggle {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  background: var(--card-bg);
-  border: none;
-  padding: 10px 12px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  z-index: 1000;
-}
-
-/* ============================================================
-   TÍTULO COM FAIXA DE LEITURA
-============================================================ */
+/* Título Principal - fixo no topo */
 .titulo {
-  background: rgba(0,0,0,0.35);
-  padding: 12px 26px;
-  border-radius: 12px;
-  display: inline-block;
-  backdrop-filter: blur(4px);
+  position: relative;
+  z-index: 30;
+  background: rgba(0,0,0,0.75);
   color: #fff !important;
-  margin: 40px auto 35px auto;
+  padding: 14px 0;
+  font-size: 1.38rem;
   text-align: center;
-  font-size: 1.7rem;
+  margin: 0;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .titulo { font-size: 1.48rem; }
+}
+
+/* ====================== CONTAINER RESPONSIVO ====================== */
+.screen-container {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 20px;
+  overflow: hidden;
+  gap: 20px;
+}
+
+.grid-panel {
+  width: 100%;
+  max-width: 480px;
+  margin-left: auto;
+}
+
+/* ====================== FLEXBOX - GRID DE BOTÕES (CORRIGIDO) ====================== */
+.cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+  max-width: 480px;
+  justify-content: flex-start;   /* garante que o último botão fique à esquerda */
+}
+
+.card, .inspector-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.84rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.20);
+  border: 1px solid rgba(255,255,255,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 195px;               /* ← CORREÇÃO PRINCIPAL: tamanho fixo */
+  min-width: 195px;
+  aspect-ratio: 1 / 1;
+  transition: transform 0.25s ease;
+  padding: 10px;
+  text-align: center;
+  position: relative;
+}
+
+.card:hover, .inspector-card:hover { 
+  transform: scale(1.05); 
+}
+
+.card-icon {
+  font-size: 1.65rem;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+/* Destaques */
+.card-relatorio, .card-inspetores { 
+  border: 2px solid var(--accent); 
+}
+
+.card-relatorio::after, .card-inspetores::after {
+  content: "★";
+  position: absolute;
+  top: 8px; right: 8px;
+  background: var(--accent); 
+  color: white;
+  font-size: 11px; 
+  width: 20px; height: 20px;
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+
+/* ====================== TELA DE INSPETORES ====================== */
+#inspector-screen {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+#inspector-screen .grid-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px 35px 20px 20px;
+}
+
+#inspector-screen .cards-grid {
+  max-width: 480px;
+}
+
+/* Botão Sair com nome discreto */
+#inspector-screen .logout-btn {
+  margin: 0 auto 30px auto;
+  min-width: 145px;
+  padding: 14px 32px;
+  font-size: 1.08rem;
+  background: #d11a2d;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.1;
+}
+
+#inspector-screen .logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+
+#inspector-screen .logout-btn small {
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* ====================== TOAST ====================== */
+#welcome-toast {
+  position: fixed;
+  top: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--modal-bg);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  padding: 20px 32px;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  font-size: 1.32rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 11000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+#welcome-toast.show {
+  display: flex;
+  opacity: 1;
+}
+
+#welcome-toast .toast-name {
+  color: var(--accent);
   font-weight: 600;
 }
 
-#main-screen .titulo {
-  display: block;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
+.toast-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--accent);
+  cursor: pointer;
 }
 
-/* ============================================================
-   BANNER
-============================================================ */
-.banner {
-  display: none;
-  background: var(--banner-bg);
-  border-left: 6px solid #ff9800;
-  padding: 16px 50px 16px 16px;
-  position: relative;
-  backdrop-filter: blur(4px);
-  color: var(--text);
-}
+/* ====================== RESPONSIVIDADE ====================== */
+@media (max-width: 768px) {
+  .screen-container,
+  #inspector-screen .grid-panel {
+    padding: 15px 20px;
+  }
 
-/* ============================================================
-   GRID DE CARDS
-============================================================ */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 18px;
-  margin-top: 20px;
-}
+  .cards-grid {
+    gap: 10px;
+  }
 
-/* ============================================================
-   CARDS COM DESTAQUE + ANIMAÇÃO
-============================================================ */
-.card, .card-relatorio {
-  background: var(--card-bg);
-  backdrop-filter: blur(8px);
-  border-radius: 16px;
-  padding: 22px 18px;
-  text-align: center;
-  text-decoration: none;
-  color: var(--text);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.22);
-  border: 1px solid rgba(255,255,255,0.25);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  .card, .inspector-card {
+    flex: 0 1 165px;          /* tamanho fixo também no mobile */
+    min-width: 165px;
+    font-size: 0.78rem;
+    padding: 8px;
+  }
 
-  opacity: 0;
-  transform: translateY(12px) scale(0.98);
-  animation: cardFadeIn 0.6s ease forwards;
-}
+  .card-icon {
+    font-size: 1.45rem;
+  }
 
-.card:nth-child(1) { animation-delay: 0.05s; }
-.card:nth-child(2) { animation-delay: 0.10s; }
-.card:nth-child(3) { animation-delay: 0.15s; }
-.card:nth-child(4) { animation-delay: 0.20s; }
-.card-relatorio     { animation-delay: 0.25s; }
+  #inspector-screen .logout-btn {
+    margin: 10px auto 25px auto;
+    padding: 13px 28px;
+    font-size: 1.02rem;
+  }
 
-@keyframes cardFadeIn {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  #welcome-toast {
+    top: 78px;
+    padding: 16px 24px;
+    font-size: 1.22rem;
   }
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.28);
-  border-color: rgba(255,255,255,0.45);
-}
-
-/* Ícones SVG */
-.card-icon svg {
-  width: 40px;
-  height: 40px;
-  fill: var(--accent);
-}
-
-/* ============================================================
-   CARD ESPECIAL – RELATÓRIO DE FISCAIS
-============================================================ */
-.card-relatorio {
-  border-radius: 18px;
-  padding: 24px 20px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.30);
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-}
-
-.card-relatorio::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 2px;
-  background: linear-gradient(135deg, #4da3ff, #00d4ff);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  pointer-events: none;
-}
-
-.card-relatorio:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
-}
-
-/* ============================================================
-   MODAIS
-============================================================ */
+/* ====================== MODAIS, TEMA E BANNER ====================== */
 .modal {
-  position: fixed;
+  position: fixed; 
   inset: 0;
-  display: none;
-  justify-content: center;
+  display: none; 
+  justify-content: center; 
   align-items: center;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px);
-  z-index: 999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
+  background: var(--overlay); 
+  backdrop-filter: blur(6px); 
+  z-index: 10000;
 }
 
-.modal.is-open {
-  display: flex;
-  opacity: 1;
-  pointer-events: auto;
-}
+.modal.is-open { display: flex; }
 
 .modal-content {
-  background: var(--modal-bg);
-  backdrop-filter: blur(6px);
-  width: 90%;
-  max-width: 380px;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
-  transform: translateY(20px) scale(0.96);
-  opacity: 0;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  background: var(--modal-bg); 
+  width: 85%; 
+  max-width: 360px;
+  padding: 22px; 
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-.modal.is-open .modal-content {
-  transform: translateY(0) scale(1);
-  opacity: 1;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.modal-title { margin: 0; font-size: 1.25rem; }
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #666;
 }
 
 .modal-btn {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  background: var(--accent);
-  color: white;
-  border-radius: 8px;
-  margin-top: 10px;
-  text-align: center;
+  display: block; 
+  padding: 14px; 
+  margin: 10px 0;
+  background: var(--accent); 
+  color: white; 
+  border-radius: 10px;
+  text-align: center; 
+  text-decoration: none;
+  font-weight: 500;
 }
 
-/* ============================================================
-   FORMULÁRIO DE LOGIN
-============================================================ */
-input[type="password"] {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #aaa;
-  background: var(--bg);
-  color: var(--text);
+.theme-toggle {
+  position: fixed;
+  top: 12px; 
+  right: 12px;
+  z-index: 1000;
+  background: var(--card-bg);
+  border: none;
+  width: 42px; 
+  height: 42px;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+#aviso-temporario.banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--banner-bg);
+  color: #333;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 15px;
+  max-width: 90%;
+  text-align: center;
+  font-weight: 500;
+  border: 2px solid #ff9800;
+}
+
+.banner-close {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #d11a2d;
+  padding: 0 8px;
+}
+
+button, a { cursor: pointer; }
+
+#inspector-screen[style*="display: none"] {
+  display: none !important;
 }
