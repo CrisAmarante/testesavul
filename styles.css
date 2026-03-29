@@ -1,6 +1,6 @@
 /* ============================================================
    PENSO - Prancheta Eletrônica
-   CSS Completo - VERSÃO CORRIGIDA COM SCROLL E RESPONSIVIDADE
+   CSS Completo - VERSÃO FINAL (com inspeção veicular atualizada)
 ============================================================ */
 
 :root {
@@ -36,7 +36,7 @@ html, body {
   color: var(--text);
   background: transparent;
   overflow-x: hidden;
-  overflow-y: auto; /* ← CORRIGIDO: permite scroll */
+  overflow-y: auto;
 }
 
 body::before {
@@ -97,7 +97,7 @@ body.dark::before {
   justify-content: center;
 }
 
-/* Cards - tamanho flexível responsivo */
+/* Cards - TODOS COM MESMO TAMANHO (largura fixa percentual) */
 .card, .inspector-card {
   background: var(--card-bg);
   backdrop-filter: blur(10px);
@@ -112,7 +112,8 @@ body.dark::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1 1 calc(50% - 16px); /* ← CORRIGIDO: tamanho flexível */
+  flex: 0 0 auto;
+  width: calc(50% - 12px);
   min-width: 140px;
   min-height: 120px;
   transition: transform 0.25s ease;
@@ -207,18 +208,19 @@ body.dark::before {
 /* ====================== TOAST ====================== */
 #welcome-toast {
   position: fixed;
-  top: 80px;
+  top: 70px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--modal-bg);
   backdrop-filter: blur(12px);
   border-radius: 16px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-  padding: 16px 32px;
-  max-width: 320px;
-  width: 90%;
+  padding: 14px 28px;
+  max-width: 300px;
+  width: auto;
+  min-width: 200px;
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   line-height: 1.4;
   font-weight: 500;
   color: var(--text);
@@ -226,8 +228,12 @@ body.dark::before {
   display: none;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 #welcome-toast.show {
@@ -241,14 +247,24 @@ body.dark::before {
 }
 
 .toast-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
   background: none;
   border: none;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   color: var(--accent);
   cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+/* Ajuste para telas pequenas: quebrar linha e reduzir padding */
+@media (max-width: 480px) {
+  #welcome-toast {
+    top: 65px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    max-width: 260px;
+    white-space: normal;
+  }
 }
 
 /* ====================== RESPONSIVIDADE ====================== */
@@ -265,7 +281,7 @@ body.dark::before {
   }
 
   .card, .inspector-card {
-    flex: 1 1 calc(50% - 12px);
+    width: calc(50% - 8px);
     min-width: 130px;
     min-height: 110px;
     font-size: 0.75rem;
@@ -289,13 +305,6 @@ body.dark::before {
     font-size: 0.7rem;
   }
 
-  #welcome-toast {
-    top: 70px;
-    padding: 12px 24px;
-    font-size: 1rem;
-    max-width: 280px;
-  }
-
   .titulo {
     padding: 10px 0;
     font-size: 1.2rem;
@@ -314,7 +323,7 @@ body.dark::before {
   }
 
   .card, .inspector-card {
-    flex: 1 1 calc(50% - 14px);
+    width: calc(50% - 10px);
     min-width: 150px;
     min-height: 115px;
     font-size: 0.8rem;
@@ -326,7 +335,7 @@ body.dark::before {
   }
 }
 
-/* Telas grandes (tablets e desktop) */
+/* Telas grandes (tablets e desktop) - 3 colunas */
 @media (min-width: 769px) {
   .screen-container,
   #inspector-screen {
@@ -335,11 +344,11 @@ body.dark::before {
 
   .cards-grid {
     gap: 20px;
-    max-width: 600px;
+    max-width: 700px;
   }
 
   .card, .inspector-card {
-    flex: 1 1 calc(33.333% - 20px);
+    width: calc(33.333% - 14px);
     min-width: 160px;
     min-height: 130px;
     font-size: 0.9rem;
@@ -444,13 +453,13 @@ body.dark::before {
   transform: translateX(-50%);
   background: var(--banner-bg);
   color: #333;
-  padding: 12px 20px;
+  padding: 10px 18px;
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
   z-index: 9999;
   display: none;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   max-width: 90%;
   text-align: center;
   font-weight: 500;
@@ -460,15 +469,15 @@ body.dark::before {
 .banner-close {
   background: none;
   border: none;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   cursor: pointer;
   color: #d11a2d;
-  padding: 0 8px;
+  padding: 0 6px;
 }
 
 /* ====================== INSPEÇÃO VEICULAR DIÁRIA ====================== */
 .inspecao-modal-content {
-  max-width: 600px !important;
+  max-width: 700px !important;
   width: 95% !important;
   max-height: 85vh;
   overflow-y: auto;
@@ -477,7 +486,7 @@ body.dark::before {
 .top-fields,
 .bottom-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -490,7 +499,8 @@ body.dark::before {
   margin-bottom: 4px;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   padding: 10px 12px;
   border: 2px solid #cbd5e1;
@@ -578,6 +588,11 @@ body.dark::before {
   display: block; 
 }
 
+/* Estilo para checkbox "Com defeito" (vermelho quando marcado) */
+.custom-checkbox input.defeito:checked + .checkmark {
+  background: #ef4444;
+}
+
 .obs-input {
   width: 100%;
   padding: 6px 8px;
@@ -605,13 +620,13 @@ body.dark::before {
 
 .posicao-buttons {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
 }
 
 .pos-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: 2px solid #64748b;
   background: var(--card-bg);
   color: var(--accent);
@@ -695,11 +710,47 @@ body.dark::before {
   
   .top-fields,
   .bottom-fields {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
   
-  .field input {
+  .field input,
+  .field select {
     padding: 6px 8px;
     font-size: 0.85rem;
   }
+
+  .posicao-buttons {
+    gap: 4px;
+  }
+}
+
+/* Estilo para a coluna de posição na tabela (apenas ventilador) */
+.posicao-cell {
+  text-align: center;
+  min-width: 80px;
+}
+
+/* Modal de conferir inspeções */
+#modal-conferir-inspecoes .modal-content {
+  max-width: 500px;
+}
+
+#lista-inspecoes {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+#lista-inspecoes ul {
+  list-style: none;
+  padding: 0;
+}
+
+#lista-inspecoes li {
+  background: var(--card-bg);
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
 }
