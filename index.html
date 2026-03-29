@@ -8,7 +8,10 @@
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260328-2">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
 
@@ -41,7 +44,7 @@
 
             <a href="https://forms.office.com/r/Vr3tWmLyv2" class="card" id="btn-telefones">
                 <div class="card-icon"><i class="fas fa-phone"></i></div>
-                Atualização de Telefone
+                Telefones
             </a>
 
             <a href="#" id="btn-clandestinos-rto" class="card">
@@ -89,6 +92,11 @@
             <a href="https://forms.office.com/pages/responsepage.aspx?id=BT9x5o7JaUGYVqezBC5ZcbsSouziSbdKtQ1p901JfchUREIxR1pNUzQ0OEJLUTlGNzFRTEZKMTI1OC4u" class="inspector-card">
                 <div class="card-icon"><i class="fa-solid fa-video"></i></div>
                 Solicitação Imagem
+            </a>
+
+            <a href="#" id="btn-inspecao-veicular" class="inspector-card" style="display: none;">
+                <div class="card-icon"><i class="fa-solid fa-bus"></i></div>
+                Inspeção Veicular<br>Diária
             </a>
         </div>
     </div>
@@ -146,6 +154,97 @@
             <button type="submit" class="button">Entrar</button>
         </form>
     </div>
+</div>
+
+<!-- ====================== MODAL INSPEÇÃO VEICULAR DIÁRIA ====================== -->
+<div id="modal-inspecao-veicular" class="modal">
+  <div class="modal-content inspecao-modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">🚍 INSPEÇÃO VEICULAR DIÁRIA</h2>
+      <button class="modal-close" onclick="window.modals.inspecaoVeicular.close()">×</button>
+    </div>
+
+    <div id="inspecao-veicular-container">
+      <div class="top-fields">
+        <div class="field"><label>CARRO</label><input type="text" id="carro" placeholder="Placa/Identificação" maxlength="10" required></div>
+        <div class="field"><label>TERMINAL</label>
+          <select id="terminal" required>
+            <option value="">Selecione...</option>
+            <option value="Terminal A">Terminal A</option>
+            <option value="Terminal B">Terminal B</option>
+            <option value="Terminal C">Terminal C</option>
+            <option value="Terminal D">Terminal D</option>
+          </select>
+        </div>
+      </div>
+
+      <table class="inspection-table" id="tabela-inspecao">
+        <thead>
+          <tr><th>ITEM</th><th>OK</th><th>COM DEFEITO</th><th>OBS.</th><th>POSIÇÃO (Ventilador)</th> </tr>
+        </thead>
+        <tbody>
+          <tr data-item="elevador">
+            <td class="item-name">ELEVADOR</td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="ok"><span class="checkmark"></span></label></td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="defeito"><span class="checkmark"></span></label></td>
+            <td><input type="text" class="obs-input" placeholder="Observação"></td>
+            <td class="posicao-cell"></td>
+          </tr>
+          <tr data-item="thoreb">
+            <td class="item-name">THOREB</td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="ok"><span class="checkmark"></span></label></td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="defeito"><span class="checkmark"></span></label></td>
+            <td><input type="text" class="obs-input" placeholder="Observação"></td>
+            <td class="posicao-cell"></td>
+          </tr>
+          <tr data-item="usb">
+            <td class="item-name">USB</td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="ok"><span class="checkmark"></span></label></td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="defeito"><span class="checkmark"></span></label></td>
+            <td><input type="text" class="obs-input" placeholder="Observação"></td>
+            <td class="posicao-cell"></td>
+          </tr>
+          <tr data-item="ventilador">
+            <td class="item-name">VENTILADOR</td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="ok"><span class="checkmark"></span></label></td>
+            <td class="checkbox-cell"><label class="custom-checkbox"><input type="checkbox" class="defeito"><span class="checkmark"></span></label></td>
+            <td><input type="text" class="obs-input" placeholder="Observação"></td>
+            <td class="posicao-cell">
+              <div class="posicao-container">
+                <div class="posicao-buttons">
+                  <button type="button" class="pos-btn" data-pos="F">F</button>
+                  <button type="button" class="pos-btn" data-pos="M">M</button>
+                  <button type="button" class="pos-btn" data-pos="T">T</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="bottom-fields">
+        <div class="field"><label>FISCAL</label><input type="text" id="fiscal" readonly></div>
+        <div class="field"><label>DATA</label><input type="text" id="data" readonly></div>
+        <div class="field"><label>HORA</label><input type="text" id="hora" readonly></div>
+      </div>
+
+      <div class="action-buttons">
+        <button id="btn-conferir-inspecoes" class="btn-secundario" style="display: none;">CONFERIR INSPEÇÕES</button>
+        <button id="btn-enviar-inspecao" class="btn-principal">ENVIAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para exibição das inspeções do fiscal -->
+<div id="modal-conferir-inspecoes" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Minhas Inspeções - Hoje</h2>
+      <button class="modal-close" onclick="fecharModalConferir()">×</button>
+    </div>
+    <div id="lista-inspecoes"></div>
+  </div>
 </div>
 
 <script src="script.js"></script>
