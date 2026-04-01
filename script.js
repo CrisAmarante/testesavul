@@ -355,7 +355,12 @@ class InspecaoVeicular {
     this.modal = new ModalController('modal-inspecao-veicular');
     this.initEventListeners();
   }
-
+// MÉTODO ADICIONADO: Resolve o erro "close is not a function"
+  close() {
+    if (this.modal) {
+      this.modal.close();
+    }
+  }
   initEventListeners() {
     const btnAbrir = getEl('btn-inspecao-veicular');
     if (btnAbrir) {
