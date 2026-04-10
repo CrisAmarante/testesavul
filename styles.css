@@ -148,3 +148,6 @@ textarea { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius:
   padding: 6px 12px;
   font-size: 0.8rem;
 }
+.ok:checked ~ .checkmark { background-color: #28a745 !important; border-color: #28a745; }
+.defeito:checked ~ .checkmark { background-color: #dc3545 !important; border-color: #dc3545; }
+.btn-close-highlight { background: #ff4d4d; color: white !important; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 1 !important; }
