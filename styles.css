@@ -29,7 +29,7 @@ body.dark::before { filter: blur(10px) brightness(0.85); }
 .card:hover, .inspector-card:hover { transform: scale(1.02); }
 .card-icon { font-size: 1.8rem; color: var(--accent); margin-bottom: 8px; }
 .card-relatorio, .card-inspetores { border: 2px solid var(--accent); }
-.card-relatorio::after, .card-inspetores::after { content: "â˜…"; position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.card-relatorio::after, .card-inspetores::after { content: "★"; position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 #inspector-screen { min-height: calc(100vh - 65px); width: 100%; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
 .logout-btn { margin: 30px auto 20px auto; min-width: 160px; padding: 14px 32px; font-size: 1.08rem; background: #d11a2d; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.25); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; line-height: 1.2; }
 .logout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
@@ -67,7 +67,7 @@ body.dark::before { filter: blur(10px) brightness(0.85); }
 .custom-checkbox input { opacity: 0; width: 0; height: 0; }
 .checkmark { position: absolute; top: 0; left: 0; width: 24px; height: 24px; background: #e2e8f0; border-radius: 6px; transition: background 0.2s; }
 .custom-checkbox input:checked + .checkmark { background: #10b981; }
-.checkmark:after { content: "âœ”"; position: absolute; display: none; color: white; font-size: 14px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.checkmark:after { content: "✔"; position: absolute; display: none; color: white; font-size: 14px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .custom-checkbox input:checked + .checkmark:after { display: block; }
 .custom-checkbox input.defeito:checked + .checkmark { background: #ef4444; }
 .obs-input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.75rem; }
@@ -102,7 +102,7 @@ textarea { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius:
   max-width: 500px;
   width: 90%;
 }
-/* Estilos para campos obrigatÃ³rios */
+/* Estilos para campos obrigatórios */
 .required {
   color: #d11a2d;
   font-weight: bold;
@@ -142,12 +142,16 @@ textarea { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius:
   color: var(--text);
 }
 
-/* BotÃµes dentro dos filtros */
+/* Botões dentro dos filtros */
 #filtros-envio button,
 #filtros-inspecao button {
   padding: 6px 12px;
   font-size: 0.8rem;
 }
-.ok:checked ~ .checkmark { background-color: #28a745 !important; border-color: #28a745; }
-.defeito:checked ~ .checkmark { background-color: #dc3545 !important; border-color: #dc3545; }
-.btn-close-highlight { background: #ff4d4d; color: white !important; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 1 !important; }
+/* Efeito visual para os botões de posição quando estão bloqueados */
+.pos-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+  color: #cbd5e1;
+}
