@@ -94,64 +94,182 @@ textarea { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius:
 #lista-envios-container { max-height: 60vh; overflow-y: auto; padding: 8px; }
 .envio-item { background: var(--card-bg); margin: 10px 0; padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent); }
 .envio-item strong { display: block; margin-bottom: 6px; }
-.envio-detalhe-modal-content {
-  max-width: 500px;
-  width: 90%;
-}
-.envio-detalhe-modal-content {
-  max-width: 500px;
-  width: 90%;
-}
-/* Estilos para campos obrigatórios */
-.required {
-  color: #d11a2d;
-  font-weight: bold;
+.envio-detalhe-modal-content { max-width: 500px; width: 90%; }
+.envio-detalhe-modal-content { max-width: 500px; width: 90%; }
+.required { color: #d11a2d; font-weight: bold; }
+#filtros-envio, #filtros-inspecao { width: 100%; box-sizing: border-box; }
+#filtros-envio > div, #filtros-inspecao > div { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: flex-start; }
+#filtros-envio label, #filtros-inspecao label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 2px; }
+#filtros-envio input, #filtros-envio select, #filtros-inspecao input { padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: var(--card-bg); color: var(--text); }
+#filtros-envio button, #filtros-inspecao button { padding: 6px 12px; font-size: 0.8rem; }
+.pos-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: #cbd5e1; color: #cbd5e1; }
+
+/* ========== NOVAS REGRAS PARA O MODAL DE DETALHE DE ENVIO ========== */
+#modal-detalhe-envio {
+  z-index: 100000 !important;
 }
 
-/* Ajuste do painel de filtros para ficar justificado */
-#filtros-envio,
-#filtros-inspecao {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#filtros-envio > div,
-#filtros-inspecao > div {
+#modal-detalhe-envio .modal-content {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  max-height: 85vh;
+  max-width: 550px;
+  width: 90%;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+#modal-detalhe-envio .modal-header {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  background: var(--modal-bg);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-bottom: 0;
+}
+
+/* Área de informações fixas (acima do histórico) */
+#modal-detalhe-envio .info-fixa {
+  flex-shrink: 0;
+  padding: 16px 20px 8px 20px;
+  background: var(--modal-bg);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Área rolável (histórico + anexos) - CORRIGIDO */
+#modal-detalhe-envio .area-rolavel {
+  flex: 1 1 auto;           /* Ocupa o espaço restante */
+  overflow-y: auto;         /* Rolagem vertical */
+  padding: 0 20px 16px 20px; /* Padding inferior para espaçamento */
+  min-height: 0;            /* Necessário para flexbox em alguns navegadores */
+}
+
+/* Remove regra antiga de .modal-body-scroll se não for usada */
+#modal-detalhe-envio .modal-body-scroll {
+  display: none;
+}
+
+#modal-detalhe-envio .modal-footer {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  background: var(--modal-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+/* Ajuste para telas muito pequenas */
+@media (max-width: 480px) {
+  #modal-detalhe-envio .modal-content {
+    max-height: 90vh;
+    width: 95%;
+  }
+  #modal-detalhe-envio .area-rolavel {
+    padding: 0 12px 12px 12px;
+  }
+  #modal-detalhe-envio .modal-footer {
+    padding: 12px;
+  }
+}
+/* Container Principal das Ações */
+.action-grid-container {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: flex-end;
-  justify-content: flex-start;
+  margin-top: 20px;
+  width: 100%;
 }
 
-#filtros-envio label,
-#filtros-inspecao label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 2px;
+.action-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
 }
 
-#filtros-envio input,
-#filtros-envio select,
-#filtros-inspecao input {
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
+/* Botões Estilo Quadrado (Anexar, Salvar, Consultar) */
+.grid-btn-anexo, .grid-btn-secundario {
+  flex: 1;
+  min-height: 80px;
   background: var(--card-bg);
   color: var(--text);
+  border: 2px solid #64748b;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  transition: all 0.2s;
 }
 
-/* Botões dentro dos filtros */
-#filtros-envio button,
-#filtros-inspecao button {
-  padding: 6px 12px;
-  font-size: 0.8rem;
+.grid-btn-anexo i, .grid-btn-secundario i {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+  color: var(--accent);
 }
-/* Efeito visual para os botões de posição quando estão bloqueados */
-.pos-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: #cbd5e1;
-  color: #cbd5e1;
+
+/* Botão Enviar (Destaque Central) */
+.grid-btn-principal {
+  flex: 1.5; /* Um pouco mais largo que os outros */
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(209, 26, 45, 0.3);
+}
+
+/* Espaço para mostrar os anexos (Preview) */
+.grid-anexos-preview {
+  flex: 2;
+  background: rgba(0,0,0,0.05);
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 8px;
+  min-height: 80px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+/* Ajuste Dark Mode */
+body.dark .grid-anexos-preview {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Hover Effects */
+.grid-btn-anexo:hover, .grid-btn-secundario:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.grid-btn-principal:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+.btn-icon {
+  background: var(--card-bg);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+.btn-icon:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
