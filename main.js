@@ -14,11 +14,12 @@ const disableDates = {
 // INICIALIZAÇÃO
 // ====================================================================
 function initModals() {
-  window.modals = {
+    window.modals = {
     login: new ModalController('modal-login'),
     clandestinosRto: new ModalController('modal-clandestinos-rto'),
     levantamentos: new ModalController('modal-levantamentos'),
-    inspecoes5s: new ModalController('modal-inspecoes-5s')
+    inspecoes5s: new ModalController('modal-inspecoes-5s'),
+    adminPanel: new ModalController('modal-admin-panel')  // NOVO
   };
   window.modals.inspecaoVeicular = new InspecaoVeicular();
 }
