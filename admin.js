@@ -9,7 +9,7 @@ function abrirModalAdmin() {
   if (!senhaAdmin) return;
 
   const callbackName = 'verificarAdmin_' + Date.now();
-  console.log('Resposta do servidor:', resposta);//***
+  console.log('Resposta do servidor:', resposta);
   window[callbackName] = function(resposta) {
     delete window[callbackName];
     if (resposta && resposta.sucesso) {
