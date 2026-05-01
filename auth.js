@@ -192,7 +192,7 @@ function ajustarCardsPorPerfil(role) {
 // ====================================================================
 function adicionarCardAdmin() {
   // Remove card existente para evitar duplicação
-  const cardExistente = getEl('btn-admin-panel');
+  const cardExistente = document.getElementById('btn-admin-panel');
   if (cardExistente) cardExistente.remove();
 
   if (currentUserRole !== 'ADMIN') return;
