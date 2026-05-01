@@ -1,1 +1,2 @@
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbyXdFAfpl9XEBFf2mIQRv5rUgsiWair5W9yUQ6jW33x5y6NhqaZRRExmgZ4yhzpCHJbMw/exec";
+//ID do ambiente de testes PWA//
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbwHlI5Ssi8DGtkon-LY_5LHFq-e9lwucnb2EzD0LDwCpX-sqhjnA7hjRp2IQQ-hLxEnAQ/exec";
