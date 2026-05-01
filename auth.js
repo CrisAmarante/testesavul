@@ -119,6 +119,32 @@ function aplicarBloqueioDeDatas() {
     if (btn && now < date) { btn.classList.add('disabled'); btn.setAttribute('href', '#'); btn.title = `Disponível a partir de ${date.toLocaleDateString('pt-BR')}`; btn.style.pointerEvents = 'none'; btn.style.opacity = '0.45'; }
   }
 }
+// ====================================================================
+// ADICIONAR CARD DE ADMINISTRAÇÃO (APENAS PARA ADMIN)
+// ====================================================================
+function adicionarCardAdmin() {
+  // Remove card existente para evitar duplicação
+  const cardExistente = getEl('btn-admin-panel');
+  if (cardExistente) cardExistente.remove();
+
+  if (currentUserRole !== 'ADMIN') return;
+  
+  const grid = document.querySelector('#inspector-screen .cards-grid');
+  if (!grid) return;
+  
+  const cardAdmin = document.createElement('a');
+  cardAdmin.href = '#';
+  cardAdmin.className = 'inspector-card';
+  cardAdmin.id = 'btn-admin-panel';
+  cardAdmin.innerHTML = '<div class="card-icon"><i class="fas fa-user-shield"></i></div>👑 Administração';
+  cardAdmin.addEventListener('click', (e) => {
+    e.preventDefault();
+    abrirModalAdmin();
+  });
+  grid.appendChild(cardAdmin);
+}
+//=======================================================================================================
+//=======================================================================================================
 function fecharBanner() { const b = getEl('aviso-temporario'); if (b) b.style.display = 'none'; }
 function mostrarBannerAviso() {
   const agora = new Date();
