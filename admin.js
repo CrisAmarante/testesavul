@@ -27,9 +27,16 @@ function abrirModalAdmin() {
 
 // Carrega o conteúdo do painel administrativo (modal)
 function carregarPainelAdmin() {
-  const modal = getEl('modal-admin-panel');
-  const container = getEl('admin-panel-conteudo');
-  if (!modal || !container) return;
+  console.log("carregarPainelAdmin iniciada");
+  const modal = document.getElementById('modal-admin-panel');
+  const container = document.getElementById('admin-panel-conteudo');
+  console.log("modal encontrado?", modal);
+  console.log("container encontrado?", container);
+  
+  if (!modal || !container) {
+    console.error("Modal ou container não encontrado. Verifique se os IDs existem no HTML.");
+    return;
+  }
 
   container.innerHTML = `
     <div class="admin-tabs">
@@ -58,7 +65,7 @@ function carregarPainelAdmin() {
 
 // Carrega o conteúdo de cada aba
 async function carregarAbaAdmin(aba) {
-  const body = getEl('admin-panel-body');
+  const body = document.getElementById('admin-panel-body');
   if (!body) return;
 
   switch(aba) {
@@ -133,7 +140,8 @@ async function carregarGestaoUsuarios(container) {
       </table>
     `;
     container.innerHTML = html;
-    document.getElementById('btn-criar-usuario')?.addEventListener('click', criarUsuario);
+    const btnCriar = document.getElementById('btn-criar-usuario');
+    if (btnCriar) btnCriar.addEventListener('click', criarUsuario);
   };
 
   const script = document.createElement('script');
@@ -159,11 +167,10 @@ async function criarUsuario() {
   }
 
   const dados = { acao: 'criar', matricula, nome, apelido, senha, funcao, ativo: 'SIM' };
-  
   const resposta = await enviarAdminPost('admin_usuarios', dados);
   if (resposta && resposta.sucesso) {
     alert('Usuário criado com sucesso!');
-    carregarGestaoUsuarios(getEl('admin-panel-body'));
+    carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || 'Erro ao criar usuário');
   }
@@ -179,7 +186,7 @@ async function salvarEdicaoUsuario(apelido) {
   const resposta = await enviarAdminPost('admin_usuarios', dados);
   if (resposta && resposta.sucesso) {
     alert('Usuário atualizado!');
-    carregarGestaoUsuarios(getEl('admin-panel-body'));
+    carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || 'Erro ao atualizar');
   }
@@ -239,7 +246,8 @@ async function carregarGestaoTerminais(container) {
       </table>
     `;
     container.innerHTML = html;
-    document.getElementById('btn-criar-terminal')?.addEventListener('click', criarTerminal);
+    const btnCriar = document.getElementById('btn-criar-terminal');
+    if (btnCriar) btnCriar.addEventListener('click', criarTerminal);
   };
 
   const script = document.createElement('script');
@@ -256,7 +264,7 @@ async function criarTerminal() {
   const resposta = await enviarAdminPost('admin_terminais', dados);
   if (resposta && resposta.sucesso) {
     alert('Terminal adicionado!');
-    carregarGestaoTerminais(getEl('admin-panel-body'));
+    carregarGestaoTerminais(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || 'Erro ao adicionar terminal');
   }
@@ -273,7 +281,7 @@ async function salvarEdicaoTerminal(id) {
   const resposta = await enviarAdminPost('admin_terminais', dados);
   if (resposta && resposta.sucesso) {
     alert('Terminal atualizado!');
-    carregarGestaoTerminais(getEl('admin-panel-body'));
+    carregarGestaoTerminais(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || 'Erro ao atualizar terminal');
   }
@@ -305,6 +313,6 @@ async function enviarAdminPost(endpoint, dados) {
 
 // ======================= FECHAR MODAL ADMIN =======================
 function fecharModalAdmin() {
-  const modal = getEl('modal-admin-panel');
+  const modal = document.getElementById('modal-admin-panel');
   if (modal) modal.classList.remove('is-open');
 }
