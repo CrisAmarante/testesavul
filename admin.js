@@ -28,16 +28,24 @@ function abrirModalAdmin() {
 // Carrega o conteúdo do painel administrativo (modal)
 function carregarPainelAdmin() {
   console.log("carregarPainelAdmin iniciada");
+  
+  // Usa document.getElementById diretamente para evitar dependência de getEl
   const modal = document.getElementById('modal-admin-panel');
   const container = document.getElementById('admin-panel-conteudo');
-  console.log("modal encontrado?", modal);
-  console.log("container encontrado?", container);
   
-  if (!modal || !container) {
-    console.error("Modal ou container não encontrado. Verifique se os IDs existem no HTML.");
+  console.log("modal (via getElementById):", modal);
+  console.log("container (via getElementById):", container);
+  
+  if (!modal) {
+    console.error("❌ Modal com ID 'modal-admin-panel' não encontrado no DOM");
     return;
   }
-
+  if (!container) {
+    console.error("❌ Container com ID 'admin-panel-conteudo' não encontrado no DOM");
+    return;
+  }
+  
+  // Se chegou aqui, os elementos existem
   container.innerHTML = `
     <div class="admin-tabs">
       <button class="admin-tab active" data-tab="usuarios">👥 Usuários</button>
