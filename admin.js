@@ -5,9 +5,11 @@
 // Abre o modal de administração com segunda validação
 function abrirModalAdmin() {
   const senhaAdmin = prompt("🔐 Acesso restrito. Digite a senha de administrador:");
+  console.log('Enviando requisição para verificar admin com senha:', senhaAdmin);//***
   if (!senhaAdmin) return;
 
   const callbackName = 'verificarAdmin_' + Date.now();
+  console.log('Resposta do servidor:', resposta);//***
   window[callbackName] = function(resposta) {
     delete window[callbackName];
     if (resposta && resposta.sucesso) {
