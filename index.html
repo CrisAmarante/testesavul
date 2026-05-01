@@ -78,7 +78,7 @@
 
 <!-- MODAIS EXISTENTES -->
 <div id="modal-clandestinos-rto" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Clandestinos</h2><button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button></div><a class="modal-btn" href="https://forms.office.com/r/v4BMhNHbSR">Rua Melvin Jones</a><a class="modal-btn" href="https://forms.office.com/r/JF8tPFysX6">Cajamar</a></div></div>
-<div id="modal-levantamentos" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Levantamentos</h2><button class="modal-close" onclick="window.modals.levantamentos.close()">×</button></div><a class="modal-btn" href="https://forms.office.com/r/YBvvJgHNx4">Levantamento ETEC Fazendinha</a></div></div>
+<div id="modal-levantamentos" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Levantamentos</h2><button class="modal-close" onclick="window.modals.levantamentos.close()">×</button></div><a class="modal-btn" href="https://forms.cloud.microsoft/r/qxrGRxcmSL">Levantamento PÇA. MÁRIO DONIZETE VIDAL - PQ SÃO ROBERTO</a></div></div>
 <div id="modal-inspecoes-5s" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Inspeções 5S</h2><button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button></div><a class="modal-btn" id="btn-osasco" href="https://forms.office.com/r/bkeF1EwmNC">Frota Osasco</a><a class="modal-btn" id="btn-santana" href="https://forms.office.com/r/dhibquxks5">Frota Santana</a></div></div>
 <div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="password" id="password" placeholder="Digite seu pin exclusivo" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Senha incorreta!</div><button type="submit" class="button">Entrar</button></form></div></div>
 
@@ -182,6 +182,29 @@
       <button class="modal-close" onclick="fecharModalDetalheEnvio()">×</button>
     </div>
     <div id="detalhe-envio-conteudo"></div>
+  </div>
+</div>
+<!-- MODAL PAINEL DE ADMINISTRAÇÃO -->
+<div id="modal-admin-panel" class="modal">
+  <div class="modal-content admin-modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title"><i class="fas fa-shield-alt"></i> Painel de Administração</h2>
+      <button class="modal-close" onclick="fecharModalAdmin()">×</button>
+    </div>
+    <div id="admin-panel-conteudo">
+      <!-- Abas serão inseridas dinamicamente -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal para edição de botões -->
+<div id="modal-editar-botoes" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-botoes-titulo">Editar Botões</h2>
+      <button class="modal-close" onclick="fecharModalEditarBotoes()">×</button>
+    </div>
+    <div id="editar-botoes-conteudo"></div>
   </div>
 </div>
 
