@@ -1,8 +1,11 @@
 // ====================================================================
 // ADMIN.JS - PAINEL DE ADMINISTRAÇÃO (APENAS PARA PERFIL ADMIN)
 // ====================================================================
-console.log("✅ admin.js carregado e executado");
-// Função chamada pelo card "Administração"
+
+// Renomeadas para evitar conflito com api.js
+let usuariosAdminCache = [];
+let terminaisAdminCache = [];
+
 window.abrirModalAdmin = function() {
   const senhaAdmin = prompt("🔐 Acesso restrito. Digite a senha de administrador:");
   if (!senhaAdmin) return;
@@ -63,14 +66,12 @@ async function carregarAbaAdmin(aba) {
 }
 
 // ======================= GESTÃO DE USUÁRIOS =======================
-let usuariosCache = [];
-
 async function carregarGestaoUsuarios(container) {
-  if (usuariosCache.length === 0) {
+  if (usuariosAdminCache.length === 0) {
     await new Promise((resolve) => {
       const callback = 'carregaUsuarios_' + Date.now();
       window[callback] = (dados) => {
-        usuariosCache = dados || [];
+        usuariosAdminCache = dados || [];
         delete window[callback];
         resolve();
       };
@@ -97,7 +98,7 @@ async function carregarGestaoUsuarios(container) {
 function buscarUsuario() {
   const matricula = document.getElementById('busca-matricula').value.trim();
   if (!matricula) return alert("Digite a matrícula");
-  const usuario = usuariosCache.find(u => String(u.matricula) === matricula);
+  const usuario = usuariosAdminCache.find(u => String(u.matricula) === matricula);
   const div = document.getElementById('resultado-usuario');
   if (!usuario) {
     div.innerHTML = `<p>❌ Usuário não encontrado</p>`;
@@ -141,7 +142,7 @@ async function salvarUsuario(apelido) {
   const resposta = await enviarAdminPost('admin_usuarios', { acao: 'atualizar', apelido, campos: { nome, funcao, ativo } });
   if (resposta && resposta.sucesso) {
     alert("Usuário atualizado!");
-    usuariosCache = [];
+    usuariosAdminCache = [];
     carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || "Erro");
@@ -150,10 +151,10 @@ async function salvarUsuario(apelido) {
 
 function listarTodosUsuarios() {
   let html = `<table class="admin-table"><thead><tr><th>Matrícula</th><th>Apelido</th><th>Nome</th><th>Função</th><th>Ativo</th><th>Ações</th></tr></thead><tbody>`;
-  usuariosCache.forEach(u => {
+  usuariosAdminCache.forEach(u => {
     html += `
       <tr>
-        <tr>${u.matricula}</td>
+        <td>${u.matricula}</td>
         <td>${u.apelido}</td>
         <td>${u.nome}</td>
         <td><select class="edit-funcao-lista">${gerarOpcoesFuncao(u.funcao)}</select></td>
@@ -175,7 +176,7 @@ window.salvarUsuarioLista = async function(apelido, btn) {
   const resposta = await enviarAdminPost('admin_usuarios', { acao: 'atualizar', apelido, campos: { funcao, ativo } });
   if (resposta && resposta.sucesso) {
     alert("Atualizado!");
-    usuariosCache = [];
+    usuariosAdminCache = [];
     carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || "Erro");
@@ -190,14 +191,12 @@ async function resetarSenhaUsuario(apelido) {
 }
 
 // ======================= GESTÃO DE TERMINAIS =======================
-let terminaisCache = [];
-
 async function carregarGestaoTerminais(container) {
-  if (terminaisCache.length === 0) {
+  if (terminaisAdminCache.length === 0) {
     await new Promise((resolve) => {
       const callback = 'carregaTerminais_' + Date.now();
       window[callback] = (dados) => {
-        terminaisCache = dados || [];
+        terminaisAdminCache = dados || [];
         delete window[callback];
         resolve();
       };
@@ -224,7 +223,7 @@ async function carregarGestaoTerminais(container) {
 function buscarTerminal() {
   const nome = document.getElementById('busca-terminal').value.trim().toLowerCase();
   if (!nome) return alert("Digite o nome");
-  const filtrados = terminaisCache.filter(t => t.terminal.toLowerCase().includes(nome));
+  const filtrados = terminaisAdminCache.filter(t => t.terminal.toLowerCase().includes(nome));
   if (filtrados.length === 0) {
     document.getElementById('resultado-terminal').innerHTML = `<p>❌ Nenhum terminal encontrado</p>`;
     return;
@@ -233,7 +232,7 @@ function buscarTerminal() {
 }
 
 function listarTerminais() {
-  exibirTerminais(terminaisCache);
+  exibirTerminais(terminaisAdminCache);
 }
 
 function exibirTerminais(terminais) {
@@ -250,7 +249,7 @@ function exibirTerminais(terminais) {
         <td><button class="btn-salvar" onclick="salvarTerminal(${t.id})">Salvar</button></td>
       </tr>`;
   });
-  html += `</tbody></table>`;
+  html += `</tbody></tr>`;
   document.getElementById('resultado-terminal').innerHTML = html;
 }
 
@@ -262,7 +261,7 @@ window.salvarTerminal = async function(id) {
   const resposta = await enviarAdminPost('admin_terminais', { acao: 'editar', id, nome, status });
   if (resposta && resposta.sucesso) {
     alert("Terminal atualizado!");
-    terminaisCache = [];
+    terminaisAdminCache = [];
     carregarGestaoTerminais(document.getElementById('admin-panel-body'));
   } else {
     alert(resposta?.erro || "Erro");
