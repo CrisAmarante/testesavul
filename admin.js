@@ -1,7 +1,7 @@
 // ====================================================================
 // ADMIN.JS - PAINEL DE ADMINISTRAÇÃO (APENAS PARA PERFIL ADMIN)
 // ====================================================================
-
+console.log("✅ admin.js carregado e executado");
 // Função chamada pelo card "Administração"
 window.abrirModalAdmin = function() {
   const senhaAdmin = prompt("🔐 Acesso restrito. Digite a senha de administrador:");
