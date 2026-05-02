@@ -401,3 +401,6 @@ body.dark .grid-anexos-preview {
   border-left: 3px solid var(--accent);
   padding-left: 10px;
 }
+#resultado-usuario, #resultado-terminal {
+  margin-top: 15px;
+}
