@@ -391,3 +391,13 @@ body.dark .grid-anexos-preview {
     width: 100%;
   }
 }
+.admin-section {
+  margin-bottom: 24px;
+}
+.admin-section h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: var(--accent);
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
