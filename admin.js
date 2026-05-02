@@ -2,16 +2,12 @@
 // ADMIN.JS - PAINEL DE ADMINISTRAÇÃO (APENAS PARA PERFIL ADMIN)
 // ====================================================================
 
-// Abre o modal de administração com segunda validação
-function abrirModalAdmin() {
+// Função chamada pelo card "Administração"
+window.abrirModalAdmin = function() {
   const senhaAdmin = prompt("🔐 Acesso restrito. Digite a senha de administrador:");
   if (!senhaAdmin) return;
-  
-  console.log("Senha digitada:", senhaAdmin);
-
   const callbackName = 'verificarAdmin_' + Date.now();
   window[callbackName] = function(resposta) {
-    console.log("Resposta do servidor:", resposta);
     delete window[callbackName];
     if (resposta && resposta.sucesso) {
       carregarPainelAdmin();
@@ -19,18 +15,15 @@ function abrirModalAdmin() {
       alert("Senha incorreta. Acesso negado.");
     }
   };
-
   const script = document.createElement('script');
   script.src = `${URL_PLANILHA}?acao=admin_verificar&senha=${encodeURIComponent(senhaAdmin)}&callback=${callbackName}`;
   document.body.appendChild(script);
-}
+};
 
-// Carrega o conteúdo do painel administrativo (modal)
 function carregarPainelAdmin() {
   const modal = document.getElementById('modal-admin-panel');
   const container = document.getElementById('admin-panel-conteudo');
   if (!modal || !container) return;
-
   container.innerHTML = `
     <div class="admin-tabs">
       <button class="admin-tab active" data-tab="usuarios">👥 Usuários</button>
@@ -41,10 +34,8 @@ function carregarPainelAdmin() {
     </div>
     <div class="admin-panel-body" id="admin-panel-body"></div>
   `;
-
   modal.classList.add('is-open');
   carregarAbaAdmin('usuarios');
-
   document.querySelectorAll('.admin-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -54,15 +45,16 @@ function carregarPainelAdmin() {
   });
 }
 
-// Carrega a aba ativa
 async function carregarAbaAdmin(aba) {
   const body = document.getElementById('admin-panel-body');
   if (!body) return;
   switch(aba) {
     case 'usuarios':
+      body.innerHTML = '<div style="text-align:center">Carregando...</div>';
       await carregarGestaoUsuarios(body);
       break;
     case 'terminais':
+      body.innerHTML = '<div style="text-align:center">Carregando...</div>';
       await carregarGestaoTerminais(body);
       break;
     default:
@@ -71,89 +63,52 @@ async function carregarAbaAdmin(aba) {
 }
 
 // ======================= GESTÃO DE USUÁRIOS =======================
-// Cache global de usuários (carregado uma vez)
 let usuariosCache = [];
 
 async function carregarGestaoUsuarios(container) {
   if (usuariosCache.length === 0) {
-    container.innerHTML = '<div style="text-align:center">Carregando base de usuários...</div>';
-    await carregarListaUsuarios();
+    await new Promise((resolve) => {
+      const callback = 'carregaUsuarios_' + Date.now();
+      window[callback] = (dados) => {
+        usuariosCache = dados || [];
+        delete window[callback];
+        resolve();
+      };
+      const script = document.createElement('script');
+      script.src = `${URL_PLANILHA}?acao=admin_listar_usuarios&callback=${callback}`;
+      document.body.appendChild(script);
+    });
   }
-  mostrarFormularioUsuario(container);
-}
-
-function carregarListaUsuarios() {
-  return new Promise((resolve) => {
-    const callbackName = 'listarUsuarios_' + Date.now();
-    window[callbackName] = function(usuarios) {
-      delete window[callbackName];
-      usuariosCache = usuarios || [];
-      resolve();
-    };
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=admin_listar_usuarios&callback=${callbackName}`;
-    document.body.appendChild(script);
-  });
-}
-
-function mostrarFormularioUsuario(container) {
   container.innerHTML = `
     <div class="admin-form">
-      <h4>🔍 Buscar Usuário por Matrícula (Chapa)</h4>
+      <h4>🔍 Buscar Usuário por Matrícula</h4>
       <div class="form-row">
-        <input type="text" id="busca-matricula" placeholder="Digite a matrícula (ex: 27610)" style="flex:2">
-        <button id="btn-buscar-usuario" class="btn-editar">Buscar</button>
-        <button id="btn-listar-todos-usuarios" class="btn-secundario">📋 Listar Todos</button>
+        <input type="text" id="busca-matricula" placeholder="Digite a matrícula" style="flex:2">
+        <button id="btn-buscar" class="btn-editar">Buscar</button>
+        <button id="btn-listar-todos" class="btn-secundario">📋 Listar Todos</button>
       </div>
     </div>
     <div id="resultado-usuario"></div>
   `;
-  document.getElementById('btn-buscar-usuario').addEventListener('click', () => buscarUsuarioPorMatricula());
-  document.getElementById('btn-listar-todos-usuarios').addEventListener('click', () => listarTodosUsuarios());
+  document.getElementById('btn-buscar').onclick = () => buscarUsuario();
+  document.getElementById('btn-listar-todos').onclick = () => listarTodosUsuarios();
 }
 
-function buscarUsuarioPorMatricula() {
+function buscarUsuario() {
   const matricula = document.getElementById('busca-matricula').value.trim();
-  if (!matricula) { alert("Digite a matrícula."); return; }
+  if (!matricula) return alert("Digite a matrícula");
   const usuario = usuariosCache.find(u => String(u.matricula) === matricula);
+  const div = document.getElementById('resultado-usuario');
   if (!usuario) {
-    document.getElementById('resultado-usuario').innerHTML = `<p>❌ Nenhum usuário encontrado com a matrícula ${matricula}.</p>`;
+    div.innerHTML = `<p>❌ Usuário não encontrado</p>`;
     return;
   }
-  exibirUsuarioParaEdicao(usuario);
-}
-
-function listarTodosUsuarios() {
-  if (usuariosCache.length === 0) return;
-  let html = `<table class="admin-table"><thead><tr><th>Matrícula</th><th>Apelido</th><th>Nome</th><th>Função</th><th>Ativo</th><th>Ações</th></tr></thead><tbody>`;
-  usuariosCache.forEach(u => {
-    html += `
-      <tr data-apelido="${u.apelido}">
-        <td>${u.matricula}</td>
-        <td>${u.apelido}</td>
-        <td>${u.nome}</td>
-        <td><select class="edit-funcao">${gerarOpcoesFuncao(u.funcao)}</select></td>
-        <td><select class="edit-ativo">
-          <option value="SIM" ${u.ativo === 'SIM' ? 'selected' : ''}>SIM</option>
-          <option value="NÃO" ${u.ativo === 'NÃO' ? 'selected' : ''}>NÃO</option>
-        </select></td>
-        <td>
-          <button class="btn-salvar" onclick="salvarEdicaoUsuario('${u.apelido}')">Salvar</button>
-          <button class="btn-editar" onclick="resetarSenhaUsuario('${u.apelido}')">Resetar Senha</button>
-        </td>
-      </tr>`;
-  });
-  html += `</tbody></table>`;
-  document.getElementById('resultado-usuario').innerHTML = html;
-}
-
-function exibirUsuarioParaEdicao(usuario) {
-  const html = `
+  div.innerHTML = `
     <div class="admin-form">
-      <h4>✏️ Editando Usuário: ${usuario.apelido} (${usuario.matricula})</h4>
+      <h4>✏️ Editando: ${usuario.apelido}</h4>
       <div class="form-row">
-        <label>Matrícula:</label><input type="text" id="edit-matricula" value="${usuario.matricula}" disabled>
-        <label>Apelido:</label><input type="text" id="edit-apelido" value="${usuario.apelido}" disabled>
+        <label>Matrícula:</label><input type="text" value="${usuario.matricula}" disabled>
+        <label>Apelido:</label><input type="text" value="${usuario.apelido}" disabled>
         <label>Nome:</label><input type="text" id="edit-nome" value="${usuario.nome}">
       </div>
       <div class="form-row">
@@ -165,62 +120,12 @@ function exibirUsuarioParaEdicao(usuario) {
           <option value="NÃO" ${usuario.ativo === 'NÃO' ? 'selected' : ''}>NÃO</option>
         </select>
       </div>
-      <div class="form-row">
-        <button id="btn-salvar-edicao" class="btn-salvar">Salvar Alterações</button>
-        <button id="btn-resetar-senha" class="btn-editar">Resetar Senha</button>
-        <button id="btn-cancelar" class="btn-cancelar">Cancelar</button>
-      </div>
+      <button id="salvar-edicao" class="btn-salvar">Salvar</button>
+      <button id="resetar-senha" class="btn-editar">Resetar Senha</button>
     </div>
   `;
-  const container = document.getElementById('resultado-usuario');
-  container.innerHTML = html;
-  document.getElementById('btn-salvar-edicao').addEventListener('click', () => salvarEdicaoUsuarioCompleta(usuario.apelido));
-  document.getElementById('btn-resetar-senha').addEventListener('click', () => resetarSenhaUsuario(usuario.apelido));
-  document.getElementById('btn-cancelar').addEventListener('click', () => mostrarFormularioUsuario(document.getElementById('admin-panel-body')));
-}
-
-async function salvarEdicaoUsuarioCompleta(apelido) {
-  const novoNome = document.getElementById('edit-nome').value.trim();
-  const novaFuncao = document.getElementById('edit-funcao').value;
-  const novoAtivo = document.getElementById('edit-ativo').value;
-  if (!novoNome) { alert("O nome não pode ficar vazio."); return; }
-  const dados = { acao: 'atualizar', apelido, campos: { nome: novoNome, funcao: novaFuncao, ativo: novoAtivo } };
-  const resposta = await enviarAdminPost('admin_usuarios', dados);
-  if (resposta && resposta.sucesso) {
-    alert("Usuário atualizado com sucesso!");
-    await carregarListaUsuarios(); // recarrega cache
-    mostrarFormularioUsuario(document.getElementById('admin-panel-body'));
-  } else {
-    alert(resposta?.erro || "Erro ao atualizar usuário.");
-  }
-}
-
-async function salvarEdicaoUsuario(apelido) {
-  const row = document.querySelector(`tr[data-apelido="${apelido}"]`);
-  if (!row) return;
-  const novaFuncao = row.querySelector('.edit-funcao').value;
-  const novoAtivo = row.querySelector('.edit-ativo').value;
-  const dados = { acao: 'atualizar', apelido, campos: { funcao: novaFuncao, ativo: novoAtivo } };
-  const resposta = await enviarAdminPost('admin_usuarios', dados);
-  if (resposta && resposta.sucesso) {
-    alert("Usuário atualizado!");
-    await carregarListaUsuarios();
-    listarTodosUsuarios();
-  } else {
-    alert(resposta?.erro || "Erro ao atualizar");
-  }
-}
-
-async function resetarSenhaUsuario(apelido) {
-  const novaSenha = prompt(`Digite a nova senha para ${apelido}:`);
-  if (!novaSenha) return;
-  const dados = { acao: 'resetar_senha', apelido, novaSenha };
-  const resposta = await enviarAdminPost('admin_usuarios', dados);
-  if (resposta && resposta.sucesso) {
-    alert("Senha resetada com sucesso!");
-  } else {
-    alert(resposta?.erro || "Erro ao resetar senha");
-  }
+  document.getElementById('salvar-edicao').onclick = () => salvarUsuario(usuario.apelido);
+  document.getElementById('resetar-senha').onclick = () => resetarSenhaUsuario(usuario.apelido);
 }
 
 function gerarOpcoesFuncao(atual) {
@@ -228,128 +133,156 @@ function gerarOpcoesFuncao(atual) {
   return funcoes.map(f => `<option value="${f}" ${f === atual ? 'selected' : ''}>${f}</option>`).join('');
 }
 
+async function salvarUsuario(apelido) {
+  const nome = document.getElementById('edit-nome').value.trim();
+  const funcao = document.getElementById('edit-funcao').value;
+  const ativo = document.getElementById('edit-ativo').value;
+  if (!nome) return alert("Nome não pode ficar vazio.");
+  const resposta = await enviarAdminPost('admin_usuarios', { acao: 'atualizar', apelido, campos: { nome, funcao, ativo } });
+  if (resposta && resposta.sucesso) {
+    alert("Usuário atualizado!");
+    usuariosCache = [];
+    carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
+  } else {
+    alert(resposta?.erro || "Erro");
+  }
+}
+
+function listarTodosUsuarios() {
+  let html = `<table class="admin-table"><thead><tr><th>Matrícula</th><th>Apelido</th><th>Nome</th><th>Função</th><th>Ativo</th><th>Ações</th></tr></thead><tbody>`;
+  usuariosCache.forEach(u => {
+    html += `
+      <tr>
+        <tr>${u.matricula}</td>
+        <td>${u.apelido}</td>
+        <td>${u.nome}</td>
+        <td><select class="edit-funcao-lista">${gerarOpcoesFuncao(u.funcao)}</select></td>
+        <td><select class="edit-ativo-lista">
+          <option value="SIM" ${u.ativo === 'SIM' ? 'selected' : ''}>SIM</option>
+          <option value="NÃO" ${u.ativo === 'NÃO' ? 'selected' : ''}>NÃO</option>
+        </select></td>
+        <td><button class="btn-salvar" onclick="salvarUsuarioLista('${u.apelido}', this)">Salvar</button></td>
+      </tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('resultado-usuario').innerHTML = html;
+}
+
+window.salvarUsuarioLista = async function(apelido, btn) {
+  const row = btn.closest('tr');
+  const funcao = row.querySelector('.edit-funcao-lista').value;
+  const ativo = row.querySelector('.edit-ativo-lista').value;
+  const resposta = await enviarAdminPost('admin_usuarios', { acao: 'atualizar', apelido, campos: { funcao, ativo } });
+  if (resposta && resposta.sucesso) {
+    alert("Atualizado!");
+    usuariosCache = [];
+    carregarGestaoUsuarios(document.getElementById('admin-panel-body'));
+  } else {
+    alert(resposta?.erro || "Erro");
+  }
+};
+
+async function resetarSenhaUsuario(apelido) {
+  const novaSenha = prompt("Nova senha:");
+  if (!novaSenha) return;
+  const resposta = await enviarAdminPost('admin_usuarios', { acao: 'resetar_senha', apelido, novaSenha });
+  alert(resposta?.sucesso ? "Senha resetada" : (resposta?.erro || "Erro"));
+}
+
 // ======================= GESTÃO DE TERMINAIS =======================
 let terminaisCache = [];
 
 async function carregarGestaoTerminais(container) {
   if (terminaisCache.length === 0) {
-    container.innerHTML = '<div style="text-align:center">Carregando base de terminais...</div>';
-    await carregarListaTerminais();
+    await new Promise((resolve) => {
+      const callback = 'carregaTerminais_' + Date.now();
+      window[callback] = (dados) => {
+        terminaisCache = dados || [];
+        delete window[callback];
+        resolve();
+      };
+      const script = document.createElement('script');
+      script.src = `${URL_PLANILHA}?acao=admin_listar_terminais_completos&callback=${callback}`;
+      document.body.appendChild(script);
+    });
   }
-  mostrarFormularioTerminal(container);
-}
-
-function carregarListaTerminais() {
-  return new Promise((resolve) => {
-    const callbackName = 'listarTerminaisCompletos_' + Date.now();
-    window[callbackName] = function(terminais) {
-      delete window[callbackName];
-      terminaisCache = terminais || [];
-      resolve();
-    };
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=admin_listar_terminais_completos&callback=${callbackName}`;
-    document.body.appendChild(script);
-  });
-}
-
-function mostrarFormularioTerminal(container) {
   container.innerHTML = `
     <div class="admin-form">
       <h4>🔍 Buscar Terminal por Nome</h4>
       <div class="form-row">
-        <input type="text" id="busca-terminal" placeholder="Nome do terminal (ex: Vila Yara 1)" style="flex:2">
+        <input type="text" id="busca-terminal" placeholder="Nome do terminal" style="flex:2">
         <button id="btn-buscar-terminal" class="btn-editar">Buscar</button>
-        <button id="btn-listar-todos-terminais" class="btn-secundario">📋 Listar Todos</button>
+        <button id="btn-listar-terminais" class="btn-secundario">📋 Listar Todos</button>
       </div>
     </div>
     <div id="resultado-terminal"></div>
   `;
-  document.getElementById('btn-buscar-terminal').addEventListener('click', () => buscarTerminalPorNome());
-  document.getElementById('btn-listar-todos-terminais').addEventListener('click', () => listarTodosTerminais());
+  document.getElementById('btn-buscar-terminal').onclick = () => buscarTerminal();
+  document.getElementById('btn-listar-terminais').onclick = () => listarTerminais();
 }
 
-function buscarTerminalPorNome() {
+function buscarTerminal() {
   const nome = document.getElementById('busca-terminal').value.trim().toLowerCase();
-  if (!nome) { alert("Digite o nome do terminal."); return; }
-  const terminais = terminaisCache.filter(t => t.terminal.toLowerCase().includes(nome));
-  if (terminais.length === 0) {
-    document.getElementById('resultado-terminal').innerHTML = `<p>❌ Nenhum terminal encontrado com "${nome}".</p>`;
+  if (!nome) return alert("Digite o nome");
+  const filtrados = terminaisCache.filter(t => t.terminal.toLowerCase().includes(nome));
+  if (filtrados.length === 0) {
+    document.getElementById('resultado-terminal').innerHTML = `<p>❌ Nenhum terminal encontrado</p>`;
     return;
   }
-  exibirListaTerminais(terminais);
+  exibirTerminais(filtrados);
 }
 
-function listarTodosTerminais() {
-  exibirListaTerminais(terminaisCache);
+function listarTerminais() {
+  exibirTerminais(terminaisCache);
 }
 
-function exibirListaTerminais(terminais) {
-  let html = `<table class="admin-table"><thead><tr><th>ID</th><th>Nome do Terminal</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+function exibirTerminais(terminais) {
+  let html = `<table class="admin-table"><thead><tr><th>ID</th><th>Nome</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
   terminais.forEach(t => {
     html += `
       <tr data-id="${t.id}">
         <td>${t.id}</td>
-        <td><input type="text" class="edit-terminal-nome" value="${t.terminal.replace(/"/g, '&quot;')}" style="width:100%"></td>
-        <td>
-          <select class="edit-terminal-status">
-            <option value="SIM" ${t.status === 'SIM' ? 'selected' : ''}>SIM</option>
-            <option value="NÃO" ${t.status === 'NÃO' ? 'selected' : ''}>NÃO</option>
-          </select>
-        </td>
-        <td><button class="btn-salvar" onclick="salvarEdicaoTerminal(${t.id})">Salvar</button></td>
+        <td><input type="text" class="edit-nome-terminal" value="${t.terminal.replace(/"/g, '&quot;')}" style="width:100%"></td>
+        <td><select class="edit-status-terminal">
+          <option value="SIM" ${t.status === 'SIM' ? 'selected' : ''}>SIM</option>
+          <option value="NÃO" ${t.status === 'NÃO' ? 'selected' : ''}>NÃO</option>
+        </select></td>
+        <td><button class="btn-salvar" onclick="salvarTerminal(${t.id})">Salvar</button></td>
       </tr>`;
   });
   html += `</tbody></table>`;
   document.getElementById('resultado-terminal').innerHTML = html;
 }
 
-async function salvarEdicaoTerminal(id) {
+window.salvarTerminal = async function(id) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
-  if (!row) return;
-  const novoNome = row.querySelector('.edit-terminal-nome').value.trim();
-  const novoStatus = row.querySelector('.edit-terminal-status').value;
-  if (!novoNome) { alert("Nome não pode ficar vazio."); return; }
-  const dados = { acao: 'editar', id, nome: novoNome, status: novoStatus };
-  const resposta = await enviarAdminPost('admin_terminais', dados);
+  const nome = row.querySelector('.edit-nome-terminal').value.trim();
+  const status = row.querySelector('.edit-status-terminal').value;
+  if (!nome) return alert("Nome não pode ficar vazio");
+  const resposta = await enviarAdminPost('admin_terminais', { acao: 'editar', id, nome, status });
   if (resposta && resposta.sucesso) {
     alert("Terminal atualizado!");
-    await carregarListaTerminais();
-    listarTodosTerminais();
+    terminaisCache = [];
+    carregarGestaoTerminais(document.getElementById('admin-panel-body'));
   } else {
-    alert(resposta?.erro || "Erro ao atualizar terminal");
+    alert(resposta?.erro || "Erro");
   }
-}
+};
 
-// ======================= FUNÇÃO AUXILIAR PARA POST ADMIN =======================
+// ======================= FUNÇÃO AUXILIAR =======================
 function enviarAdminPost(endpoint, dados) {
   return new Promise((resolve) => {
-    const callbackName = 'adminPost_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    window[callbackName] = (resposta) => {
-      delete window[callbackName];
-      resolve(resposta);
-    };
-    const formData = new URLSearchParams();
-    formData.append('acao', endpoint);
-    formData.append('dados', JSON.stringify(dados));
-    formData.append('callback', callbackName);
+    const callback = 'adminPost_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    window[callback] = (res) => { delete window[callback]; resolve(res); };
+    const params = new URLSearchParams({ acao: endpoint, dados: JSON.stringify(dados), callback });
     const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?${formData.toString()}`;
-    script.onerror = () => {
-      delete window[callbackName];
-      resolve({ erro: 'Erro de conexão' });
-    };
+    script.src = `${URL_PLANILHA}?${params}`;
+    script.onerror = () => { delete window[callback]; resolve({ erro: 'Erro de conexão' }); };
     document.body.appendChild(script);
   });
 }
 
-// ======================= FECHAR MODAL ADMIN =======================
 function fecharModalAdmin() {
   const modal = document.getElementById('modal-admin-panel');
   if (modal) modal.classList.remove('is-open');
 }
-
-// Exportar funções para uso global (onclick)
-window.salvarEdicaoUsuario = salvarEdicaoUsuario;
-window.resetarSenhaUsuario = resetarSenhaUsuario;
-window.salvarEdicaoTerminal = salvarEdicaoTerminal;
