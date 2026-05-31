@@ -6,19 +6,17 @@
 // ====================================================================
 // VARIÁVEIS GLOBAIS DO MÓDULO
 // ====================================================================
-let acidenteAtualId = null;           // ID do acidente em edição
-let bensArray = [];                   // Lista de objetos de bens avariados
-let pessoasArray = [];                // Lista de objetos de pessoas (vítimas/testemunhas)
-let anexosPrincipaisArray = [];       // Array de {base64, mimeType, nome} (anexos gerais)
-let editMode = false;                 // true se estiver editando um acidente existente
-let originalStatus = null;            // 'EM_ANDAMENTO' ou 'FINALIZADO'
+let acidenteAtualId = null;
+let bensArray = [];
+let pessoasArray = [];
+let anexosPrincipaisArray = [];
+let editMode = false;
+let originalStatus = null;
 
-// Elementos DOM (usaremos getEl do utils.js)
 // ====================================================================
 // INICIALIZAÇÃO DOS EVENTOS DO MODAL
 // ====================================================================
 function initAcidenteModal() {
-  // Botões do modal
   const btnSalvar = getEl('btn-salvar-rascunho');
   const btnFinalizar = getEl('btn-finalizar-acidente');
   const btnConsultar = getEl('btn-consultar-acidentes');
@@ -35,14 +33,12 @@ function initAcidenteModal() {
   if (btnAdicionarTestemunha) btnAdicionarTestemunha.addEventListener('click', () => adicionarPessoa('Testemunha'));
   if (btnAnexarPrincipal) btnAnexarPrincipal.addEventListener('click', anexarArquivosPrincipais);
 
-  // Eventos de input para auto-salvamento (debounce)
   const autoSaveFields = ['acidente-data', 'acidente-hora', 'acidente-local', 'acidente-prefixo', 'acidente-motorista', 'acidente-descricao'];
   autoSaveFields.forEach(id => {
     const el = getEl(id);
     if (el) el.addEventListener('input', debounce(salvarRascunhoAcidente, 800));
   });
 
-  // Abas
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -53,11 +49,8 @@ function initAcidenteModal() {
 }
 
 function ativarAba(tabId) {
-  // Esconde todos os conteúdos
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-  // Remove classe active dos botões
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  // Ativa a aba correspondente
   const targetContent = document.getElementById(`tab-${tabId}`);
   if (targetContent) targetContent.classList.add('active');
   const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
@@ -70,19 +63,15 @@ function ativarAba(tabId) {
 function abrirModalEnvio(acidenteId = null) {
   const modal = getEl('modal-envio-informacoes');
   if (!modal) return;
-  
-  // Resetar estado
   if (!acidenteId) {
     iniciarNovoAcidente();
   } else {
     carregarAcidenteExistente(acidenteId);
   }
-  
   modal.classList.add('is-open');
-  preencherResponsavel();
   preencherDataAtual();
   iniciarAutoComplete();
-  initAcidenteModal(); // garante eventos
+  initAcidenteModal();
 }
 
 function fecharModalEnvio() {
@@ -91,7 +80,7 @@ function fecharModalEnvio() {
 }
 
 // ====================================================================
-// NOVO ACIDENTE (ID TEMPORÁRIO, RESETA DADOS)
+// NOVO ACIDENTE
 // ====================================================================
 function iniciarNovoAcidente() {
   acidenteAtualId = Date.now().toString();
@@ -101,7 +90,7 @@ function iniciarNovoAcidente() {
   editMode = false;
   originalStatus = null;
   limparFormularioAcidente();
-  carregarRascunhoLocal(); // Tenta carregar do localStorage se houver rascunho para este ID
+  carregarRascunhoLocal();
   renderizarListaBens();
   renderizarListaPessoas();
   renderizarListaAnexosPrincipais();
@@ -117,7 +106,7 @@ function limparFormularioAcidente() {
 }
 
 // ====================================================================
-// RASCUNHO LOCAL (localStorage)
+// RASCUNHO LOCAL
 // ====================================================================
 function carregarRascunhoLocal() {
   const chave = `rascunho_acidente_${acidenteAtualId}`;
@@ -152,7 +141,7 @@ function salvarRascunhoLocal() {
 }
 
 // ====================================================================
-// MONTAR OBJETO ACIDENTE (para envio ao backend)
+// MONTAR OBJETO ACIDENTE
 // ====================================================================
 function montarObjetoAcidente() {
   return {
@@ -178,18 +167,13 @@ function montarObjetoAcidente() {
 function salvarRascunhoAcidente() {
   if (!acidenteAtualId) return;
   const dados = montarObjetoAcidente();
-  // Salva localmente
   localStorage.setItem(`rascunho_acidente_${acidenteAtualId}`, JSON.stringify(dados));
-  
-  // Envia ao backend (não bloqueante)
   const payload = { acao: 'salvar_rascunho_acidente', dados: JSON.stringify(dados) };
   fetch(URL_PLANILHA, {
     method: 'POST',
     mode: 'no-cors',
     body: new URLSearchParams(payload)
   }).catch(console.warn);
-  
-  // Pequeno feedback visual (opcional)
   const btn = getEl('btn-salvar-rascunho');
   if (btn) {
     const originalText = btn.innerHTML;
@@ -199,34 +183,28 @@ function salvarRascunhoAcidente() {
 }
 
 // ====================================================================
-// FINALIZAR ACIDENTE (envia ao backend e remove rascunho local)
+// FINALIZAR ACIDENTE
 // ====================================================================
 async function finalizarAcidente() {
   if (!validarFormularioAcidente()) return;
-  
   const dados = montarObjetoAcidente();
   dados.finalizado = true;
   dados.status = 'FINALIZADO';
-  
-  // Primeiro salva rascunho final
   await fetch(URL_PLANILHA, {
     method: 'POST',
     mode: 'no-cors',
     body: new URLSearchParams({ acao: 'salvar_rascunho_acidente', dados: JSON.stringify(dados) })
   });
-  
-  // Depois finaliza
-  const resp = await fetch(URL_PLANILHA, {
+  await fetch(URL_PLANILHA, {
     method: 'POST',
     mode: 'no-cors',
     body: new URLSearchParams({ acao: 'finalizar_acidente', dados: JSON.stringify({ id: acidenteAtualId }) })
   });
-  
   alert('✅ Relatório finalizado com sucesso!');
   localStorage.removeItem(`rascunho_acidente_${acidenteAtualId}`);
   fecharModalEnvio();
-  // Recarregar consulta se estiver aberta
-  if (getEl('modal-consulta-acidentes') && getEl('modal-consulta-acidentes').style.display !== 'none') {
+  const modalConsulta = getEl('modal-consulta-acidentes');
+  if (modalConsulta && modalConsulta.style.display !== 'none') {
     document.getElementById('btn-buscar-acidentes')?.click();
   }
 }
@@ -240,7 +218,7 @@ function validarFormularioAcidente() {
 }
 
 // ====================================================================
-// BENS AVARIADOS (CRUD)
+// BENS AVARIADOS
 // ====================================================================
 function adicionarBem() {
   const bem = {
@@ -253,7 +231,7 @@ function adicionarBem() {
     proprietario: prompt('Proprietário / Responsável:') || '',
     telefone: prompt('Telefone para contato:') || '',
     danos: prompt('Danos identificados:') || '',
-    anexos: []  // Anexos específicos do bem (podem ser implementados depois)
+    anexos: []
   };
   bensArray.push(bem);
   renderizarListaBens();
@@ -298,7 +276,7 @@ function renderizarListaBens() {
 }
 
 // ====================================================================
-// VÍTIMAS E TESTEMUNHAS (CRUD)
+// VÍTIMAS E TESTEMUNHAS
 // ====================================================================
 function adicionarPessoa(tipo) {
   const nome = prompt(`Nome da ${tipo}:`);
@@ -329,10 +307,8 @@ function renderizarListaPessoas() {
   const containerVitimas = getEl('vitimas-list');
   const containerTestemunhas = getEl('testemunhas-list');
   if (!containerVitimas || !containerTestemunhas) return;
-  
   const vitimas = pessoasArray.filter(p => p.tipo === 'Vítima');
   const testemunhas = pessoasArray.filter(p => p.tipo === 'Testemunha');
-  
   const renderGrupo = (lista, tipo) => {
     if (lista.length === 0) return `<div class="empty-list"><small>Nenhum(a) ${tipo.toLowerCase()} adicionado(a).</small></div>`;
     let html = '<div class="cards-list">';
@@ -354,13 +330,12 @@ function renderizarListaPessoas() {
     html += '</div>';
     return html;
   };
-  
   containerVitimas.innerHTML = renderGrupo(vitimas, 'Vítima');
   containerTestemunhas.innerHTML = renderGrupo(testemunhas, 'Testemunha');
 }
 
 // ====================================================================
-// ANEXOS PRINCIPAIS (até 4 arquivos)
+// ANEXOS PRINCIPAIS
 // ====================================================================
 function anexarArquivosPrincipais() {
   const input = document.createElement('input');
@@ -419,40 +394,31 @@ function renderizarListaAnexosPrincipais() {
 }
 
 // ====================================================================
-// CARREGAR ACIDENTE EXISTENTE (para edição ou visualização)
+// CARREGAR ACIDENTE EXISTENTE
 // ====================================================================
 async function carregarAcidenteExistente(id) {
   const url = `${URL_PLANILHA}?acao=obter_acidente&id=${id}`;
   const response = await fetch(url);
   const acidente = await response.json();
   if (!acidente) return;
-  
   acidenteAtualId = acidente.id;
   originalStatus = acidente.status;
   editMode = true;
-  
-  // Preencher campos principais
   getEl('acidente-data').value = acidente.dataAcidente || '';
   getEl('acidente-hora').value = acidente.horaAcidente || '';
   getEl('acidente-local').value = acidente.local || '';
   getEl('acidente-prefixo').value = acidente.prefixo || '';
   getEl('acidente-motorista').value = acidente.motoristaChapa || '';
   getEl('acidente-descricao').value = acidente.descricaoAnalise || '';
-  
   bensArray = acidente.bens || [];
   pessoasArray = acidente.pessoas || [];
   anexosPrincipaisArray = acidente.anexosPrincipais || [];
-  
   renderizarListaBens();
   renderizarListaPessoas();
   renderizarListaAnexosPrincipais();
-  
-  // Verificar permissão de edição
   const currentUser = localStorage.getItem('inspectorApelido');
-  const podeEditar = (currentUserRole === 'ADMIN' || currentUserRole === 'SAF' || currentUserRole === 'ENCARREGADO' || acidente.fiscal === currentUser);
-  
+  const podeEditar = (window.currentUserRole === 'ADMIN' || window.currentUserRole === 'SAF' || window.currentUserRole === 'ENCARREGADO' || acidente.fiscal === currentUser);
   if (acidente.status === 'FINALIZADO' || !podeEditar) {
-    // Modo somente leitura
     desabilitarEdicao();
     alert('Este relatório está finalizado ou você não tem permissão para editar. Modo somente leitura.');
   } else {
@@ -463,7 +429,6 @@ async function carregarAcidenteExistente(id) {
 function desabilitarEdicao() {
   const inputs = document.querySelectorAll('#modal-envio-informacoes input, #modal-envio-informacoes textarea, #modal-envio-informacoes select, #modal-envio-informacoes button');
   inputs.forEach(el => el.disabled = true);
-  // Botão finalizar especificamente
   const btnFinal = getEl('btn-finalizar-acidente');
   if (btnFinal) btnFinal.disabled = true;
 }
@@ -478,14 +443,13 @@ function habilitarEdicao() {
 }
 
 // ====================================================================
-// AUTOCOMPLETE (veículos e operadores via backend)
+// AUTOCOMPLETE
 // ====================================================================
 function iniciarAutoComplete() {
   const prefixoInput = getEl('acidente-prefixo');
   const motoristaInput = getEl('acidente-motorista');
   const datalistVeiculos = getEl('lista-veiculos');
   const datalistMotoristas = getEl('lista-motoristas');
-  
   if (prefixoInput && datalistVeiculos) {
     prefixoInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
@@ -502,7 +466,6 @@ function iniciarAutoComplete() {
       } catch(e) { console.warn(e); }
     }, 500));
   }
-  
   if (motoristaInput && datalistMotoristas) {
     motoristaInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
@@ -522,13 +485,12 @@ function iniciarAutoComplete() {
 }
 
 // ====================================================================
-// CONSULTA DE ACIDENTES (MODAL)
+// CONSULTA DE ACIDENTES
 // ====================================================================
 function abrirModalConsultaAcidentes() {
   const modal = getEl('modal-consulta-acidentes');
   if (!modal) return;
   modal.style.display = 'flex';
-  
   const btnBuscar = getEl('btn-buscar-acidentes');
   if (btnBuscar) {
     btnBuscar.onclick = () => {
@@ -539,7 +501,7 @@ function abrirModalConsultaAcidentes() {
         dataInicio: getEl('filtro-data-inicio')?.value || '',
         dataFim: getEl('filtro-data-fim')?.value || '',
         status: getEl('filtro-status')?.value || '',
-        papel: currentUserRole,
+        papel: window.currentUserRole,
         apelido: localStorage.getItem('inspectorApelido')
       });
       fetch(`${URL_PLANILHA}?${params.toString()}`)
@@ -583,52 +545,8 @@ function fecharModalConsulta() {
 }
 
 // ====================================================================
-// DETALHES (visualização rápida) – opcional
-// ====================================================================
-function abrirModalDetalheAcidente(id) {
-  fetch(`${URL_PLANILHA}?acao=obter_acidente&id=${id}`)
-    .then(res => res.json())
-    .then(ac => {
-      const modal = getEl('modal-detalhe-acidente');
-      const container = getEl('detalhe-acidente-conteudo');
-      if (!modal || !container) return;
-      let html = `
-        <div><strong>Data/Hora:</strong> ${ac.dataAcidente} ${ac.horaAcidente || ''}</div>
-        <div><strong>Local:</strong> ${ac.local}</div>
-        <div><strong>Prefixo:</strong> ${ac.prefixo || '-'}</div>
-        <div><strong>Motorista:</strong> ${ac.motoristaChapa || '-'}</div>
-        <div><strong>Descrição:</strong> ${ac.descricaoAnalise || '-'}</div>
-        <hr><h4>Bens avariados</h4>
-      `;
-      if (ac.bens && ac.bens.length) {
-        ac.bens.forEach(b => {
-          html += `<div><strong>${b.tipoBem}</strong> - Placa: ${b.placa} - Danos: ${b.danos}</div>`;
-        });
-      } else html += '<div>Nenhum bem informado</div>';
-      html += `<hr><h4>Vítimas e testemunhas</h4>`;
-      if (ac.pessoas && ac.pessoas.length) {
-        ac.pessoas.forEach(p => {
-          html += `<div><strong>${p.tipo}:</strong> ${p.nome} - ${p.observacoes || ''}</div>`;
-        });
-      } else html += '<div>Nenhuma pessoa informada</div>`;
-      container.innerHTML = html;
-      modal.style.display = 'flex';
-    });
-}
-
-function fecharModalDetalhe() {
-  const modal = getEl('modal-detalhe-acidente');
-  if (modal) modal.style.display = 'none';
-}
-
-// ====================================================================
 // UTILITÁRIOS
 // ====================================================================
-function preencherResponsavel() {
-  const resp = getEl('aciente-responsavel'); // não existe no novo HTML, mas deixamos para compatibilidade
-  // Não usado no acidente.js diretamente, mas manter função vazia para evitar erro
-}
-
 function preencherDataAtual() {
   const dataInput = getEl('acidente-data');
   if (dataInput && !dataInput.value) {
@@ -649,7 +567,7 @@ function debounce(func, wait) {
   };
 }
 
-// Exportar funções para o escopo global (necessário para onclick nos botões dinâmicos)
+// Exportar funções para o escopo global
 window.adicionarBem = adicionarBem;
 window.removerBem = removerBem;
 window.removerPessoa = removerPessoa;
@@ -660,6 +578,4 @@ window.finalizarAcidente = finalizarAcidente;
 window.salvarRascunhoAcidente = salvarRascunhoAcidente;
 window.abrirModalConsultaAcidentes = abrirModalConsultaAcidentes;
 window.fecharModalConsulta = fecharModalConsulta;
-window.abrirModalDetalheAcidente = abrirModalDetalheAcidente;
-window.fecharModalDetalhe = fecharModalDetalhe;
 window.anexarArquivosPrincipais = anexarArquivosPrincipais;
