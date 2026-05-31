@@ -1,9 +1,7 @@
 // ====================================================================
 // VARIÁVEIS DE AUTENTICAÇÃO E PERMISSÕES
 // ====================================================================
-const ROLES_ALLOWED_INSPECTION = ['INSPETOR', 'ENCARREGADO', 'ADMIN', 'GERENTE', 'FISCAL', 'PLANTONISTA'];
 let currentUserRole = '';
-let canCreateInspection = false;
 
 // ====================================================================
 // VERIFICAR STATUS DE LOGIN (VERSÃO CORRIGIDA)
@@ -15,7 +13,6 @@ async function checkLoginStatus() {
   const roleSalva = localStorage.getItem('inspectorRole');
   const main = getEl('main-screen');
   const insp = getEl('inspector-screen');
-  const btnInspecao = getEl('btn-inspecao-veicular');
   const btnEnvio = getEl('btn-envio-informacoes');
   
   if (logado === 'true' && nome && apelido) {
@@ -38,14 +35,6 @@ async function checkLoginStatus() {
     }
     
     currentUserRole = role;
-    canCreateInspection = (role === 'FISCAL' || role === 'INSPETOR');
-    
-    // Lógica existente para mostrar/ocultar os cards especiais (baseada no MONITOR)
-    if (btnInspecao && role !== 'MONITOR') btnInspecao.style.display = 'flex';
-    else if (btnInspecao) btnInspecao.style.display = 'none';
-    
-    if (btnEnvio && role !== 'MONITOR') btnEnvio.style.display = 'flex';
-    else if (btnEnvio) btnEnvio.style.display = 'none';
     
     // Ajusta todos os cards conforme o perfil
     ajustarCardsPorPerfil(role);
@@ -141,20 +130,6 @@ function showWelcomeToast(apelido) {
 
 function hideWelcomeToast() { const t = getEl('welcome-toast'); if (t) t.classList.remove('show'); }
 
-function aplicarBloqueioDeDatas() {
-  const now = new Date();
-  for (const [id, date] of Object.entries(disableDates)) {
-    const btn = getEl(id);
-    if (btn && now < date) {
-      btn.classList.add('disabled');
-      btn.setAttribute('href', '#');
-      btn.title = `Disponível a partir de ${date.toLocaleDateString('pt-BR')}`;
-      btn.style.pointerEvents = 'none';
-      btn.style.opacity = '0.45';
-    }
-  }
-}
-
 function fecharBanner() { const b = getEl('aviso-temporario'); if (b) b.style.display = 'none'; }
 
 function mostrarBannerAviso() {
@@ -168,20 +143,9 @@ function mostrarBannerAviso() {
 // ====================================================================
 function ajustarCardsPorPerfil(role) {
   const todosCards = document.querySelectorAll('#inspector-screen .inspector-card');
-  const cardInspecao = document.getElementById('btn-inspecao-veicular');
-  const cardEnvio = document.getElementById('btn-envio-informacoes');
   
-  if (role === 'FISCAL') {
-    todosCards.forEach(card => {
-      if (card === cardInspecao || card === cardEnvio) {
-        card.style.display = 'flex';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  } else {
-    todosCards.forEach(card => {
-      card.style.display = 'flex';
-    });
-  }
+  // Todos os cards são exibidos para qualquer perfil logado
+  todosCards.forEach(card => {
+    card.style.display = 'flex';
+  });
 }

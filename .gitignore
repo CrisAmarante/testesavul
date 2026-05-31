@@ -1,26 +1,41 @@
-# Arquivos com credenciais ou configurações locais
-config.js
-.env
-*.local
+```
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
-# Arquivos do editor e IDE
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# Logs e dependências
+# Dependencies
 node_modules/
-*.log
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
 
-# Arquivos do sistema operacional
+# Build artifacts
+dist/
+build/
+target/
+*.pyc
+*.class
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# System files
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# Arquivos de backup
-*.bak
-*.tmp
-
-# Arquivos particulares
-upgrades.txt
+```

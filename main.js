@@ -5,29 +5,17 @@
 const DATA_INICIO_BANNER = new Date('2026-07-10T00:00:00');
 const DATA_FIM_BANNER    = new Date('2026-07-21T00:01:00');
 
-const disableDates = {
-  'btn-osasco': new Date('2026-07-19'),
-  'btn-santana': new Date('2026-07-03')
-};
-
 // ====================================================================
 // INICIALIZAÇÃO
 // ====================================================================
 function initModals() {
   window.modals = {
-    login: new ModalController('modal-login'),
-    clandestinosRto: new ModalController('modal-clandestinos-rto'),
-    levantamentos: new ModalController('modal-levantamentos'),
-    inspecoes5s: new ModalController('modal-inspecoes-5s')
+    login: new ModalController('modal-login')
   };
-  window.modals.inspecaoVeicular = new InspecaoVeicular();
 }
 function initEventListeners() {
   getEl('btn-segunda-tela')?.addEventListener('click', (e) => { e.preventDefault(); getEl('login-error').style.display = 'none'; getEl('password').value = ''; window.modals.login.open(); });
   const loginForm = getEl('login-form'); if (loginForm) { loginForm.removeEventListener('submit', login); loginForm.addEventListener('submit', login); }
-  getEl('btn-clandestinos-rto')?.addEventListener('click', (e) => { e.preventDefault(); window.modals.clandestinosRto.open(); });
-  getEl('btn-levantamentos')?.addEventListener('click', (e) => { e.preventDefault(); window.modals.levantamentos.open(); });
-  getEl('btn-inspecoes-5s')?.addEventListener('click', (e) => { e.preventDefault(); window.modals.inspecoes5s.open(); });
   getEl('btn-fechar-banner')?.addEventListener('click', fecharBanner);
   getEl('btn-envio-informacoes')?.addEventListener('click', (e) => { e.preventDefault(); abrirModalEnvio(); });
   getEl('btn-salvar-rascunho')?.addEventListener('click', salvarRascunho);
@@ -100,8 +88,7 @@ async function inicializar() {
   // Depois verifica se já existe usuário logado
   checkLoginStatus();
   
-  mostrarBannerAviso(); 
-  aplicarBloqueioDeDatas();
+  mostrarBannerAviso();
   
   carregarTerminais().then(() => preencherSelectTerminais());
   
