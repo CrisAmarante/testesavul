@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PENSO - Prancheta Eletrônica</title>
+    <title>PENSO - Relatório de Acidentes</title>
     <link rel="icon" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
@@ -37,11 +37,11 @@
 <button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">🌙</button>
 
 <div id="aviso-temporario" class="banner">
-    <div><strong>ATENÇÃO</strong><br>Período de inspeções 5S da frota Osasco iniciado.</div>
+    <div><strong>ATENÇÃO</strong><br>Sistema de Relatório de Acidentes - Salvamento parcial automático</div>
     <button id="btn-fechar-banner" class="banner-close">×</button>
 </div>
 
-<h1 class="titulo"><i class="fas fa-clipboard-list"></i> PENSO - Prancheta Eletrônica</h1>
+<h1 class="titulo"><i class="fas fa-clipboard-list"></i> PENSO - Relatório de Acidentes</h1>
 
 <!-- TELA INICIAL (NÃO LOGADA) -->
 <div id="main-screen" class="screen-container">
@@ -56,7 +56,7 @@
 <div id="inspector-screen" class="screen-container" style="display: none;">
     <div class="grid-panel">
         <div class="cards-grid">
-            <a href="#" id="btn-envio-informacoes" class="inspector-card" style="display: none;"><div class="card-icon"><i class="fas fa-paper-plane"></i></div>Envio de Informações</a>
+            <a href="#" id="btn-envio-informacoes" class="inspector-card"><div class="card-icon"><i class="fas fa-car-crash"></i></div>Relatório de Acidentes</a>
         </div>
     </div>
     <button onclick="logoutInspector()" class="logout-btn">Sair</button>
@@ -68,85 +68,104 @@
 <!-- MODAL DE LOGIN -->
 <div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="password" id="password" placeholder="Digite seu pin exclusivo" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Senha incorreta!</div><button type="submit" class="button">Entrar</button></form></div></div>
 
-<!-- MODAL ENVIO DE INFORMAÇÕES -->
+<!-- MODAL RELATÓRIO DE ACIDENTES (COM ABAS) -->
 <div id="modal-envio-informacoes" class="modal">
   <div class="modal-content envio-modal-content">
-    <div class="modal-header"><h2 class="modal-title">📋 RELATÓRIO À CHEFIA DO TRÁFEGO</h2><button class="modal-close" onclick="fecharModalEnvio()">×</button></div>
-    <form id="form-envio">
-      <div class="form-section">
-        <label>ÁREA DE DESTINO: <span class="required">*</span></label>
-        <div class="radio-group" id="area-destino-group">
-          <label><input type="radio" name="areaDestino" value="FISCALIZAÇÃO"> FISCALIZAÇÃO</label>
-          <label><input type="radio" name="areaDestino" value="SAF"> SAF</label>
-          <label><input type="radio" name="areaDestino" value="PLANTÃO"> PLANTÃO</label>
-          <label><input type="radio" name="areaDestino" value="OUTRAS ÁREAS"> OUTRAS ÁREAS</label>
-        </div>
-        <div id="campo-outras-area" style="display: none; margin-top: 10px;">
-          <input type="text" id="envio-outras-area" placeholder="Digite a área de destino (ex: Manutenção, Portaria, Seleção...)" style="width: 100%;">
-        </div>
-      </div>
-      <div class="form-section">
-        <label>MOTIVO: <span class="required">*</span></label>
-        <div class="radio-group" id="motivo-group">
-          <label><input type="radio" name="motivo" value="AVARIAS"> AVARIAS</label>
-          <label><input type="radio" name="motivo" value="PEDIDO DE FOLGAS"> PEDIDO DE FOLGAS</label>
-          <label><input type="radio" name="motivo" value="SOLICITAÇÃO DE MATERIAIS"> SOLICITAÇÃO DE MATERIAIS</label>
-          <label><input type="radio" name="motivo" value="OUTROS"> OUTROS</label>
-        </div>
-        <div id="campo-outros-motivo" style="display: none; margin-top: 10px;">
-          <input type="text" id="envio-outros-motivo" placeholder="Descreva o motivo resumidamente" style="width: 100%;">
-        </div>
-      </div>
-      <div class="form-row" id="dados-veiculo">
-        <div class="field"><label>CARRO</label><input type="text" id="envio-carro" placeholder="Carro"></div>
-        <div class="field"><label>LINHA</label><input type="text" id="envio-linha" placeholder="Linha"></div>
-        <div class="field"><label>MOT.</label><input type="text" id="envio-motorista" placeholder="Motorista"></div>
-        <div class="field"><label>COB.</label><input type="text" id="envio-cobrador" placeholder="Cobrador"></div>
-      </div>
-      <div class="form-row" id="dados-hora-sentido">
-        <div class="field"><label>HORA</label><input type="time" id="envio-hora"></div>
-        <div class="field"><label>SENT.</label><input type="text" id="envio-sentido" placeholder="Ex: IDA, VOLTA. Garagem, etc..."></div>
-      </div>
-      <div class="form-section">
-        <label>HISTÓRICO: <span id="historico-contador" style="font-size: 0.7rem; font-weight: normal;">(0/1400)</span></label>
-        <div style="display: flex; gap: 8px; align-items: flex-start;">
-         <textarea id="envio-historico" rows="4" placeholder="Descreva o ocorrido..." style="flex: 1;" maxlength="1400"></textarea>
-          <button type="button" id="btn-microfone" class="btn-icon" title="Ditar histórico (microfone)">🎤</button>
-        </div>
-      </div>
+    <div class="modal-header">
+      <h2 class="modal-title">🚨 RELATÓRIO DE ACIDENTES</h2>
+      <button class="modal-close" onclick="fecharModalEnvio()">×</button>
+    </div>
+    
+    <!-- Abas -->
+    <div class="tabs-container">
+      <button class="tab-btn active" data-tab="analise">📋 Análise do acidente</button>
+      <button class="tab-btn" data-tab="bens">🚗 Bens avariados</button>
+      <button class="tab-btn" data-tab="pessoas">👥 Vítimas e testemunhas</button>
+    </div>
+    
+    <!-- ABA 1: Análise do acidente -->
+    <div id="tab-analise" class="tab-content active">
       <div class="form-row">
-        <div class="field"><label>LOCAL:</label><select id="envio-local"><option value="">Selecione...</option></select></div>
-        <div class="field"><label>RESPONSÁVEL:</label><input type="text" id="envio-responsavel" readonly></div>
-        <div class="field"><label>DATA:</label><input type="date" id="envio-data" max=""></div>
+        <div class="field"><label>📅 Data do acidente *</label><input type="date" id="acidente-data" required></div>
+        <div class="field"><label>⏰ Hora</label><input type="time" id="acidente-hora"></div>
       </div>
-      <div class="action-grid-container">
+      <div class="field"><label>📍 Local *</label><input type="text" id="acidente-local" placeholder="Endereço, ponto de referência" required></div>
+      <div class="form-row">
+        <div class="field"><label>🚛 Prefixo (carro)</label><input type="text" id="acidente-prefixo" placeholder="Digite o prefixo" list="lista-veiculos"></div>
+        <div class="field"><label>👨‍✈️ Motorista (chapa ou nome)</label><input type="text" id="acidente-motorista" placeholder="Chapa ou nome" list="lista-motoristas"></div>
+      </div>
+      <datalist id="lista-veiculos"></datalist>
+      <datalist id="lista-motoristas"></datalist>
+      <div class="field"><label>📝 Descrição da análise</label><textarea id="acidente-descricao" rows="6" placeholder="Descreva a dinâmica do acidente, condições da via, fatores climáticos, etc."></textarea></div>
+      <div class="field"><label>📎 Anexos gerais (até 4 arquivos)</label>
         <div class="action-row">
-          <button type="button" id="btn-anexar" class="btn-secundario" onclick="anexarArquivos()">📎 ANEXAR (até 4)</button>
-          <div id="lista-anexos" class="grid-anexos-preview">
-            <small>Nenhum anexo selecionado (máx. 4)</small>
-          </div>
-        </div>
-        <div class="action-row">
-          <button type="button" id="btn-salvar-rascunho" class="btn-secundario">💾 SALVAR</button>
-          <button type="button" id="btn-enviar-relatorio" class="btn-principal">📤 ENVIAR</button>
-          <button type="button" id="btn-consultar-envios" class="btn-secundario">🔍 CONSULTAR ENVIOS</button>
+          <button type="button" id="btn-anexar-principal" class="btn-secundario" onclick="anexarArquivosPrincipais()">➕ Anexar arquivos</button>
+          <div id="lista-anexos-principais" class="grid-anexos-preview"><small>Nenhum anexo</small></div>
         </div>
       </div>
-    </form>
+    </div>
+    
+    <!-- ABA 2: Bens avariados -->
+    <div id="tab-bens" class="tab-content">
+      <div id="bens-list" class="bens-container"></div>
+      <button type="button" id="btn-adicionar-bem" class="btn-secundario" style="margin-top: 10px;">+ Adicionar bem / veículo</button>
+    </div>
+    
+    <!-- ABA 3: Vítimas e testemunhas -->
+    <div id="tab-pessoas" class="tab-content">
+      <h4>🚑 Vítimas</h4>
+      <div id="vitimas-list" class="pessoas-container"></div>
+      <button type="button" id="btn-adicionar-vitima" class="btn-secundario">+ Adicionar vítima</button>
+      <h4 style="margin-top: 20px;">🗣️ Testemunhas</h4>
+      <div id="testemunhas-list" class="pessoas-container"></div>
+      <button type="button" id="btn-adicionar-testemunha" class="btn-secundario">+ Adicionar testemunha</button>
+    </div>
+    
+    <div class="action-buttons" style="margin-top: 20px;">
+      <button type="button" id="btn-salvar-rascunho" class="btn-secundario">💾 Salvar rascunho</button>
+      <button type="button" id="btn-finalizar-acidente" class="btn-principal">✅ Finalizar relatório</button>
+      <button type="button" id="btn-consultar-acidentes" class="btn-secundario">🔍 Consultar acidentes</button>
+    </div>
   </div>
 </div>
 
-<!-- MODAL LISTA DE ENVIOS -->
-<div id="modal-lista-envios" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">📋 ENVIOS REALIZADOS</h2><button class="modal-close" onclick="fecharModalListaEnvios()">×</button></div><div id="lista-envios-container"></div></div></div>
-
-<!-- MODAL DETALHE DO ENVIO -->
-<div id="modal-detalhe-envio" class="modal modal-detalhe-envio">
+<!-- MODAL CONSULTA DE ACIDENTES (dinâmico) -->
+<div id="modal-consulta-acidentes" class="modal" style="display: none;">
   <div class="modal-content">
     <div class="modal-header">
-      <h2 class="modal-title">📄 DETALHES DO RELATÓRIO</h2>
-      <button class="modal-close" onclick="fecharModalDetalheEnvio()">×</button>
+      <h2 class="modal-title">🔎 Consultar Acidentes</h2>
+      <button class="modal-close" onclick="fecharModalConsulta()">×</button>
     </div>
-    <div id="detalhe-envio-conteudo"></div>
+    <div style="padding: 10px;">
+      <div class="form-row">
+        <div class="field"><label>Prefixo</label><input type="text" id="filtro-prefixo" placeholder="Prefixo do carro"></div>
+        <div class="field"><label>Motorista</label><input type="text" id="filtro-motorista" placeholder="Chapa ou nome"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Data início</label><input type="date" id="filtro-data-inicio"></div>
+        <div class="field"><label>Data fim</label><input type="date" id="filtro-data-fim"></div>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="filtro-status">
+          <option value="">Todos</option>
+          <option value="EM_ANDAMENTO">Em andamento</option>
+          <option value="FINALIZADO">Finalizado</option>
+        </select>
+      </div>
+      <button id="btn-buscar-acidentes" class="btn-principal" style="width:100%; margin-top:10px;">Buscar</button>
+    </div>
+    <div id="lista-acidentes-resultados" style="max-height: 50vh; overflow-y: auto; padding: 10px;"></div>
+  </div>
+</div>
+
+<!-- MODAL DETALHE DO ACIDENTE (visualização) -->
+<div id="modal-detalhe-acidente" class="modal" style="display: none;">
+  <div class="modal-content envio-modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">📄 Detalhes do Acidente</h2>
+      <button class="modal-close" onclick="fecharModalDetalhe()">×</button>
+    </div>
+    <div id="detalhe-acidente-conteudo"></div>
   </div>
 </div>
 
@@ -154,7 +173,7 @@
 <script src="utils.js"></script>
 <script src="api.js"></script>
 <script src="auth.js"></script>
-<script src="envio.js"></script>
+<script src="acidente.js"></script> <!-- novo arquivo JS para relatório de acidentes -->
 <script src="main.js"></script>
 </body>
 </html>
