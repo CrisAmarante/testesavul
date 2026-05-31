@@ -1,44 +1,22 @@
 // ====================================================================
-// VARIÁVEIS DE AUTENTICAÇÃO E PERMISSÕES
+// AUTENTICAÇÃO – Login, logout, verificação de sessão e permissões
 // ====================================================================
+
 let currentUserRole = '';
 
 // ====================================================================
-// VERIFICAR STATUS DE LOGIN (VERSÃO CORRIGIDA)
+// VERIFICAR STATUS DE LOGIN (agora sem INSPETORES)
 // ====================================================================
 async function checkLoginStatus() {
   const logado = localStorage.getItem('inspectorLoggedIn');
   const nome = localStorage.getItem('inspectorName');
   const apelido = localStorage.getItem('inspectorApelido');
-  const roleSalva = localStorage.getItem('inspectorRole');
+  const role = localStorage.getItem('inspectorRole');
   const main = getEl('main-screen');
   const insp = getEl('inspector-screen');
-  const btnEnvio = getEl('btn-envio-informacoes');
   
-  if (logado === 'true' && nome && apelido) {
-    // Tenta obter o papel do localStorage primeiro
-    let role = roleSalva;
-    
-    // Se o INSPETORES já tiver o dado, usa para validar/atualizar
-    if (INSPETORES[apelido]) {
-      const roleFromServer = INSPETORES[apelido].funcao;
-      if (roleFromServer !== role) {
-        role = roleFromServer;
-        localStorage.setItem('inspectorRole', role);
-      }
-    }
-    
-    if (!role) {
-      // Sem papel, não pode continuar – força logout
-      logoutInspector();
-      return;
-    }
-    
+  if (logado === 'true' && nome && apelido && role) {
     currentUserRole = role;
-    
-    // Ajusta todos os cards conforme o perfil
-    ajustarCardsPorPerfil(role);
-    
     main.style.display = 'none';
     insp.style.display = 'flex';
     showWelcomeToast(apelido);
@@ -46,23 +24,24 @@ async function checkLoginStatus() {
     const logoutBtn = insp.querySelector('.logout-btn');
     if (logoutBtn) logoutBtn.innerHTML = `Sair<small>${apelido}</small>`;
   } else {
-    // Usuário não logado: garante que a tela principal apareça e a de inspetor suma
+    // Usuário não logado ou dados incompletos: limpa e mostra tela principal
     localStorage.removeItem('inspectorLoggedIn');
     localStorage.removeItem('inspectorName');
     localStorage.removeItem('inspectorApelido');
     localStorage.removeItem('inspectorRole');
+    currentUserRole = '';
     main.style.display = 'flex';
     insp.style.display = 'none';
   }
 }
 
 // ====================================================================
-// LOGIN (mantido igual, mas com refreshInspetores opcional após sucesso)
+// LOGIN (via JSONP, compatível com o backend atual)
 // ====================================================================
 async function login(e) {
   e.preventDefault();
-  const senha = getEl('password').value.trim();
-  const errorMsg = getEl('login-error');
+  const senha = document.getElementById('password').value.trim();
+  const errorMsg = document.getElementById('login-error');
   const btnSubmit = e.target.querySelector('button[type="submit"]');
   
   const textoOriginal = btnSubmit.innerHTML;
@@ -72,7 +51,7 @@ async function login(e) {
 
   const callbackName = 'loginCallback_' + Date.now();
   
-  window[callbackName] = async function(resposta) {
+  window[callbackName] = function(resposta) {
     delete window[callbackName];
     btnSubmit.innerHTML = textoOriginal;
     btnSubmit.disabled = false;
@@ -82,17 +61,15 @@ async function login(e) {
       localStorage.setItem('inspectorName', resposta.nome);
       localStorage.setItem('inspectorApelido', resposta.apelido);
       localStorage.setItem('inspectorRole', resposta.funcao);
-      
-      // Garante que os dados dos inspetores estejam atualizados (opcional)
-      await refreshInspetores();
+      currentUserRole = resposta.funcao;
       
       registrarLog(resposta.apelido);
       window.modals.login.close();
       checkLoginStatus();
     } else {
       errorMsg.style.display = 'block';
-      getEl('password').value = '';
-      getEl('password').focus();
+      document.getElementById('password').value = '';
+      document.getElementById('password').focus();
     }
   };
 
@@ -108,20 +85,25 @@ async function login(e) {
 }
 
 // ====================================================================
-// DEMAIS FUNÇÕES (logout, toast, banner, etc.) PERMANECEM IGUAIS
+// LOGOUT
 // ====================================================================
 function logoutInspector() {
   localStorage.removeItem('inspectorLoggedIn');
   localStorage.removeItem('inspectorName');
   localStorage.removeItem('inspectorApelido');
   localStorage.removeItem('inspectorRole');
+  currentUserRole = '';
   checkLoginStatus();
 }
 
+// ====================================================================
+// TOAST DE BOAS-VINDAS
+// ====================================================================
 function showWelcomeToast(apelido) {
   const toast = getEl('welcome-toast');
   if (!toast) return;
-  getEl('toast-name').textContent = apelido;
+  const toastName = getEl('toast-name');
+  if (toastName) toastName.textContent = apelido;
   toast.classList.add('show');
   setTimeout(() => hideWelcomeToast(), 3500);
   const clickHandler = () => { hideWelcomeToast(); document.removeEventListener('click', clickHandler); };
@@ -130,22 +112,12 @@ function showWelcomeToast(apelido) {
 
 function hideWelcomeToast() { const t = getEl('welcome-toast'); if (t) t.classList.remove('show'); }
 
+// ====================================================================
+// BANNER (se ainda usado)
+// ====================================================================
 function fecharBanner() { const b = getEl('aviso-temporario'); if (b) b.style.display = 'none'; }
-
 function mostrarBannerAviso() {
   const agora = new Date();
   const banner = getEl('aviso-temporario');
   if (banner) banner.style.display = (agora >= DATA_INICIO_BANNER && agora < DATA_FIM_BANNER) ? 'flex' : 'none';
-}
-
-// ====================================================================
-// AJUSTAR VISIBILIDADE DOS CARDS CONFORME PERFIL
-// ====================================================================
-function ajustarCardsPorPerfil(role) {
-  const todosCards = document.querySelectorAll('#inspector-screen .inspector-card');
-  
-  // Todos os cards são exibidos para qualquer perfil logado
-  todosCards.forEach(card => {
-    card.style.display = 'flex';
-  });
 }
