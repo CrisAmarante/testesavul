@@ -162,18 +162,39 @@ function montarObjetoAcidente() {
 }
 
 // ====================================================================
-// SALVAR RASCUNHO (local + backend)
+// SALVAR RASCUNHO (local + backend) - VERSÃO CORRIGIDA
 // ====================================================================
-function salvarRascunhoAcidente() {
+async function salvarRascunhoAcidente() {
   if (!acidenteAtualId) return;
   const dados = montarObjetoAcidente();
+  // Salva localmente
   localStorage.setItem(`rascunho_acidente_${acidenteAtualId}`, JSON.stringify(dados));
-  const payload = { acao: 'salvar_rascunho_acidente', dados: JSON.stringify(dados) };
-  fetch(URL_PLANILHA, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams(payload)
-  }).catch(console.warn);
+  
+  // Envia ao backend com fetch padrão (sem no-cors)
+  const payload = new URLSearchParams();
+  payload.append('acao', 'salvar_rascunho_acidente');
+  payload.append('dados', JSON.stringify(dados));
+  
+  try {
+    const response = await fetch(URL_PLANILHA, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: payload
+    });
+    const text = await response.text();
+    console.log('Resposta do backend (salvar rascunho):', text);
+    // Se quiser, pode tentar parsear JSON
+    try {
+      const json = JSON.parse(text);
+      if (json.success) console.log('Rascunho salvo no backend com sucesso');
+    } catch(e) {}
+  } catch (error) {
+    console.error('Erro ao salvar rascunho no backend:', error);
+  }
+  
+  // Feedback visual
   const btn = getEl('btn-salvar-rascunho');
   if (btn) {
     const originalText = btn.innerHTML;
@@ -183,40 +204,53 @@ function salvarRascunhoAcidente() {
 }
 
 // ====================================================================
-// FINALIZAR ACIDENTE
+// FINALIZAR ACIDENTE - VERSÃO CORRIGIDA
 // ====================================================================
 async function finalizarAcidente() {
   if (!validarFormularioAcidente()) return;
   const dados = montarObjetoAcidente();
   dados.finalizado = true;
   dados.status = 'FINALIZADO';
-  await fetch(URL_PLANILHA, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams({ acao: 'salvar_rascunho_acidente', dados: JSON.stringify(dados) })
-  });
-  await fetch(URL_PLANILHA, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams({ acao: 'finalizar_acidente', dados: JSON.stringify({ id: acidenteAtualId }) })
-  });
-  alert('✅ Relatório finalizado com sucesso!');
-  localStorage.removeItem(`rascunho_acidente_${acidenteAtualId}`);
-  fecharModalEnvio();
-  const modalConsulta = getEl('modal-consulta-acidentes');
-  if (modalConsulta && modalConsulta.style.display !== 'none') {
-    document.getElementById('btn-buscar-acidentes')?.click();
+  
+  // Primeiro salva rascunho final
+  const payloadSalvar = new URLSearchParams();
+  payloadSalvar.append('acao', 'salvar_rascunho_acidente');
+  payloadSalvar.append('dados', JSON.stringify(dados));
+  
+  try {
+    await fetch(URL_PLANILHA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payloadSalvar
+    });
+    
+    // Depois finaliza
+    const payloadFinalizar = new URLSearchParams();
+    payloadFinalizar.append('acao', 'finalizar_acidente');
+    payloadFinalizar.append('dados', JSON.stringify({ id: acidenteAtualId }));
+    
+    const response = await fetch(URL_PLANILHA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payloadFinalizar
+    });
+    
+    const result = await response.text();
+    console.log('Resposta finalizar:', result);
+    
+    alert('✅ Relatório finalizado com sucesso!');
+    localStorage.removeItem(`rascunho_acidente_${acidenteAtualId}`);
+    fecharModalEnvio();
+    // Recarregar consulta se estiver aberta
+    const modalConsulta = getEl('modal-consulta-acidentes');
+    if (modalConsulta && modalConsulta.style.display !== 'none') {
+      document.getElementById('btn-buscar-acidentes')?.click();
+    }
+  } catch (error) {
+    console.error('Erro ao finalizar:', error);
+    alert('Erro ao finalizar o relatório. Verifique o console.');
   }
 }
-
-function validarFormularioAcidente() {
-  const data = getEl('acidente-data').value;
-  const local = getEl('acidente-local').value;
-  if (!data) { alert('Data do acidente é obrigatória.'); return false; }
-  if (!local) { alert('Local é obrigatório.'); return false; }
-  return true;
-}
-
 // ====================================================================
 // BENS AVARIADOS
 // ====================================================================
