@@ -8,7 +8,8 @@
 // ====================================================================
 const DATA_INICIO_BANNER = new Date('2026-07-10T00:00:00');
 const DATA_FIM_BANNER    = new Date('2026-07-21T00:01:00');
-let currentUserRole = ''; // será preenchido pelo auth.js
+
+// NOTA: A variável currentUserRole é definida em auth.js (global window.currentUserRole)
 
 // ====================================================================
 // INICIALIZAÇÃO DOS MODAIS (apenas login)
@@ -45,7 +46,7 @@ function initEventListeners() {
   const btnFecharBanner = getEl('btn-fechar-banner');
   if (btnFecharBanner) btnFecharBanner.addEventListener('click', fecharBanner);
 
-  // Botão principal: Relatório de Acidentes (antes "btn-envio-informacoes")
+  // Botão principal: Relatório de Acidentes
   const btnAcidente = getEl('btn-envio-informacoes');
   if (btnAcidente) {
     btnAcidente.addEventListener('click', (e) => {
@@ -53,9 +54,6 @@ function initEventListeners() {
       abrirModalEnvio(); // função definida em acidente.js
     });
   }
-
-  // Botão de consulta de acidentes (dentro do modal, mas o evento será atrelado em acidente.js)
-  // Mantido apenas para referência – o evento real será adicionado em acidente.js
 }
 
 // ====================================================================
@@ -122,7 +120,9 @@ async function inicializar() {
   registerServiceWorker();
 
   // Carrega os dados dos inspetores (necessário para validar login)
-  await refreshInspetores();
+  // NOTA: refreshInspetores foi removido porque não existe mais no api.js
+  // Se você ainda usa INSPETORES em algum lugar, comente ou remova esta linha.
+  // await refreshInspetores();
 
   // Verifica se já existe usuário logado
   checkLoginStatus();
@@ -130,25 +130,25 @@ async function inicializar() {
   // Mostra banner se aplicável
   mostrarBannerAviso();
 
-  // Carrega terminais (útil se houver select, mas pode ser removido se não usar)
-  await carregarTerminais().then(() => preencherSelectTerminais());
+  // Carregamento de terminais removido (não utilizado no novo sistema)
+  // Se precisar deles, descomente as linhas abaixo:
+  // await carregarTerminais().then(() => preencherSelectTerminais());
 
   // Eventos de retorno à página (pageshow / visibilitychange) recarregam estado
   window.addEventListener('pageshow', async (e) => {
     if (e.persisted) {
-      await refreshInspetores();
       checkLoginStatus();
-      await carregarTerminais(true);
-      preencherSelectTerminais();
+      // Se houver necessidade de recarregar terminais, descomente:
+      // await carregarTerminais(true);
+      // preencherSelectTerminais();
     }
   });
 
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
-      await refreshInspetores();
       checkLoginStatus();
-      await carregarTerminais(true);
-      preencherSelectTerminais();
+      // await carregarTerminais(true);
+      // preencherSelectTerminais();
     }
   });
 }
