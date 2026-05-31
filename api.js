@@ -1,13 +1,16 @@
-let INSPETORES = {};
-let refreshPromise = null;
+// ====================================================================
+// API.JS – Apenas funções de rede e terminais (sem INSPETORES)
+// ====================================================================
+
 let terminaisCache = [];
 let terminaisTimestamp = 0;
 const TERMINAIS_CACHE_DURACAO = 30 * 60 * 1000; // 30 minutos
 let terminaisPromise = null;
 let todosTerminaisCache = [];
 let todosTerminaisPromise = null;
+
 // ====================================================================
-// LOG
+// LOG (mantido – apenas registra login bem-sucedido)
 // ====================================================================
 async function registrarLog(nomeApelido) {
   try {
@@ -17,37 +20,7 @@ async function registrarLog(nomeApelido) {
     await fetch(URL_PLANILHA, { method: "POST", body: formData, mode: "no-cors" });
   } catch (err) { console.warn("Falha ao registrar log:", err); }
 }
-// ====================================================================
-// CARREGAR INSPETORES
-// ====================================================================
-function processarDadosPlanilha(dados) {
-  if (Array.isArray(dados)) {
-    const novoObjeto = {};
-    dados.forEach(row => {
-      if (row.apelido && row.hash && row.ativo === "SIM") {
-        novoObjeto[row.apelido] = { hash: row.hash, nome: row.nome, funcao: row.funcao };
-      }
-    });
-    INSPETORES = novoObjeto;
-  } else { INSPETORES = dados || {}; }
-}
-async function refreshInspetores() {
-  if (refreshPromise) return refreshPromise;
-  refreshPromise = new Promise((resolve, reject) => {
-    const callbackName = 'processarDadosPlanilha_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    window[callbackName] = function(dados) {
-      processarDadosPlanilha(dados);
-      delete window[callbackName];
-      refreshPromise = null;
-      resolve();
-    };
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?callback=${callbackName}&_=${Date.now()}`;
-    script.onerror = () => { delete window[callbackName]; refreshPromise = null; reject(); };
-    document.body.appendChild(script);
-  });
-  return refreshPromise;
-}
+
 // ====================================================================
 // TERMINAIS (apenas SIM) com cache
 // ====================================================================
@@ -79,18 +52,9 @@ function carregarTerminais(forceRefresh = false) {
   });
   return terminaisPromise;
 }
-function preencherSelectTerminais() {
-  const select = getEl('terminal');
-  if (!select) return;
-  carregarTerminais().then(terminais => {
-    const valorAtual = select.value;
-    select.innerHTML = '<option value="">Selecione...</option>';
-    terminais.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.textContent = t; select.appendChild(opt); });
-    if (valorAtual && terminais.includes(valorAtual)) select.value = valorAtual;
-  });
-}
+
 // ====================================================================
-// TERMINAIS (todos, para local no envio)
+// TERMINAIS (todos, para local no envio – se ainda usado)
 // ====================================================================
 function carregarTodosTerminais(forceRefresh = false) {
   if (!forceRefresh && todosTerminaisCache.length) return Promise.resolve(todosTerminaisCache);
@@ -115,6 +79,18 @@ function carregarTodosTerminais(forceRefresh = false) {
   });
   return todosTerminaisPromise;
 }
+
+function preencherSelectTerminais() {
+  const select = getEl('envio-local');
+  if (!select) return;
+  carregarTerminais().then(terminais => {
+    const valorAtual = select.value;
+    select.innerHTML = '<option value="">Selecione...</option>';
+    terminais.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.textContent = t; select.appendChild(opt); });
+    if (valorAtual && terminais.includes(valorAtual)) select.value = valorAtual;
+  });
+}
+
 function preencherSelectLocal() {
   const select = getEl('envio-local');
   if (!select) return;
