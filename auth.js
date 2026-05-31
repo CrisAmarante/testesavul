@@ -2,7 +2,8 @@
 // AUTENTICAÇÃO – Login, logout, verificação de sessão e permissões
 // ====================================================================
 
-let currentUserRole = '';
+// Variável global de papel do usuário (acessível a todos os módulos)
+window.currentUserRole = '';
 
 // ====================================================================
 // VERIFICAR STATUS DE LOGIN (agora sem INSPETORES)
@@ -16,7 +17,7 @@ async function checkLoginStatus() {
   const insp = getEl('inspector-screen');
   
   if (logado === 'true' && nome && apelido && role) {
-    currentUserRole = role;
+    window.currentUserRole = role;
     main.style.display = 'none';
     insp.style.display = 'flex';
     showWelcomeToast(apelido);
@@ -29,7 +30,7 @@ async function checkLoginStatus() {
     localStorage.removeItem('inspectorName');
     localStorage.removeItem('inspectorApelido');
     localStorage.removeItem('inspectorRole');
-    currentUserRole = '';
+    window.currentUserRole = '';
     main.style.display = 'flex';
     insp.style.display = 'none';
   }
@@ -61,7 +62,7 @@ async function login(e) {
       localStorage.setItem('inspectorName', resposta.nome);
       localStorage.setItem('inspectorApelido', resposta.apelido);
       localStorage.setItem('inspectorRole', resposta.funcao);
-      currentUserRole = resposta.funcao;
+      window.currentUserRole = resposta.funcao;
       
       registrarLog(resposta.apelido);
       window.modals.login.close();
@@ -92,7 +93,7 @@ function logoutInspector() {
   localStorage.removeItem('inspectorName');
   localStorage.removeItem('inspectorApelido');
   localStorage.removeItem('inspectorRole');
-  currentUserRole = '';
+  window.currentUserRole = '';
   checkLoginStatus();
 }
 
