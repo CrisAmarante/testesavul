@@ -44,7 +44,6 @@ function fecharModalEnvio() {
 // ====================================================================
 // CONTADOR DE CARACTERES DO HISTÓRICO
 // ====================================================================
-// Substitua a função iniciarContadorHistorico por esta versão
 function iniciarContadorHistorico() {
   const historicoField = getEl('envio-historico');
   const contadorSpan = getEl('historico-contador');
@@ -60,7 +59,6 @@ function iniciarContadorHistorico() {
     let ultrapassouCaracteres = texto.length > MAX_CARACTERES;
     
     if (ultrapassouLinhas) {
-      // Trunca para o máximo de linhas
       const novasLinhas = linhas.slice(0, MAX_LINHAS);
       historicoField.value = novasLinhas.join('\n');
       texto = historicoField.value;
@@ -69,7 +67,6 @@ function iniciarContadorHistorico() {
     }
     
     if (ultrapassouCaracteres) {
-      // Trunca para o máximo de caracteres
       historicoField.value = texto.substring(0, MAX_CARACTERES);
       texto = historicoField.value;
       ultrapassouCaracteres = false;
@@ -88,7 +85,6 @@ function iniciarContadorHistorico() {
   
   historicoField.addEventListener('input', atualizarContador);
   historicoField.addEventListener('keydown', function(e) {
-    // Impede nova linha se já atingiu o limite de linhas
     if (e.key === 'Enter') {
       const linhasAtuais = historicoField.value.split(/\r?\n/).length;
       if (linhasAtuais >= MAX_LINHAS) {
@@ -286,7 +282,6 @@ function validarFormulario() {
   if (!data) { alert('Preencha a Data.'); return false; }
   const hoje = new Date().toISOString().split('T')[0];
   if (data > hoje) { alert('A data não pode ser maior que a data atual.'); return false; }
-  // Nova validação do histórico
   const historico = getEl('envio-historico').value;
   const MAX_CARACTERES = 1400;
   const MAX_LINHAS = 16;
@@ -565,7 +560,7 @@ function limparFormularioEnvio() {
 }
 
 // ====================================================================
-// CONSULTAS DE ENVIOS - VERSÃO ROBUSTA (FETCH + FALLBACK)
+// CONSULTAS DE ENVIOS - COM ENVIO DO PAPEL AO BACKEND
 // ====================================================================
 function consultarEnvios() {
   consultarEnviosComFiltro(null, null, null, null, null);
@@ -579,9 +574,15 @@ function consultarEnviosComFiltro(dataInicio, dataFim, motivo, carro, fiscalFilt
   if (motivo) params.append('motivo', motivo);
   if (carro) params.append('carro', carro);
   if (fiscalFiltro) params.append('fiscalFiltro', fiscalFiltro);
-  if (window.currentUserRole === 'FISCAL') {
-    params.append('fiscal', localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName'));
-  }
+  
+  // Obtém papel e apelido do usuário logado
+  const role = window.currentUserRole || localStorage.getItem('inspectorRole') || '';
+  const apelido = localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName') || '';
+  
+  // Envia o papel e o apelido para o backend aplicar as regras de permissão
+  params.append('papel', role);
+  params.append('apelido', apelido);
+  
   return _executarConsultaEnvios(params);
 }
 
@@ -674,8 +675,10 @@ function mostrarListaEnvios(dados) {
     
     let html = '';
     dados.forEach((envio, idx) => {
+      // Exibe o responsável (apelido) acima do motivo
       html += `
         <div class="envio-item" data-idx="${idx}" style="cursor: pointer;">
+          <strong>👤 RESPONSÁVEL: ${envio.fiscal || 'N/I'}</strong><br>
           <strong>MOTIVO: ${envio.motivo || 'N/I'}</strong><br>
           CARRO: ${envio.carro || 'N/I'} | DATA: ${formatarData(envio.data)} | MOTORISTA: ${envio.motorista || 'N/I'}
         </div>
@@ -702,7 +705,7 @@ function mostrarListaEnvios(dados) {
 }
 
 // ====================================================================
-// MOSTRAR DETALHES DO ENVIO
+// MOSTRAR DETALHES DO ENVIO (idêntico ao original)
 // ====================================================================
 function mostrarDetalheEnvio(envio) {
   const modal = getEl('modal-detalhe-envio');
@@ -785,7 +788,7 @@ function mostrarDetalheEnvio(envio) {
 }
 
 // ====================================================================
-// PROCESSAR LINK DO ANEXO (THUMBNAIL)
+// PROCESSAR LINK DO ANEXO (THUMBNAIL) - idêntico ao original
 // ====================================================================
 function processarLinkAnexo(link) {
   link = link.trim();
@@ -830,7 +833,7 @@ function processarLinkAnexo(link) {
 }
 
 // ====================================================================
-// EXPORTAÇÃO PARA PDF COM LIMITAÇÃO DE HISTÓRICO (16 linhas ou 1400 caracteres)
+// EXPORTAÇÃO PARA PDF - idêntico ao original
 // ====================================================================
 function limitarHistorico(texto, limiteCaracteres = 1400, limiteLinhas = 16) {
   if (!texto) return { texto: '', foiTruncado: false };
@@ -838,7 +841,6 @@ function limitarHistorico(texto, limiteCaracteres = 1400, limiteLinhas = 16) {
   let textoFinal = texto;
   let motivoTruncamento = '';
   
-  // Limite por caracteres
   if (textoFinal.length > limiteCaracteres) {
     let textoTruncado = textoFinal.substring(0, limiteCaracteres);
     const ultimoEspaco = textoTruncado.lastIndexOf(' ');
@@ -849,7 +851,6 @@ function limitarHistorico(texto, limiteCaracteres = 1400, limiteLinhas = 16) {
     motivoTruncamento = `Limite de ${limiteCaracteres} caracteres`;
   }
   
-  // Limite por linhas (contando quebras de linha)
   const linhas = textoFinal.split(/\r?\n/);
   if (linhas.length > limiteLinhas) {
     const linhasTruncadas = linhas.slice(0, limiteLinhas);
@@ -885,7 +886,6 @@ async function exportarParaPDF(envio) {
     const margin = 20;
     let y = 22;
 
-    // Cabeçalho
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.text("AUTO VIAÇÃO URUBUPUNGÁ LTDA.", pageWidth/2, y, { align: "center" });
@@ -902,7 +902,6 @@ async function exportarParaPDF(envio) {
 
     y += 18;
 
-    // Campos fixos
     doc.setFontSize(12);
     const leftCol = margin;
     const rightCol = pageWidth / 2 + 12;
@@ -924,7 +923,6 @@ async function exportarParaPDF(envio) {
     doc.text("Sr. Chefe", margin, y);
     y += 10;
 
-    // ========== HISTÓRICO COM LIMITAÇÃO ==========
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11.5);
 
@@ -958,7 +956,6 @@ async function exportarParaPDF(envio) {
 
     y += 22;
 
-    // Rodapé
     const dataFormatada = formatarData(envio.data) || '__/__/____';
     const responsavel = envio.fiscal || '________________';
     const localSelecionado = envio.local || 'Não informado';
@@ -1098,7 +1095,7 @@ function fecharModalListaEnvios() {
 }
 
 // ====================================================================
-// MICROFONE (Reconhecimento de Voz)
+// MICROFONE - idêntico ao original
 // ====================================================================
 let reconhecimentoVoz = null;
 
@@ -1148,7 +1145,6 @@ function iniciarReconhecimentoVoz() {
       novoTexto = textoAtual + '\n' + texto;
     }
     
-    // Verifica limites antes de aplicar
     const MAX_CARACTERES = 1400;
     const MAX_LINHAS = 16;
     const linhas = novoTexto.split(/\r?\n/).length;
