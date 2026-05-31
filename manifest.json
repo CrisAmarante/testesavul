@@ -1,14 +1,15 @@
+// manifest.json
 {
-  "name": "Testes de campo",
-  "short_name": "PENSO",
-  "description": "Prancheta eletrônica -Relatórios",
-  "id": "/testesavul/",
+  "name": "PENSO - Relatório de Acidentes",
+  "short_name": "PENSO Acidentes",
+  "description": "Sistema para registro, consulta e gestão de ocorrências de acidentes com salvamento parcial e controle de permissões.",
+  "id": "/penso-acidentes/",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#d11a2d",
   "theme_color": "#d11a2d",
   "orientation": "portrait-primary",
-  "version": "2026.05.11-vs3.1.7.5",
+  "version": "2026.05.31-v1.0.0",
   "icons": [
     {
       "src": "icon.png",
