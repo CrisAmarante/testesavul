@@ -102,7 +102,17 @@ Caso o tipo de acidente seja selecionado seja Acidente / colisão sem vítimas, 
 **** Aba Análise do acidente ****
 
 Incluir um subitem chamado Perfil da sinalização entre as condições de visibilidade e o atendimento ao acidente
-No prefil da sinilização criar checkbox de seleção única Perfil da Via com os itens: Reta, Curva; Na mesma linha o checkbox de seleção única com os itens: Em plano, Em Aclíve, Em declive
+No Perfil da sinalização criar checkbox de seleção única 
+Perfil da Via com os itens: Reta, Curva; Na mesma linha o checkbox de seleção única com os itens: Em plano, Em Aclíve, Em declive
+Na outra linha: criar checkbox Tipo de Via (seleção única): Normal, cruzamento, bifurcação, pátio / estacionamento;
+na outra linha criar o checkbox Sentido da Via, também em seleção única: Mão única, Mão dupla; >>> na mesma linha, um checkbox também de seleção única Nº de faixas: uma, duas, três ou mais.
+Após o perfil da via inserir o checkbox de seleção única Condição da via, com os itens de seleção única divididos em linhas, sendo:
+Linha 1 - Pavimentação: Asfalto, Cascalho, Paralelepído, Concreto, Terra;
+linha 2 - Conservação: Boa, Danificada, Em obras. // Situação: Seca, Molhada, Alagada / enlameada;
+linha 3 - Sinalização de solo: Inexistente, faixa simples, faixa dupla contínua, faixa dupla seccionada, faixa de pedestres / ciclofaixa, PARE, Preferencial
+linha 4 - Sinalização vertical (placas): Pare, Sentido da via, Velocidade, Faixa exclusiva, Caminhões e ônibus à direita, Outros (especifique)
+linha 5 - Semáforo: Inxistente, Inoperante ou com defeito, Normal
+
 O checkbox situação do ônibus no momento do acidente (estacionado, parado, Transitando) deve ser de selação única;
 O checkbox situação quando parado deve ser de seleção única (no pontofinal, no semáforo, no trânsito, embarcando / desembarcando) deve ser de selação única;
 O checkbox situação quando transitando deve ser de seleção única (em frente, em marcha a ré, manobrando) deve ser de seleção única;
