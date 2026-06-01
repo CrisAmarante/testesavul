@@ -1,0 +1,90 @@
+Melhorias:
+****1ª ABA - CADASTRO DE ACIDENTE ****
+Aba Análise do acidente: Mudar o nome para cadastro de acidente.
+=====CHECKBOX TIPO DE ACIDENTE====
+na primeira linha da ABA um checkbox de seleção única, Com o subtítulo TIPO DE ACIDENTEcom os seguintes itens: Acidente / Colisão sem vítimas; Atropelamento/ Queda acidental / Colisão Com vítimas;
+====DADOS DO ACIDENTE====
+Na linha seguinte, o campo Data/Hora
+Na linha seguinte os dados de endereço do acidente, divididos em Logradouro (Rua, Avenida, Estrada...); Bairro; Cidade; CEP (inserir buscador de CEP, SE POSSÍVEL).
+Na linha seguinte, os dados sobre a linha: Código da linha; Nome da linha; Sentido da linha;(APÓS A DIGITAÇÃO DO CAMPO CÓDIGO DA LINHA, OS DADOS SERÃO PREENCHIDOS COM DADOS DA ABA DE CADASTRO DE LINHAS)
+====DADOS DO ÔNIBUS====
+Após o prefixo (DIGITADO), na mesma linha, inserir os campos: Placa; Renavan; Ano de fabricação;(APÓS A DIGITAÇÃO DO CAMPO PREFIXO, OS DADOS SERÃO PREENCHIDOS COM DADOS DA ABA DE CADASTRO DE VEÍCULOS)
+Na linha seguinte: Marca; Modelo; Cor; Cidade.
+====DADOS DO MOTORISTA====
+Na linha seguinte, os dados do motorista com os campos: Chapa; Nome de escala (apelido); Nome completo; CNH; Validade da CNH:(APÓS A DIGITAÇÃO DO CAMPO CHAPA, OS DADOS SERÃO PREENCHIDOS COM DADOS DA ABA DE CADASTRO DE OPERADORES)
+Na linha seguinte, ainda com os dados do motorista: Endereço, separado em Logradouro; Bairro; Cidade; Complemento;(APÓS A DIGITAÇÃO DO CAMPO CHAPA, OS DADOS SERÃO PREENCHIDOS COM DADOS DA ABA DE CADASTRO DE OPERADORES)
+Na linha seguinte, ainda com os dados do motorista: Nascimento (data); Naturalidade (Cidade / sigla do estado); Nome da mãe; Celular;(APÓS A DIGITAÇÃO DO CAMPO CHAPA, OS DADOS SERÃO PREENCHIDOS COM DADOS DA ABA DE CADASTRO DE OPERADORES)
+====HISTÓRICO DO MOTORISTA====
+Campo atual da descrição (o antigo campo descrição da análise), com a possibilidade de utliziar o microfone para grava, como atualmente.
+Abaixo do campo o upload de foto da CNH do motorista, para validação do histórico (esta foto não conta como anexo da ocorrência)
+====ANEXOS, E SALVAMENTO=====
+Campo de anexos: Permitir até 6 fotos, nomeadas como fotos do coletivo.
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+
+****2ª ABA - SERÁ CRIADA COM O NOME "ANÁLISE DO ACIDENTE" ****
+
+==== SITUAÇÃO DO ÔNIBUS NO MOMENTO DO ACIDENTE====
+
+CHECKBOX SITUAÇÃO DO ÔNIBUS: ESTACIONADO; PARADO; TRANSITANDO.
+SE SITUAÇÃO = TRANSITANDO HABILITAR CHECKBOX MOVIMENTAÇÃO DO ÔNIBUS: EM FRENTE; EM MARCHA A RÉ, MANOBRANDO E HABILITAR UM CAMPO: VELOCIDADE;
+SE SITUAÇÃO = PARADO HABILITAR CHECKBOX: NO PONTO FINAL; NO SEMÁFORO; NO TRÂNSITO; EMBARCANDO/DESEMBARCANDO.
+APÓS INSERIR CAMPO: LOTAÇÃO
+CHECKBOX PARTE AVARIADA (DO ÔNIBUS): LATERAL ESQUERDA; LATERAL DIREITA; TRASEIRA; FRONTAL; NÃO SE APLICA
+CHECKBOX DANOS RESULTANTES DO ACIDENTE: VEÍCULO(S); VÍTIMA(S);INSTALAÇÕES PÚBLICAS (PONTOS, PLACAS. POSTES, ETC..); IMÓVEIS -[SELEÇÃO MÚLTIPLA]
+
+====CONDIÇÕES CLIMÁTICAS====
+CHECKBOX PERÍODO: DIA; NOITE; ENTARDECER/ALVORECER;
+CHECKBOX CLIMA: TEMPO BOM / ENSOLARADO; NEBLINA; CHUVOSO;
+
+====CONDIÇÕES DE VISIBILIDADE NO ACIDENTE====
+CHECKBOX ILUMINAÇÃO: NATURAL / SOL; NOITE COM ILUMINAÇÃO ARTIFICIAL; PENUMBRA; NOITE SEM ILUMINAÇÃO ARTIFICIAL
+CHECKBOX VISIBILIDADE DO ACIDENTE: TOTAL; PARCIAL; NULA
+CHECKBOX TIPO DE ACIDENTE: CHOQUE; ALBARROAMENTO; COLISÃO;
+
+====ATENDIMENTO DO ACIDENTE====
+
+CHECKBOX PREENCHIMENTO DA OCORRENCIA: NO LOCAL DOS FATOS; NA GARAGEM; NO TERMINAL; DELEGACIA OU PRONTO SOCORRO; OUTROS (DESCREVA)
+CHECKBOX AUTORIDADES PRESENTES: PM; SAMU; BOMBEIROS; RESGATE; POLÍCIA CIVIL; GCM; TRANSITO; POLÍCIA RODOVIÁRIA; [SELEÇÃO MÚLTIPLA]
+PARA CADA ITEM SELECIONADO NO CHECKBOS AUTORIDADES PRESENTES HABILITAR UM CAMPO PARA PREENCHIMENTO DE DADOS COM OS SEGUINTES CAMPOS:
+Nº VIATURA; RESPONSÁVEL; DISTRITO/ BATALHÃO/ DELEGACIA;
+CHECKBOX PARA ÓRGÃO GESTOR: SIM; NÃO;
+SE CHECKBOX PARA ÓRGÃO GESTOR= "SIM", HABILITAR CAMPOS PARA PREENCHIMENTO: ÓRGÃO; RESPONSÁVEL; PROTOCOLO DE ATENDIMENTO;
+
+Novo Campo de anexos: Permitir até 6 fotos, nomeadas como fotos do local.
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+
+
+****3ª ABA - BENS AVARIADOS****
+
+Substituir os campos dinâmicos por campos fixos no formulário, mantendo o restante das funcionalidades
+para cada veículo incluído ciar um novo Campo de anexos: Permitir até 6 fotos, fotos do terceiro.
+Cada novo veículo deve ser nomeado em sequencia numérica (ex. veículo 1, veículo 2, veículo 3, etc...)
+
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+
+****4ª ABA - VÍTIMAS****
+
+Substituir os campos dinâmicos por campos fixos no formulário, mantendo o restante das funcionalidades;
+Cada nova vítima deve ser nomeada em sequencia númerica (ex. Vítima 1, vítima 2, vítima 3, etc...)
+
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+
+****5ª ABA - TESTEMUNHAS****
+
+Substituir os campos dinâmicos por campos fixos no formulário, mantendo o restante das funcionalidades;
+Cada nova testemunha deve ser nomeada em sequencia númerica (ex. Vítima 1, vítima 2, vítima 3, etc...)
+
+
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+
+****6ª ABA - PARECER DA OPERAÇÃO****
+
+CAMPO: INSPETOR (CARREGADO DINAMICAMENTE COM O APELIDO DO INSPETOR LOGADO); CHAPA; NOME COMPLETO (CARREGADOS DA ABA LOGIN).
+
+CAMPO VISÃO DO INSPETOR: ÁREA DE TEXTO LONGO, SEMELHANTE E COM TODAS AS REGRAS DO HISTÓRICO ANTERIOR;
+CHECKBOX ATRIBUIÇÃO DE CULPA: TERCEIRO; NOSSO MOTORISTA; OUTROS (DIGITE)
+CAMPO: MOTIVO (TEXTO);
+
+No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
+INSERIR NESTA ABA O BOTÃO SALVAR E ENVIAR. (ESTE BOTÃO É O ÚNICO QUE ENCERRA A OCORRÊNCIA).
+
