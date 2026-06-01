@@ -68,7 +68,7 @@
 <!-- MODAL DE LOGIN -->
 <div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="password" id="password" placeholder="Digite seu pin exclusivo" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Senha incorreta!</div><button type="submit" class="button">Entrar</button></form></div></div>
 
-<!-- MODAL RELATÓRIO DE ACIDENTES (COM ABAS) -->
+<!-- MODAL RELATÓRIO DE ACIDENTES (COM 6 ABAS) -->
 <div id="modal-envio-informacoes" class="modal">
   <div class="modal-content envio-modal-content">
     <div class="modal-header">
@@ -78,52 +78,333 @@
     
     <!-- Abas -->
     <div class="tabs-container">
-      <button class="tab-btn active" data-tab="analise">📋 Análise do acidente</button>
-      <button class="tab-btn" data-tab="bens">🚗 Bens avariados</button>
-      <button class="tab-btn" data-tab="pessoas">👥 Vítimas e testemunhas</button>
+      <button class="tab-btn active" data-tab="cadastro">📋 Cadastro de Acidente</button>
+      <button class="tab-btn" data-tab="analise">🔍 Análise do Acidente</button>
+      <button class="tab-btn" data-tab="bens">🚗 Bens Avariados</button>
+      <button class="tab-btn" data-tab="vitimas">🚑 Vítimas</button>
+      <button class="tab-btn" data-tab="testemunhas">🗣️ Testemunhas</button>
+      <button class="tab-btn" data-tab="parecer">📝 Parecer da Operação</button>
     </div>
     
-    <!-- ABA 1: Análise do acidente -->
-    <div id="tab-analise" class="tab-content active">
-      <div class="form-row">
-        <div class="field"><label>📅 Data do acidente *</label><input type="date" id="acidente-data" required></div>
-        <div class="field"><label>⏰ Hora</label><input type="time" id="acidente-hora"></div>
-      </div>
-      <div class="field"><label>📍 Local *</label><input type="text" id="acidente-local" placeholder="Endereço, ponto de referência" required></div>
-      <div class="form-row">
-        <div class="field"><label>🚛 Prefixo (carro)</label><input type="text" id="acidente-prefixo" placeholder="Digite o prefixo" list="lista-veiculos"></div>
-        <div class="field"><label>👨‍✈️ Motorista (chapa ou nome)</label><input type="text" id="acidente-motorista" placeholder="Chapa ou nome" list="lista-motoristas"></div>
-      </div>
-      <datalist id="lista-veiculos"></datalist>
-      <datalist id="lista-motoristas"></datalist>
-      <div class="field"><label>📝 Descrição da análise</label><textarea id="acidente-descricao" rows="6" placeholder="Descreva a dinâmica do acidente, condições da via, fatores climáticos, etc."></textarea></div>
-      <div class="field"><label>📎 Anexos gerais (até 4 arquivos)</label>
-        <div class="action-row">
-          <button type="button" id="btn-anexar-principal" class="btn-secundario" onclick="anexarArquivosPrincipais()">➕ Anexar arquivos</button>
-          <div id="lista-anexos-principais" class="grid-anexos-preview"><small>Nenhum anexo</small></div>
+    <!-- ABA 1: CADASTRO DE ACIDENTE -->
+    <div id="tab-cadastro" class="tab-content active">
+      <fieldset class="form-fieldset">
+        <legend>✓ Tipo de Acidente</legend>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="tipo-acidente" value="acidente_colisao_sem_vitimas"> Acidente / Colisão sem vítimas</label>
+          <label><input type="radio" name="tipo-acidente" value="atropelamento_queda"> Atropelamento / Queda acidental</label>
+          <label><input type="radio" name="tipo-acidente" value="colisao_com_vitimas"> Colisão Com vítimas</label>
         </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>📅 Dados do Acidente</legend>
+        <div class="form-row">
+          <div class="field"><label>Data *</label><input type="date" id="cadastro-data" required></div>
+          <div class="field"><label>Hora *</label><input type="time" id="cadastro-hora" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field" style="flex: 2;"><label>Logradouro *</label><input type="text" id="cadastro-logradouro" placeholder="Rua, Avenida, Estrada..." required></div>
+          <div class="field"><label>Bairro *</label><input type="text" id="cadastro-bairro" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Cidade *</label><input type="text" id="cadastro-cidade" required></div>
+          <div class="field"><label>CEP</label><input type="text" id="cadastro-cep" placeholder="00000-000" maxlength="9"><button type="button" class="btn-buscar-cep" onclick="buscarCEP()">🔍</button></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>🚌 Dados da Linha</legend>
+        <div class="form-row">
+          <div class="field"><label>Código da Linha *</label><input type="text" id="cadastro-codigo-linha" placeholder="Digite o código" onchange="buscarDadosLinha()"></div>
+          <div class="field"><label>Nome da Linha</label><input type="text" id="cadastro-nome-linha" readonly></div>
+          <div class="field"><label>Sentido</label><input type="text" id="cadastro-sentido-linha" readonly></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>🚍 Dados do Ônibus</legend>
+        <div class="form-row">
+          <div class="field"><label>Prefixo *</label><input type="text" id="cadastro-prefixo" placeholder="Digite o prefixo" onchange="buscarDadosVeiculo()" list="lista-veiculos"></div>
+          <div class="field"><label>Placa</label><input type="text" id="cadastro-placa" readonly></div>
+          <div class="field"><label>Renavan</label><input type="text" id="cadastro-renavan" readonly></div>
+          <div class="field"><label>Ano Fabricação</label><input type="text" id="cadastro-ano-fab" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Marca</label><input type="text" id="cadastro-marca" readonly></div>
+          <div class="field"><label>Modelo</label><input type="text" id="cadastro-modelo" readonly></div>
+          <div class="field"><label>Cor</label><input type="text" id="cadastro-cor" readonly></div>
+          <div class="field"><label>Cidade</label><input type="text" id="cadastro-cidade-onibus" readonly></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>👨‍✈️ Dados do Motorista</legend>
+        <div class="form-row">
+          <div class="field"><label>Chapa *</label><input type="text" id="cadastro-chapa" placeholder="Digite a chapa" onchange="buscarDadosMotorista()" list="lista-motoristas"></div>
+          <div class="field"><label>Nome de Escala (Apelido)</label><input type="text" id="cadastro-apelido" readonly></div>
+          <div class="field" style="flex: 2;"><label>Nome Completo</label><input type="text" id="cadastro-nome-completo" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>CNH</label><input type="text" id="cadastro-cnh" readonly></div>
+          <div class="field"><label>Validade CNH</label><input type="date" id="cadastro-validade-cnh" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field" style="flex: 2;"><label>Logradouro</label><input type="text" id="cadastro-moto-logradouro" readonly></div>
+          <div class="field"><label>Bairro</label><input type="text" id="cadastro-moto-bairro" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Cidade</label><input type="text" id="cadastro-moto-cidade" readonly></div>
+          <div class="field"><label>Complemento</label><input type="text" id="cadastro-moto-complemento" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Nascimento</label><input type="date" id="cadastro-nascimento" readonly></div>
+          <div class="field"><label>Naturalidade</label><input type="text" id="cadastro-naturalidade" placeholder="Cidade/UF" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="field" style="flex: 2;"><label>Nome da Mãe</label><input type="text" id="cadastro-nome-mae" readonly></div>
+          <div class="field"><label>Celular</label><input type="tel" id="cadastro-celular" readonly></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>📝 Histórico do Motorista</legend>
+        <div class="field">
+          <label>Descrição do Histórico</label>
+          <textarea id="cadastro-historico" rows="4" placeholder="Descreva o histórico..."></textarea>
+          <button type="button" class="btn-gravar" onclick="gravarHistorico()"><i class="fas fa-microphone"></i> Gravar</button>
+        </div>
+        <div class="field">
+          <label>Foto da CNH (para validação)</label>
+          <input type="file" id="cadastro-foto-cnh" accept="image/*" onchange="handleFotoCNH(this)">
+          <div id="preview-foto-cnh" class="preview-imagem"></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>📎 Anexos - Fotos do Coletivo (até 6)</legend>
+        <div class="action-row">
+          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo()">➕ Adicionar fotos</button>
+          <div id="lista-fotos-coletivo" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
+        </div>
+      </fieldset>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaCadastro()">💾 SALVAR DADOS DA ABA</button>
       </div>
     </div>
     
-    <!-- ABA 2: Bens avariados -->
+    <!-- ABA 2: ANÁLISE DO ACIDENTE -->
+    <div id="tab-analise" class="tab-content">
+      <fieldset class="form-fieldset">
+        <legend>🚌 Situação do Ônibus no Momento do Acidente</legend>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="situacao-onibus" value="estacionado" onchange="toggleSituacaoOnibus()"> Estacionado</label>
+          <label><input type="checkbox" name="situacao-onibus" value="parado" onchange="toggleSituacaoOnibus()"> Parado</label>
+          <label><input type="checkbox" name="situacao-onibus" value="transitando" onchange="toggleSituacaoOnibus()"> Transitando</label>
+        </div>
+        
+        <div id="div-movimentacao" class="hidden-field">
+          <label>Movimentação do Ônibus:</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="movimentacao" value="frente"> Em frente</label>
+            <label><input type="checkbox" name="movimentacao" value="re"> Em marcha à ré</label>
+            <label><input type="checkbox" name="movimentacao" value="manobrando"> Manobrando</label>
+          </div>
+          <div class="field"><label>Velocidade (km/h)</label><input type="number" id="analise-velocidade" placeholder="0"></div>
+        </div>
+        
+        <div id="div-parado" class="hidden-field">
+          <label>Situação quando parado:</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="parado-situacao" value="ponto_final"> No ponto final</label>
+            <label><input type="checkbox" name="parado-situacao" value="semaforo"> No semáforo</label>
+            <label><input type="checkbox" name="parado-situacao" value="transito"> No trânsito</label>
+            <label><input type="checkbox" name="parado-situacao" value="embarcando"> Embarcando/Desembarcando</label>
+          </div>
+        </div>
+        
+        <div class="field"><label>Lotação</label><input type="text" id="analise-lotacao" placeholder="Número de passageiros"></div>
+        
+        <label>Parte Avariada (do ônibus):</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="parte-avariada" value="lateral_esq"> Lateral Esquerda</label>
+          <label><input type="checkbox" name="parte-avariada" value="lateral_dir"> Lateral Direita</label>
+          <label><input type="checkbox" name="parte-avariada" value="traseira"> Traseira</label>
+          <label><input type="checkbox" name="parte-avariada" value="frontal"> Frontal</label>
+          <label><input type="checkbox" name="parte-avariada" value="nao_aplica"> Não se aplica</label>
+        </div>
+        
+        <label>Danos Resultantes do Acidente:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="danos-resultantes" value="veiculos"> Veículo(s)</label>
+          <label><input type="checkbox" name="danos-resultantes" value="vitimas"> Vítima(s)</label>
+          <label><input type="checkbox" name="danos-resultantes" value="instalacoes"> Instalações Públicas (pontos, placas, postes, etc.)</label>
+          <label><input type="checkbox" name="danos-resultantes" value="imoveis"> Imóveis</label>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>🌤️ Condições Climáticas</legend>
+        <label>Período:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="periodo" value="dia"> Dia</label>
+          <label><input type="checkbox" name="periodo" value="noite"> Noite</label>
+          <label><input type="checkbox" name="periodo" value="entardecer"> Entardecer/Alvorecer</label>
+        </div>
+        <label>Clima:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="clima" value="bom_ensolarado"> Tempo Bom / Ensolarado</label>
+          <label><input type="checkbox" name="clima" value="neblina"> Neblina</label>
+          <label><input type="checkbox" name="clima" value="chuvoso"> Chuvoso</label>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>👁️ Condições de Visibilidade no Acidente</legend>
+        <label>Iluminação:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="iluminacao" value="natural_sol"> Natural / Sol</label>
+          <label><input type="checkbox" name="iluminacao" value="noite_artificial"> Noite com iluminação artificial</label>
+          <label><input type="checkbox" name="iluminacao" value="penumbra"> Penumbra</label>
+          <label><input type="checkbox" name="iluminacao" value="noite_sem_luz"> Noite sem iluminação artificial</label>
+        </div>
+        <label>Visibilidade do Acidente:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="visibilidade" value="total"> Total</label>
+          <label><input type="checkbox" name="visibilidade" value="parcial"> Parcial</label>
+          <label><input type="checkbox" name="visibilidade" value="nula"> Nula</label>
+        </div>
+        <label>Tipo de Acidente:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="tipo-acidente-analise" value="choque"> Choque</label>
+          <label><input type="checkbox" name="tipo-acidente-analise" value="atropelamento"> Atropelamento</label>
+          <label><input type="checkbox" name="tipo-acidente-analise" value="colisao"> Colisão</label>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>🚑 Atendimento do Acidente</legend>
+        <label>Preenchimento da Ocorrência:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="local-preenchimento" value="local_fatos" onchange="toggleOutrosLocal('outros-local-desc')"> No local dos fatos</label>
+          <label><input type="checkbox" name="local-preenchimento" value="garagem"> Na garagem</label>
+          <label><input type="checkbox" name="local-preenchimento" value="terminal"> No terminal</label>
+          <label><input type="checkbox" name="local-preenchimento" value="delegacia"> Delegacia ou Pronto Socorro</label>
+          <label><input type="checkbox" name="local-preenchimento" value="outros" onchange="toggleOutrosLocal('outros-local-desc')"> Outros</label>
+        </div>
+        <div id="outros-local-desc" class="hidden-field field"><label>Descreva outros:</label><input type="text" id="analise-outros-local"></div>
+        
+        <label>Autoridades Presentes:</label>
+        <div class="checkbox-group" id="autoridades-checkboxes">
+          <label><input type="checkbox" name="autoridades" value="pm" onchange="toggleAutoridadeFields('pm')"> PM</label>
+          <label><input type="checkbox" name="autoridades" value="samu" onchange="toggleAutoridadeFields('samu')"> SAMU</label>
+          <label><input type="checkbox" name="autoridades" value="bombeiros" onchange="toggleAutoridadeFields('bombeiros')"> Bombeiros</label>
+          <label><input type="checkbox" name="autoridades" value="resgate" onchange="toggleAutoridadeFields('resgate')"> Resgate</label>
+          <label><input type="checkbox" name="autoridades" value="pol_civil" onchange="toggleAutoridadeFields('pol_civil')"> Polícia Civil</label>
+          <label><input type="checkbox" name="autoridades" value="gcm" onchange="toggleAutoridadeFields('gcm')"> GCM</label>
+          <label><input type="checkbox" name="autoridades" value="transito" onchange="toggleAutoridadeFields('transito')"> Trânsito</label>
+          <label><input type="checkbox" name="autoridades" value="pol_rodoviaria" onchange="toggleAutoridadeFields('pol_rodoviaria')"> Polícia Rodoviária</label>
+        </div>
+        
+        <div id="autoridades-fields-container"></div>
+        
+        <label>Para Órgão Gestor:</label>
+        <div class="checkbox-group">
+          <label><input type="radio" name="orgao_gestor" value="sim" onchange="toggleOrgaoGestor(true)"> SIM</label>
+          <label><input type="radio" name="orgao_gestor" value="nao" onchange="toggleOrgaoGestor(false)" checked> NÃO</label>
+        </div>
+        <div id="orgao-gestor-fields" class="hidden-field">
+          <div class="form-row">
+            <div class="field"><label>Órgão</label><input type="text" id="analise-orgao"></div>
+            <div class="field"><label>Responsável</label><input type="text" id="analise-responsavel-gestor"></div>
+          </div>
+          <div class="field"><label>Protocolo de Atendimento</label><input type="text" id="analise-protocolo"></div>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>📎 Anexos - Fotos do Local (até 6)</legend>
+        <div class="action-row">
+          <button type="button" class="btn-secundario" onclick="anexarFotosLocal()">➕ Adicionar fotos</button>
+          <div id="lista-fotos-local" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
+        </div>
+      </fieldset>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaAnalise()">💾 SALVAR DADOS DA ABA</button>
+      </div>
+    </div>
+    
+    <!-- ABA 3: BENS AVARIADOS -->
     <div id="tab-bens" class="tab-content">
-      <div id="bens-list" class="bens-container"></div>
-      <button type="button" id="btn-adicionar-bem" class="btn-secundario" style="margin-top: 10px;">+ Adicionar bem / veículo</button>
+      <div id="bens-fixos-container"></div>
+      <button type="button" class="btn-secundario" onclick="adicionarVeiculoBem()">+ Adicionar Veículo</button>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaBens()">💾 SALVAR DADOS DA ABA</button>
+      </div>
     </div>
     
-    <!-- ABA 3: Vítimas e testemunhas -->
-    <div id="tab-pessoas" class="tab-content">
-      <h4>🚑 Vítimas</h4>
-      <div id="vitimas-list" class="pessoas-container"></div>
-      <button type="button" id="btn-adicionar-vitima" class="btn-secundario">+ Adicionar vítima</button>
-      <h4 style="margin-top: 20px;">🗣️ Testemunhas</h4>
-      <div id="testemunhas-list" class="pessoas-container"></div>
-      <button type="button" id="btn-adicionar-testemunha" class="btn-secundario">+ Adicionar testemunha</button>
+    <!-- ABA 4: VÍTIMAS -->
+    <div id="tab-vitimas" class="tab-content">
+      <div id="vitimas-fixas-container"></div>
+      <button type="button" class="btn-secundario" onclick="adicionarVitima()">+ Adicionar Vítima</button>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaVitimas()">💾 SALVAR DADOS DA ABA</button>
+      </div>
     </div>
     
-    <div class="action-buttons" style="margin-top: 20px;">
-      <button type="button" id="btn-salvar-rascunho" class="btn-secundario">💾 Salvar rascunho</button>
-      <button type="button" id="btn-finalizar-acidente" class="btn-principal">✅ Finalizar relatório</button>
+    <!-- ABA 5: TESTEMUNHAS -->
+    <div id="tab-testemunhas" class="tab-content">
+      <div id="testemunhas-fixas-container"></div>
+      <button type="button" class="btn-secundario" onclick="adicionarTestemunha()">+ Adicionar Testemunha</button>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaTestemunhas()">💾 SALVAR DADOS DA ABA</button>
+      </div>
+    </div>
+    
+    <!-- ABA 6: PARECER DA OPERAÇÃO -->
+    <div id="tab-parecer" class="tab-content">
+      <fieldset class="form-fieldset">
+        <legend>👮 Dados do Inspetor</legend>
+        <div class="form-row">
+          <div class="field"><label>Inspetor</label><input type="text" id="parecer-inspetor" readonly></div>
+          <div class="field"><label>Chapa</label><input type="text" id="parecer-chapa" readonly></div>
+        </div>
+        <div class="field"><label>Nome Completo</label><input type="text" id="parecer-nome-completo" readonly></div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>📝 Visão do Inspetor</legend>
+        <div class="field">
+          <label>Descrição</label>
+          <textarea id="parecer-visao" rows="6" placeholder="Descreva sua visão sobre o acidente..."></textarea>
+          <button type="button" class="btn-gravar" onclick="gravarParecer()"><i class="fas fa-microphone"></i> Gravar</button>
+        </div>
+      </fieldset>
+      
+      <fieldset class="form-fieldset">
+        <legend>⚖️ Atribuição de Culpa</legend>
+        <div class="checkbox-group">
+          <label><input type="radio" name="atribuicao-culpa" value="terceiro" onchange="toggleOutrosCulpa('culpa-outros-desc')"> Terceiro</label>
+          <label><input type="radio" name="atribuicao-culpa" value="nosso_motorista"> Nosso Motorista</label>
+          <label><input type="radio" name="atribuicao-culpa" value="outros" onchange="toggleOutrosCulpa('culpa-outros-desc')"> Outros</label>
+        </div>
+        <div id="culpa-outros-desc" class="hidden-field field"><label>Especifique:</label><input type="text" id="parecer-culpa-outros"></div>
+        <div class="field"><label>Motivo</label><textarea id="parecer-motivo" rows="3" placeholder="Justifique a atribuição de culpa..."></textarea></div>
+      </fieldset>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-salvar-aba" onclick="salvarAbaParecer()">💾 SALVAR DADOS DA ABA</button>
+        <button type="button" class="btn-principal" onclick="finalizarAcidenteCompleto()">✅ SALVAR E ENVIAR</button>
+      </div>
+    </div>
+    
+    <!-- Botões globais -->
+    <div class="action-buttons" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
       <button type="button" id="btn-consultar-acidentes" class="btn-secundario">🔍 Consultar acidentes</button>
     </div>
   </div>
