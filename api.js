@@ -20,7 +20,6 @@ async function registrarLog(nomeApelido) {
     await fetch(URL_PLANILHA, { method: "POST", body: formData, mode: "no-cors" });
   } catch (err) { console.warn("Falha ao registrar log:", err); }
 }
-
 // ====================================================================
 // TERMINAIS (apenas SIM) com cache e Promise pooling
 // ====================================================================
