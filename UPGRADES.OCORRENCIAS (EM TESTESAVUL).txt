@@ -88,6 +88,8 @@ CAMPO: MOTIVO (TEXTO);
 No lugar do botão salvando, criar um botão "SALVAR DADOS DA ABA", que guarda os dados parciais no banco de dados. 
 INSERIR NESTA ABA O BOTÃO SALVAR E ENVIAR. (ESTE BOTÃO É O ÚNICO QUE ENCERRA A OCORRÊNCIA).
 ========================================================================================================================feito até aqui========================================================================================
+Alterar o login para Chapa e Senha:
+Os dados estão na aba login da planilha do googlesheets, cujos cabeçalhso são: matricula	nome	apelido	senha	funcao	ativo	senha_hash
 ****ABA Cadastro **** - 
 Habilitar a Cãmera para o carregamento da CNH do motorista
 
