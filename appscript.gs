@@ -1,7 +1,7 @@
 // ====================================================================
 // CONFIGURAÇÕES GLOBAIS
 // ====================================================================
-const ID_PASTA_ANEXOS_ACIDENTES = "1vvjL8WtPMJKYsMfWaUdzYHHbKisOwbwF"; // Substitua pelo ID da sua pasta no Drive
+const ID_PASTA_ANEXOS_ACIDENTES = "1vvjL8WtPMJKYsMfWaUdzYHHbKisOwbwF"; 
 
 // ====================================================================
 // CRIAÇÃO DAS ABAS NECESSÁRIAS (executar uma vez)
