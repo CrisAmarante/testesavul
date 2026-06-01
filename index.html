@@ -21,9 +21,8 @@
   if (window.location.search.includes('debug=true') || localStorage.getItem('debugMode') === 'true') {
     var vConsole = new VConsole();
     console.log('🐛 Modo debug ativado!');
-  }
-  
-  // Para ativar sem recarregar, pode usar este atalho:
+  }  
+  // Para ativar sem recarregar, usar este atalho:
   window.ativarDebug = function() {
     if (typeof VConsole !== 'undefined' && !window.vConsoleInstance) {
       window.vConsoleInstance = new VConsole();
