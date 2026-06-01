@@ -579,6 +579,24 @@ function fecharModalConsulta() {
 }
 
 // ====================================================================
+// DEBOUNCE OTIMIZADO
+// ====================================================================
+const debounceTimers = new Map();
+function debounce(func, wait) {
+  return function executedFunction(...args) {
+    const context = this;
+    if (debounceTimers.has(func)) {
+      clearTimeout(debounceTimers.get(func));
+    }
+    const timeoutId = setTimeout(() => {
+      func.apply(context, args);
+      debounceTimers.delete(func);
+    }, wait);
+    debounceTimers.set(func, timeoutId);
+  };
+}
+
+// ====================================================================
 // UTILITÁRIOS
 // ====================================================================
 function preencherDataAtual() {
@@ -589,19 +607,8 @@ function preencherDataAtual() {
   }
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-// Exportar funções para o escopo global
+// Exportar preencherDataAtual para escopo global
+window.preencherDataAtual = preencherDataAtual;
 window.adicionarBem = adicionarBem;
 window.removerBem = removerBem;
 window.removerPessoa = removerPessoa;

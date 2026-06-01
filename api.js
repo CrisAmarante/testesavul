@@ -22,7 +22,7 @@ async function registrarLog(nomeApelido) {
 }
 
 // ====================================================================
-// TERMINAIS (apenas SIM) com cache
+// TERMINAIS (apenas SIM) com cache e Promise pooling
 // ====================================================================
 function carregarTerminais(forceRefresh = false) {
   const agora = Date.now();
@@ -30,6 +30,7 @@ function carregarTerminais(forceRefresh = false) {
     return Promise.resolve(terminaisCache);
   }
   if (terminaisPromise) return terminaisPromise;
+  
   terminaisPromise = new Promise((resolve) => {
     const callbackName = 'carregarTerminaisCallback_' + Date.now();
     window[callbackName] = function(terminais) {
@@ -54,11 +55,12 @@ function carregarTerminais(forceRefresh = false) {
 }
 
 // ====================================================================
-// TERMINAIS (todos, para local no envio – se ainda usado)
+// TERMINAIS (todos, para local no envio – se ainda usado) com cache
 // ====================================================================
 function carregarTodosTerminais(forceRefresh = false) {
   if (!forceRefresh && todosTerminaisCache.length) return Promise.resolve(todosTerminaisCache);
   if (todosTerminaisPromise) return todosTerminaisPromise;
+  
   todosTerminaisPromise = new Promise((resolve) => {
     const callbackName = 'carregarTodosTerminaisCallback_' + Date.now();
     window[callbackName] = function(terminais) {
