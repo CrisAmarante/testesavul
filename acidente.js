@@ -1,44 +1,41 @@
 // ====================================================================
-// acidente.js - Módulo de Relatório de Acidentes
-// Abas, rascunho parcial, anexos, bens, vítimas/testemunhas, consulta
+// acidente.js - Módulo de Relatório de Acidentes (VERSÃO OTIMIZADA)
+// 6 Abas: Cadastro, Análise, Bens Avariados, Vítimas, Testemunhas, Parecer
 // ====================================================================
 
 // ====================================================================
 // VARIÁVEIS GLOBAIS DO MÓDULO
 // ====================================================================
 let acidenteAtualId = null;
-let bensArray = [];
-let pessoasArray = [];
-let anexosPrincipaisArray = [];
 let editMode = false;
 let originalStatus = null;
+
+// Dados por aba
+let dadosCadastro = {};
+let dadosAnalise = {};
+let bensArray = [];
+let vitimasArray = [];
+let testemunhasArray = [];
+let dadosParecer = {};
+
+// Anexos
+let fotosColetivoArray = [];
+let fotosLocalArray = [];
+let fotoCNHBase64 = null;
+
+// Contadores para veículos/vítimas/testemunhas
+let veiculoCounter = 0;
+let vitimaCounter = 0;
+let testemunhaCounter = 0;
+
+// Autoridades presentes
+let autoridadesPresentes = {};
 
 // ====================================================================
 // INICIALIZAÇÃO DOS EVENTOS DO MODAL
 // ====================================================================
 function initAcidenteModal() {
-  const btnSalvar = getEl('btn-salvar-rascunho');
-  const btnFinalizar = getEl('btn-finalizar-acidente');
-  const btnConsultar = getEl('btn-consultar-acidentes');
-  const btnAdicionarBem = getEl('btn-adicionar-bem');
-  const btnAdicionarVitima = getEl('btn-adicionar-vitima');
-  const btnAdicionarTestemunha = getEl('btn-adicionar-testemunha');
-  const btnAnexarPrincipal = getEl('btn-anexar-principal');
-
-  if (btnSalvar) btnSalvar.addEventListener('click', salvarRascunhoAcidente);
-  if (btnFinalizar) btnFinalizar.addEventListener('click', finalizarAcidente);
-  if (btnConsultar) btnConsultar.addEventListener('click', abrirModalConsultaAcidentes);
-  if (btnAdicionarBem) btnAdicionarBem.addEventListener('click', adicionarBem);
-  if (btnAdicionarVitima) btnAdicionarVitima.addEventListener('click', () => adicionarPessoa('Vítima'));
-  if (btnAdicionarTestemunha) btnAdicionarTestemunha.addEventListener('click', () => adicionarPessoa('Testemunha'));
-  if (btnAnexarPrincipal) btnAnexarPrincipal.addEventListener('click', anexarArquivosPrincipais);
-
-  const autoSaveFields = ['acidente-data', 'acidente-hora', 'acidente-local', 'acidente-prefixo', 'acidente-motorista', 'acidente-descricao'];
-  autoSaveFields.forEach(id => {
-    const el = getEl(id);
-    if (el) el.addEventListener('input', debounce(salvarRascunhoAcidente, 800));
-  });
-
+  // Event listeners para abas
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -46,6 +43,15 @@ function initAcidenteModal() {
       ativarAba(tabId);
     });
   });
+
+  // Carregar dados do inspetor na aba parecer
+  carregarDadosInspetor();
+
+  // Inicializar autocomplete
+  iniciarAutoComplete();
+
+  // Preencher data atual
+  preencherDataAtual();
 }
 
 function ativarAba(tabId) {
@@ -63,14 +69,14 @@ function ativarAba(tabId) {
 function abrirModalEnvio(acidenteId = null) {
   const modal = getEl('modal-envio-informacoes');
   if (!modal) return;
+  
   if (!acidenteId) {
     iniciarNovoAcidente();
   } else {
     carregarAcidenteExistente(acidenteId);
   }
+  
   modal.classList.add('is-open');
-  preencherDataAtual();
-  iniciarAutoComplete();
   initAcidenteModal();
 }
 
@@ -84,25 +90,90 @@ function fecharModalEnvio() {
 // ====================================================================
 function iniciarNovoAcidente() {
   acidenteAtualId = Date.now().toString();
-  bensArray = [];
-  pessoasArray = [];
-  anexosPrincipaisArray = [];
   editMode = false;
   originalStatus = null;
-  limparFormularioAcidente();
+  
+  // Resetar arrays
+  bensArray = [];
+  vitimasArray = [];
+  testemunhasArray = [];
+  fotosColetivoArray = [];
+  fotosLocalArray = [];
+  fotoCNHBase64 = null;
+  veiculoCounter = 0;
+  vitimaCounter = 0;
+  testemunhaCounter = 0;
+  autoridadesPresentes = {};
+  
+  // Resetar formulários
+  limparFormularioCadastro();
+  limparFormularioAnalise();
+  limparFormularioParecer();
+  
+  // Renderizar containers vazios
+  renderizarBensFixos();
+  renderizarVitimasFixas();
+  renderizarTestemunhasFixas();
+  renderizarFotosColetivo();
+  renderizarFotosLocal();
+  
+  // Carregar rascunho se existir
   carregarRascunhoLocal();
-  renderizarListaBens();
-  renderizarListaPessoas();
-  renderizarListaAnexosPrincipais();
 }
 
-function limparFormularioAcidente() {
-  getEl('acidente-data').value = '';
-  getEl('acidente-hora').value = '';
-  getEl('acidente-local').value = '';
-  getEl('acidente-prefixo').value = '';
-  getEl('acidente-motorista').value = '';
-  getEl('acidente-descricao').value = '';
+function limparFormularioCadastro() {
+  const ids = ['cadastro-data', 'cadastro-hora', 'cadastro-logradouro', 'cadastro-bairro', 
+               'cadastro-cidade', 'cadastro-cep', 'cadastro-codigo-linha', 'cadastro-nome-linha',
+               'cadastro-sentido-linha', 'cadastro-prefixo', 'cadastro-placa', 'cadastro-renavan',
+               'cadastro-ano-fab', 'cadastro-marca', 'cadastro-modelo', 'cadastro-cor',
+               'cadastro-cidade-onibus', 'cadastro-chapa', 'cadastro-apelido', 'cadastro-nome-completo',
+               'cadastro-cnh', 'cadastro-validade-cnh', 'cadastro-moto-logradouro', 'cadastro-moto-bairro',
+               'cadastro-moto-cidade', 'cadastro-moto-complemento', 'cadastro-nascimento',
+               'cadastro-naturalidade', 'cadastro-nome-mae', 'cadastro-celular', 'cadastro-historico'];
+  ids.forEach(id => {
+    const el = getEl(id);
+    if (el) el.value = '';
+  });
+  
+  // Reset radio buttons
+  document.querySelectorAll('input[name="tipo-acidente"]').forEach(r => r.checked = false);
+  
+  // Clear preview
+  const preview = getEl('preview-foto-cnh');
+  if (preview) preview.innerHTML = '';
+}
+
+function limparFormularioAnalise() {
+  // Clear checkboxes
+  document.querySelectorAll('#tab-analise input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#tab-analise input[type="radio"]').forEach(r => r.checked = false);
+  
+  // Clear text inputs
+  const ids = ['analise-velocidade', 'analise-lotacao', 'analise-outros-local', 
+               'analise-orgao', 'analise-responsavel-gestor', 'analise-protocolo'];
+  ids.forEach(id => {
+    const el = getEl(id);
+    if (el) el.value = '';
+  });
+  
+  // Hide conditional fields
+  hideElement('div-movimentacao');
+  hideElement('div-parado');
+  hideElement('outros-local-desc');
+  hideElement('orgao-gestor-fields');
+  
+  // Clear authority fields container
+  const container = getEl('autoridades-fields-container');
+  if (container) container.innerHTML = '';
+}
+
+function limparFormularioParecer() {
+  const ids = ['parecer-visao', 'parecer-culpa-outros', 'parecer-motivo'];
+  ids.forEach(id => {
+    const el = getEl(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('input[name="atribuicao-culpa"]').forEach(r => r.checked = false);
 }
 
 // ====================================================================
@@ -115,132 +186,202 @@ function carregarRascunhoLocal() {
     try {
       const rascunho = JSON.parse(dadosSalvos);
       preencherFormularioComDados(rascunho);
-      bensArray = rascunho.bens || [];
-      pessoasArray = rascunho.pessoas || [];
-      anexosPrincipaisArray = rascunho.anexosPrincipais || [];
-      renderizarListaBens();
-      renderizarListaPessoas();
-      renderizarListaAnexosPrincipais();
     } catch(e) { console.warn('Erro ao carregar rascunho local', e); }
   }
 }
 
 function preencherFormularioComDados(dados) {
-  getEl('acidente-data').value = dados.dataAcidente || '';
-  getEl('acidente-hora').value = dados.horaAcidente || '';
-  getEl('acidente-local').value = dados.local || '';
-  getEl('acidente-prefixo').value = dados.prefixo || '';
-  getEl('acidente-motorista').value = dados.motoristaChapa || '';
-  getEl('acidente-descricao').value = dados.descricaoAnalise || '';
+  // Preencher cadastro
+  if (dados.cadastro) {
+    Object.keys(dados.cadastro).forEach(key => {
+      const el = getEl(`cadastro-${key}`);
+      if (el) el.value = dados.cadastro[key];
+    });
+  }
+  
+  // Preencher análise
+  if (dados.analise) {
+    Object.keys(dados.analise).forEach(key => {
+      const el = getEl(`analise-${key}`);
+      if (el) el.value = dados.analise[key];
+    });
+  }
+  
+  // Restaurar arrays
+  if (dados.bens) { bensArray = dados.bens; renderizarBensFixos(); }
+  if (dados.vitimas) { vitimasArray = dados.vitimas; renderizarVitimasFixas(); }
+  if (dados.testemunhas) { testemunhasArray = dados.testemunhas; renderizarTestemunhasFixas(); }
+  if (dados.fotosColetivo) { fotosColetivoArray = dados.fotosColetivo; renderizarFotosColetivo(); }
+  if (dados.fotosLocal) { fotosLocalArray = dados.fotosLocal; renderizarFotosLocal(); }
 }
 
 function salvarRascunhoLocal() {
-  const dados = montarObjetoAcidente();
+  const dados = montarObjetoAcidenteCompleto();
   const chave = `rascunho_acidente_${acidenteAtualId}`;
   localStorage.setItem(chave, JSON.stringify(dados));
 }
 
 // ====================================================================
-// MONTAR OBJETO ACIDENTE
+// SALVAR ABAS INDIVIDUAIS
 // ====================================================================
-function montarObjetoAcidente() {
+async function salvarAbaCadastro() {
+  coletarDadosCadastro();
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Cadastro salvos!');
+}
+
+async function salvarAbaAnalise() {
+  coletarDadosAnalise();
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Análise salvos!');
+}
+
+async function salvarAbaBens() {
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Bens salvos!');
+}
+
+async function salvarAbaVitimas() {
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Vítimas salvos!');
+}
+
+async function salvarAbaTestemunhas() {
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Testemunhas salvos!');
+}
+
+async function salvarAbaParecer() {
+  coletarDadosParecer();
+  salvarRascunhoLocal();
+  mostrarFeedback('✅ Dados da aba Parecer salvos!');
+}
+
+function mostrarFeedback(mensagem) {
+  alert(mensagem);
+}
+
+// ====================================================================
+// COLETAR DADOS DAS ABAS
+// ====================================================================
+function coletarDadosCadastro() {
+  dadosCadastro = {
+    tipoAcidente: getSelectedRadioValue('tipo-acidente'),
+    data: getEl('cadastro-data')?.value || '',
+    hora: getEl('cadastro-hora')?.value || '',
+    logradouro: getEl('cadastro-logradouro')?.value || '',
+    bairro: getEl('cadastro-bairro')?.value || '',
+    cidade: getEl('cadastro-cidade')?.value || '',
+    cep: getEl('cadastro-cep')?.value || '',
+    codigoLinha: getEl('cadastro-codigo-linha')?.value || '',
+    nomeLinha: getEl('cadastro-nome-linha')?.value || '',
+    sentidoLinha: getEl('cadastro-sentido-linha')?.value || '',
+    prefixo: getEl('cadastro-prefixo')?.value || '',
+    placa: getEl('cadastro-placa')?.value || '',
+    renavan: getEl('cadastro-renavan')?.value || '',
+    anoFab: getEl('cadastro-ano-fab')?.value || '',
+    marca: getEl('cadastro-marca')?.value || '',
+    modelo: getEl('cadastro-modelo')?.value || '',
+    cor: getEl('cadastro-cor')?.value || '',
+    cidadeOnibus: getEl('cadastro-cidade-onibus')?.value || '',
+    chapa: getEl('cadastro-chapa')?.value || '',
+    apelido: getEl('cadastro-apelido')?.value || '',
+    nomeCompleto: getEl('cadastro-nome-completo')?.value || '',
+    cnh: getEl('cadastro-cnh')?.value || '',
+    validadeCnh: getEl('cadastro-validade-cnh')?.value || '',
+    motoLogradouro: getEl('cadastro-moto-logradouro')?.value || '',
+    motoBairro: getEl('cadastro-moto-bairro')?.value || '',
+    motoCidade: getEl('cadastro-moto-cidade')?.value || '',
+    motoComplemento: getEl('cadastro-moto-complemento')?.value || '',
+    nascimento: getEl('cadastro-nascimento')?.value || '',
+    naturalidade: getEl('cadastro-naturalidade')?.value || '',
+    nomeMae: getEl('cadastro-nome-mae')?.value || '',
+    celular: getEl('cadastro-celular')?.value || '',
+    historico: getEl('cadastro-historico')?.value || '',
+    fotoCNH: fotoCNHBase64
+  };
+}
+
+function coletarDadosAnalise() {
+  dadosAnalise = {
+    situacaoOnibus: getCheckedValues('situacao-onibus'),
+    movimentacao: getCheckedValues('movimentacao'),
+    velocidade: getEl('analise-velocidade')?.value || '',
+    paradoSituacao: getCheckedValues('parado-situacao'),
+    lotacao: getEl('analise-lotacao')?.value || '',
+    parteAvariada: getCheckedValues('parte-avariada'),
+    danosResultantes: getCheckedValues('danos-resultantes'),
+    periodo: getCheckedValues('periodo'),
+    clima: getCheckedValues('clima'),
+    iluminacao: getCheckedValues('iluminacao'),
+    visibilidade: getCheckedValues('visibilidade'),
+    tipoAcidenteAnalise: getCheckedValues('tipo-acidente-analise'),
+    localPreenchimento: getCheckedValues('local-preenchimento'),
+    outrosLocal: getEl('analise-outros-local')?.value || '',
+    autoridades: getCheckedValues('autoridades'),
+    orgaoGestor: getSelectedRadioValue('orgao_gestor'),
+    orgao: getEl('analise-orgao')?.value || '',
+    responsavelGestor: getEl('analise-responsavel-gestor')?.value || '',
+    protocolo: getEl('analise-protocolo')?.value || ''
+  };
+}
+
+function coletarDadosParecer() {
+  dadosParecer = {
+    inspetor: getEl('parecer-inspetor')?.value || '',
+    chapa: getEl('parecer-chapa')?.value || '',
+    nomeCompleto: getEl('parecer-nome-completo')?.value || '',
+    visao: getEl('parecer-visao')?.value || '',
+    atribuicaoCulpa: getSelectedRadioValue('atribuicao-culpa'),
+    culpaOutros: getEl('parecer-culpa-outros')?.value || '',
+    motivo: getEl('parecer-motivo')?.value || ''
+  };
+}
+
+// ====================================================================
+// MONTAR OBJETO COMPLETO DO ACIDENTE
+// ====================================================================
+function montarObjetoAcidenteCompleto() {
   return {
     id: acidenteAtualId,
     status: editMode ? originalStatus : 'EM_ANDAMENTO',
     fiscal: localStorage.getItem('inspectorApelido'),
-    dataAcidente: getEl('acidente-data').value,
-    horaAcidente: getEl('acidente-hora').value,
-    local: getEl('acidente-local').value,
-    prefixo: getEl('acidente-prefixo').value,
-    motoristaChapa: getEl('acidente-motorista').value,
-    descricaoAnalise: getEl('acidente-descricao').value,
-    anexosPrincipais: anexosPrincipaisArray,
+    cadastro: dadosCadastro,
+    analise: dadosAnalise,
     bens: bensArray,
-    pessoas: pessoasArray,
+    vitimas: vitimasArray,
+    testemunhas: testemunhasArray,
+    parecer: dadosParecer,
+    fotosColetivo: fotosColetivoArray,
+    fotosLocal: fotosLocalArray,
     finalizado: (originalStatus === 'FINALIZADO') ? true : false
   };
 }
 
 // ====================================================================
-// SALVAR RASCUNHO (local + backend) - VERSÃO CORRIGIDA
+// FINALIZAR ACIDENTE COMPLETO
 // ====================================================================
-async function salvarRascunhoAcidente() {
-  if (!acidenteAtualId) return;
-  const dados = montarObjetoAcidente();
-  // Salva localmente
-  localStorage.setItem(`rascunho_acidente_${acidenteAtualId}`, JSON.stringify(dados));
+async function finalizarAcidenteCompleto() {
+  // Coletar todos os dados
+  coletarDadosCadastro();
+  coletarDadosAnalise();
+  coletarDadosParecer();
   
-  // Envia ao backend com fetch padrão (sem no-cors)
-  const payload = new URLSearchParams();
-  payload.append('acao', 'salvar_rascunho_acidente');
-  payload.append('dados', JSON.stringify(dados));
-  
-  try {
-    const response = await fetch(URL_PLANILHA, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: payload
-    });
-    const text = await response.text();
-    console.log('Resposta do backend (salvar rascunho):', text);
-    // Se quiser, pode tentar parsear JSON
-    try {
-      const json = JSON.parse(text);
-      if (json.success) console.log('Rascunho salvo no backend com sucesso');
-    } catch(e) {}
-  } catch (error) {
-    console.error('Erro ao salvar rascunho no backend:', error);
-  }
-  
-  // Feedback visual
-  const btn = getEl('btn-salvar-rascunho');
-  if (btn) {
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '💾 Salvando...';
-    setTimeout(() => { btn.innerHTML = originalText; }, 1000);
-  }
-}
-
-// ====================================================================
-// FINALIZAR ACIDENTE - VERSÃO CORRIGIDA
-// ====================================================================
-async function finalizarAcidente() {
-  if (!validarFormularioAcidente()) return;
-  const dados = montarObjetoAcidente();
+  const dados = montarObjetoAcidenteCompleto();
   dados.finalizado = true;
   dados.status = 'FINALIZADO';
   
-  // Primeiro salva rascunho final
-  const payloadSalvar = new URLSearchParams();
-  payloadSalvar.append('acao', 'salvar_rascunho_acidente');
-  payloadSalvar.append('dados', JSON.stringify(dados));
-  
   try {
-    await fetch(URL_PLANILHA, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: payloadSalvar
-    });
+    // Salvar rascunho final
+    await salvarNoBackend(dados, 'salvar_rascunho_acidente');
     
-    // Depois finaliza
-    const payloadFinalizar = new URLSearchParams();
-    payloadFinalizar.append('acao', 'finalizar_acidente');
-    payloadFinalizar.append('dados', JSON.stringify({ id: acidenteAtualId }));
+    // Finalizar
+    await salvarNoBackend({ id: acidenteAtualId }, 'finalizar_acidente');
     
-    const response = await fetch(URL_PLANILHA, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: payloadFinalizar
-    });
-    
-    const result = await response.text();
-    console.log('Resposta finalizar:', result);
-    
-    alert('✅ Relatório finalizado com sucesso!');
+    alert('✅ Relatório finalizado e enviado com sucesso!');
     localStorage.removeItem(`rascunho_acidente_${acidenteAtualId}`);
     fecharModalEnvio();
+    
     // Recarregar consulta se estiver aberta
     const modalConsulta = getEl('modal-consulta-acidentes');
     if (modalConsulta && modalConsulta.style.display !== 'none') {
@@ -251,147 +392,306 @@ async function finalizarAcidente() {
     alert('Erro ao finalizar o relatório. Verifique o console.');
   }
 }
-// ====================================================================
-// BENS AVARIADOS
-// ====================================================================
-function adicionarBem() {
-  const bem = {
-    tipoBem: prompt('Tipo de bem (ex: Carro, Moto, Muro, Poste, etc.):') || '',
-    placa: prompt('Placa (se veículo):') || '',
-    ano: prompt('Ano:') || '',
-    cor: prompt('Cor:') || '',
-    modelo: prompt('Modelo:') || '',
-    renavan: prompt('Renavan (se veículo):') || '',
-    proprietario: prompt('Proprietário / Responsável:') || '',
-    telefone: prompt('Telefone para contato:') || '',
-    danos: prompt('Danos identificados:') || '',
-    anexos: []
-  };
-  bensArray.push(bem);
-  renderizarListaBens();
-  salvarRascunhoAcidente();
+
+async function salvarNoBackend(payload, acao) {
+  const params = new URLSearchParams();
+  params.append('acao', acao);
+  params.append('dados', JSON.stringify(payload));
+  
+  const response = await fetch(URL_PLANILHA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  });
+  
+  return await response.text();
 }
 
-function removerBem(index) {
-  if (confirm('Remover este bem?')) {
-    bensArray.splice(index, 1);
-    renderizarListaBens();
-    salvarRascunhoAcidente();
+// ====================================================================
+// FUNÇÕES DE UI - TOGGLE CAMPOS CONDICIONAIS
+// ====================================================================
+function toggleSituacaoOnibus() {
+  const transitando = document.querySelector('input[name="situacao-onibus"][value="transitando"]');
+  const parado = document.querySelector('input[name="situacao-onibus"][value="parado"]');
+  
+  if (transitando && transitando.checked) {
+    showElement('div-movimentacao');
+    hideElement('div-parado');
+  } else if (parado && parado.checked) {
+    showElement('div-parado');
+    hideElement('div-movimentacao');
+  } else {
+    hideElement('div-movimentacao');
+    hideElement('div-parado');
   }
 }
 
-function renderizarListaBens() {
-  const container = getEl('bens-list');
+function toggleOutrosLocal(elementId) {
+  const el = getEl(elementId);
+  if (el) {
+    const isChecked = document.querySelector('input[name="local-preenchimento"][value="outros"]')?.checked;
+    if (isChecked) showElement(elementId);
+    else hideElement(elementId);
+  }
+}
+
+function toggleOrgaoGestor(isSim) {
+  if (isSim) showElement('orgao-gestor-fields');
+  else hideElement('orgao-gestor-fields');
+}
+
+function toggleOutrosCulpa(elementId) {
+  const outros = document.querySelector('input[name="atribuicao-culpa"][value="outros"]');
+  if (outros && outros.checked) showElement(elementId);
+  else hideElement(elementId);
+}
+
+function toggleAutoridadeFields(valor) {
+  const checkbox = document.querySelector(`input[name="autoridades"][value="${valor}"]`);
+  const container = getEl('autoridades-fields-container');
   if (!container) return;
-  if (bensArray.length === 0) {
-    container.innerHTML = '<div class="empty-list"><small>Nenhum bem adicionado.</small></div>';
-    return;
-  }
-  let html = '<div class="cards-list">';
-  bensArray.forEach((bem, idx) => {
-    html += `
-      <div class="bem-card" data-idx="${idx}">
-        <div class="card-header"><strong>${bem.tipoBem || 'Bem'} - ${bem.placa || 'Sem placa'}</strong>
-          <button class="btn-remover" onclick="removerBem(${idx})">🗑️</button>
-        </div>
-        <div class="card-body">
-          ${bem.modelo ? `<div><strong>Modelo:</strong> ${bem.modelo}</div>` : ''}
-          ${bem.cor ? `<div><strong>Cor:</strong> ${bem.cor}</div>` : ''}
-          ${bem.ano ? `<div><strong>Ano:</strong> ${bem.ano}</div>` : ''}
-          ${bem.proprietario ? `<div><strong>Proprietário:</strong> ${bem.proprietario}</div>` : ''}
-          ${bem.telefone ? `<div><strong>Telefone:</strong> ${bem.telefone}</div>` : ''}
-          ${bem.danos ? `<div><strong>Danos:</strong> ${bem.danos}</div>` : ''}
-        </div>
-      </div>
-    `;
-  });
-  html += '</div>';
-  container.innerHTML = html;
-}
-
-// ====================================================================
-// VÍTIMAS E TESTEMUNHAS
-// ====================================================================
-function adicionarPessoa(tipo) {
-  const nome = prompt(`Nome da ${tipo}:`);
-  if (!nome) return;
-  const documento = prompt('Documento (RG/CPF) ou identificação:');
-  const contato = prompt('Telefone / Contato:');
-  const observacoes = prompt(`Observações (ex: lesões para vítimas, relato para testemunhas):`);
-  pessoasArray.push({
-    tipo: tipo,
-    nome: nome,
-    documento: documento || '',
-    contato: contato || '',
-    observacoes: observacoes || ''
-  });
-  renderizarListaPessoas();
-  salvarRascunhoAcidente();
-}
-
-function removerPessoa(index) {
-  if (confirm('Remover esta pessoa?')) {
-    pessoasArray.splice(index, 1);
-    renderizarListaPessoas();
-    salvarRascunhoAcidente();
-  }
-}
-
-function renderizarListaPessoas() {
-  const containerVitimas = getEl('vitimas-list');
-  const containerTestemunhas = getEl('testemunhas-list');
-  if (!containerVitimas || !containerTestemunhas) return;
-  const vitimas = pessoasArray.filter(p => p.tipo === 'Vítima');
-  const testemunhas = pessoasArray.filter(p => p.tipo === 'Testemunha');
-  const renderGrupo = (lista, tipo) => {
-    if (lista.length === 0) return `<div class="empty-list"><small>Nenhum(a) ${tipo.toLowerCase()} adicionado(a).</small></div>`;
-    let html = '<div class="cards-list">';
-    lista.forEach((pessoa, idx) => {
-      const globalIdx = pessoasArray.findIndex(p => p === pessoa);
-      html += `
-        <div class="pessoa-card" data-idx="${globalIdx}">
-          <div class="card-header"><strong>${pessoa.nome}</strong>
-            <button class="btn-remover" onclick="removerPessoa(${globalIdx})">🗑️</button>
+  
+  if (checkbox && checkbox.checked) {
+    // Criar campos para esta autoridade
+    if (!autoridadesPresentes[valor]) {
+      autoridadesPresentes[valor] = true;
+      const html = `
+        <div class="veiculo-card" id="auth-fields-${valor}">
+          <h4>${valor.toUpperCase()} - Dados</h4>
+          <div class="form-row">
+            <div class="field"><label>Nº Viatura</label><input type="text" id="auth-viatura-${valor}"></div>
+            <div class="field"><label>Responsável</label><input type="text" id="auth-resp-${valor}"></div>
           </div>
-          <div class="card-body">
-            ${pessoa.documento ? `<div><strong>Documento:</strong> ${pessoa.documento}</div>` : ''}
-            ${pessoa.contato ? `<div><strong>Contato:</strong> ${pessoa.contato}</div>` : ''}
-            ${pessoa.observacoes ? `<div><strong>Observações:</strong> ${pessoa.observacoes}</div>` : ''}
-          </div>
+          <div class="field"><label>Distrato/Batalhão/Delegacia</label><input type="text" id="auth-dist-${valor}"></div>
         </div>
       `;
-    });
-    html += '</div>';
-    return html;
-  };
-  containerVitimas.innerHTML = renderGrupo(vitimas, 'Vítima');
-  containerTestemunhas.innerHTML = renderGrupo(testemunhas, 'Testemunha');
+      container.insertAdjacentHTML('beforeend', html);
+    }
+  } else {
+    // Remover campos
+    autoridadesPresentes[valor] = false;
+    const fieldsEl = getEl(`auth-fields-${valor}`);
+    if (fieldsEl) fieldsEl.remove();
+  }
+}
+
+function showElement(id) {
+  const el = getEl(id);
+  if (el) el.classList.add('show');
+}
+
+function hideElement(id) {
+  const el = getEl(id);
+  if (el) el.classList.remove('show');
 }
 
 // ====================================================================
-// ANEXOS PRINCIPAIS
+// BUSCAR CEP
 // ====================================================================
-function anexarArquivosPrincipais() {
+async function buscarCEP() {
+  const cep = getEl('cadastro-cep')?.value || '';
+  if (cep.length < 8) {
+    alert('Digite um CEP válido (8 dígitos)');
+    return;
+  }
+  
+  const cepLimpo = cep.replace(/\D/g, '');
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+    const data = await response.json();
+    if (data.erro) {
+      alert('CEP não encontrado');
+      return;
+    }
+    if (getEl('cadastro-logradouro')) getEl('cadastro-logradouro').value = data.logradouro;
+    if (getEl('cadastro-bairro')) getEl('cadastro-bairro').value = data.bairro;
+    if (getEl('cadastro-cidade')) getEl('cadastro-cidade').value = data.localidade;
+  } catch (e) {
+    console.warn('Erro ao buscar CEP', e);
+    alert('Erro ao buscar CEP. Tente novamente.');
+  }
+}
+
+// ====================================================================
+// BUSCAR DADOS DA LINHA
+// ====================================================================
+async function buscarDadosLinha() {
+  const codigo = getEl('cadastro-codigo-linha')?.value || '';
+  if (codigo.length < 2) return;
+  
+  try {
+    const url = `${URL_PLANILHA}?acao=buscar_linha&codigo=${encodeURIComponent(codigo)}`;
+    const resp = await fetch(url);
+    const linha = await resp.json();
+    if (linha && linha.codigo) {
+      if (getEl('cadastro-nome-linha')) getEl('cadastro-nome-linha').value = linha.nome || '';
+      if (getEl('cadastro-sentido-linha')) getEl('cadastro-sentido-linha').value = linha.sentido || '';
+    }
+  } catch (e) { console.warn('Erro ao buscar linha', e); }
+}
+
+// ====================================================================
+// BUSCAR DADOS DO VEÍCULO
+// ====================================================================
+async function buscarDadosVeiculo() {
+  const prefixo = getEl('cadastro-prefixo')?.value || '';
+  if (prefixo.length < 2) return;
+  
+  try {
+    const url = `${URL_PLANILHA}?acao=buscar_veiculo&prefixo=${encodeURIComponent(prefixo)}`;
+    const resp = await fetch(url);
+    const veiculo = await resp.json();
+    if (veiculo && veiculo.prefixo) {
+      if (getEl('cadastro-placa')) getEl('cadastro-placa').value = veiculo.placa || '';
+      if (getEl('cadastro-renavan')) getEl('cadastro-renavan').value = veiculo.renavan || '';
+      if (getEl('cadastro-ano-fab')) getEl('cadastro-ano-fab').value = veiculo.ano || '';
+      if (getEl('cadastro-marca')) getEl('cadastro-marca').value = veiculo.marca || '';
+      if (getEl('cadastro-modelo')) getEl('cadastro-modelo').value = veiculo.modelo || '';
+      if (getEl('cadastro-cor')) getEl('cadastro-cor').value = veiculo.cor || '';
+      if (getEl('cadastro-cidade-onibus')) getEl('cadastro-cidade-onibus').value = veiculo.cidade || '';
+    }
+  } catch (e) { console.warn('Erro ao buscar veículo', e); }
+}
+
+// ====================================================================
+// BUSCAR DADOS DO MOTORISTA
+// ====================================================================
+async function buscarDadosMotorista() {
+  const chapa = getEl('cadastro-chapa')?.value || '';
+  if (chapa.length < 2) return;
+  
+  try {
+    const url = `${URL_PLANILHA}?acao=buscar_operador&termo=${encodeURIComponent(chapa)}`;
+    const resp = await fetch(url);
+    const operadores = await resp.json();
+    if (operadores && operadores.length > 0) {
+      const op = operadores[0];
+      if (getEl('cadastro-apelido')) getEl('cadastro-apelido').value = op.apelido || '';
+      if (getEl('cadastro-nome-completo')) getEl('cadastro-nome-completo').value = op.nome || '';
+      if (getEl('cadastro-cnh')) getEl('cadastro-cnh').value = op.cnh || '';
+      if (getEl('cadastro-validade-cnh')) getEl('cadastro-validade-cnh').value = op.validade_cnh || '';
+      if (getEl('cadastro-moto-logradouro')) getEl('cadastro-moto-logradouro').value = op.endereco || '';
+      if (getEl('cadastro-moto-bairro')) getEl('cadastro-moto-bairro').value = op.bairro || '';
+      if (getEl('cadastro-moto-cidade')) getEl('cadastro-moto-cidade').value = op.cidade || '';
+      if (getEl('cadastro-moto-complemento')) getEl('cadastro-moto-complemento').value = op.complemento || '';
+      if (getEl('cadastro-nascimento')) getEl('cadastro-nascimento').value = op.nascimento || '';
+      if (getEl('cadastro-naturalidade')) getEl('cadastro-naturalidade').value = op.naturalidade || '';
+      if (getEl('cadastro-nome-mae')) getEl('cadastro-nome-mae').value = op.nome_mae || '';
+      if (getEl('cadastro-celular')) getEl('cadastro-celular').value = op.celular || '';
+    }
+  } catch (e) { console.warn('Erro ao buscar operador', e); }
+}
+
+// ====================================================================
+// CARREGAR DADOS DO INSPETOR
+// ====================================================================
+function carregarDadosInspetor() {
+  const apelido = localStorage.getItem('inspectorApelido') || '';
+  const chapa = localStorage.getItem('inspectorChapa') || '';
+  const nome = localStorage.getItem('inspectorNome') || '';
+  
+  if (getEl('parecer-inspetor')) getEl('parecer-inspetor').value = apelido;
+  if (getEl('parecer-chapa')) getEl('parecer-chapa').value = chapa;
+  if (getEl('parecer-nome-completo')) getEl('parecer-nome-completo').value = nome;
+}
+
+// ====================================================================
+// ANEXOS - FOTOS
+// ====================================================================
+async function anexarFotosColetivo() {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
-  input.accept = 'image/*,application/pdf';
+  input.accept = 'image/*';
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
-    if (anexosPrincipaisArray.length + files.length > 4) {
-      alert('Máximo de 4 anexos gerais por acidente.');
+    if (fotosColetivoArray.length + files.length > 6) {
+      alert('Máximo de 6 fotos do coletivo.');
       return;
     }
     for (const file of files) {
       const base64 = await fileToBase64(file);
-      anexosPrincipaisArray.push({
+      fotosColetivoArray.push({
         base64: base64.split(',')[1],
         mimeType: file.type,
-        nome: file.name
+        nome: `coletivo_${fotosColetivoArray.length + 1}.${file.type.split('/')[1]}`
       });
     }
-    renderizarListaAnexosPrincipais();
-    salvarRascunhoAcidente();
+    renderizarFotosColetivo();
+  };
+  input.click();
+}
+
+async function anexarFotosLocal() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (fotosLocalArray.length + files.length > 6) {
+      alert('Máximo de 6 fotos do local.');
+      return;
+    }
+    for (const file of files) {
+      const base64 = await fileToBase64(file);
+      fotosLocalArray.push({
+        base64: base64.split(',')[1],
+        mimeType: file.type,
+        nome: `local_${fotosLocalArray.length + 1}.${file.type.split('/')[1]}`
+      });
+    }
+    renderizarFotosLocal();
+  };
+  input.click();
+}
+
+async function anexarFotosVeiculo(index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!bensArray[index].fotos) bensArray[index].fotos = [];
+    if (bensArray[index].fotos.length + files.length > 6) {
+      alert('Máximo de 6 fotos por veículo.');
+      return;
+    }
+    for (const file of files) {
+      const base64 = await fileToBase64(file);
+      bensArray[index].fotos.push({
+        base64: base64.split(',')[1],
+        mimeType: file.type,
+        nome: `veiculo${index+1}_${bensArray[index].fotos.length + 1}.${file.type.split('/')[1]}`
+      });
+    }
+    renderizarBensFixos();
+  };
+  input.click();
+}
+
+async function anexarFotosVitima(index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!vitimasArray[index].fotos) vitimasArray[index].fotos = [];
+    if (vitimasArray[index].fotos.length + files.length > 6) {
+      alert('Máximo de 6 fotos por vítima.');
+      return;
+    }
+    for (const file of files) {
+      const base64 = await fileToBase64(file);
+      vitimasArray[index].fotos.push({
+        base64: base64.split(',')[1],
+        mimeType: file.type,
+        nome: `vitima${index+1}_${vitimasArray[index].fotos.length + 1}.${file.type.split('/')[1]}`
+      });
+    }
+    renderizarVitimasFixas();
   };
   input.click();
 }
@@ -404,86 +704,348 @@ function fileToBase64(file) {
   });
 }
 
-function removerAnexoPrincipal(index) {
-  anexosPrincipaisArray.splice(index, 1);
-  renderizarListaAnexosPrincipais();
-  salvarRascunhoAcidente();
+function handleFotoCNH(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    fotoCNHBase64 = e.target.result.split(',')[1];
+    const preview = getEl('preview-foto-cnh');
+    if (preview) preview.innerHTML = `<img src="${e.target.result}" alt="CNH">`;
+  };
+  reader.readAsDataURL(file);
 }
 
-function renderizarListaAnexosPrincipais() {
-  const container = getEl('lista-anexos-principais');
+function renderizarFotosColetivo() {
+  const container = getEl('lista-fotos-coletivo');
   if (!container) return;
-  if (anexosPrincipaisArray.length === 0) {
-    container.innerHTML = '<small>Nenhum anexo geral</small>';
+  if (fotosColetivoArray.length === 0) {
+    container.innerHTML = '<small>Nenhuma foto</small>';
     return;
   }
   let html = '';
-  anexosPrincipaisArray.forEach((a, idx) => {
-    html += `<div class="anexo-item">
-              📎 ${a.nome}
-              <button class="btn-remover-pequeno" onclick="removerAnexoPrincipal(${idx})">❌</button>
-            </div>`;
+  fotosColetivoArray.forEach((f, idx) => {
+    html += `<div class="anexo-item">📷 ${f.nome}<button class="btn-remover-pequeno" onclick="removerFotoColetivo(${idx})">❌</button></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderizarFotosLocal() {
+  const container = getEl('lista-fotos-local');
+  if (!container) return;
+  if (fotosLocalArray.length === 0) {
+    container.innerHTML = '<small>Nenhuma foto</small>';
+    return;
+  }
+  let html = '';
+  fotosLocalArray.forEach((f, idx) => {
+    html += `<div class="anexo-item">📷 ${f.nome}<button class="btn-remover-pequeno" onclick="removerFotoLocal(${idx})">❌</button></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function removerFotoColetivo(index) {
+  fotosColetivoArray.splice(index, 1);
+  renderizarFotosColetivo();
+}
+
+function removerFotoLocal(index) {
+  fotosLocalArray.splice(index, 1);
+  renderizarFotosLocal();
+}
+
+// ====================================================================
+// BENS AVARIADOS - CAMPOS FIXOS
+// ====================================================================
+function adicionarVeiculoBem() {
+  veiculoCounter++;
+  bensArray.push({
+    id: veiculoCounter,
+    tipo: 'Veículo ' + veiculoCounter,
+    placa: '',
+    modelo: '',
+    ano: '',
+    cor: '',
+    proprietario: '',
+    telefone: '',
+    danos: '',
+    fotos: []
+  });
+  renderizarBensFixos();
+}
+
+function removerVeiculoBem(index) {
+  if (confirm('Remover este veículo?')) {
+    bensArray.splice(index, 1);
+    renderizarBensFixos();
+  }
+}
+
+function atualizarVeiculoBem(index, campo, valor) {
+  bensArray[index][campo] = valor;
+}
+
+function renderizarBensFixos() {
+  const container = getEl('bens-fixos-container');
+  if (!container) return;
+  
+  if (bensArray.length === 0) {
+    container.innerHTML = '<div class="empty-list"><small>Nenhum veículo adicionado.</small></div>';
+    return;
+  }
+  
+  let html = '';
+  bensArray.forEach((bem, idx) => {
+    html += `
+      <div class="veiculo-card">
+        <button class="btn-remover-veiculo" onclick="removerVeiculoBem(${idx})">🗑️</button>
+        <h4>Veículo ${bem.id}</h4>
+        <div class="form-row">
+          <div class="field"><label>Tipo</label><input type="text" value="${bem.tipo}" onchange="atualizarVeiculoBem(${idx}, 'tipo', this.value)"></div>
+          <div class="field"><label>Placa</label><input type="text" value="${bem.placa || ''}" onchange="atualizarVeiculoBem(${idx}, 'placa', this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Modelo</label><input type="text" value="${bem.modelo || ''}" onchange="atualizarVeiculoBem(${idx}, 'modelo', this.value)"></div>
+          <div class="field"><label>Ano</label><input type="text" value="${bem.ano || ''}" onchange="atualizarVeiculoBem(${idx}, 'ano', this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Cor</label><input type="text" value="${bem.cor || ''}" onchange="atualizarVeiculoBem(${idx}, 'cor', this.value)"></div>
+          <div class="field"><label>Proprietário</label><input type="text" value="${bem.proprietario || ''}" onchange="atualizarVeiculoBem(${idx}, 'proprietario', this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Telefone</label><input type="tel" value="${bem.telefone || ''}" onchange="atualizarVeiculoBem(${idx}, 'telefone', this.value)"></div>
+          <div class="field"><label>Danos</label><input type="text" value="${bem.danos || ''}" onchange="atualizarVeiculoBem(${idx}, 'danos', this.value)"></div>
+        </div>
+        <div class="field">
+          <label>Fotos do Terceiro (até 6)</label>
+          <button type="button" class="btn-secundario" onclick="anexarFotosVeiculo(${idx})">➕ Adicionar fotos</button>
+          <div class="grid-anexos-preview" style="margin-top: 8px;">
+            ${bem.fotos && bem.fotos.length > 0 ? bem.fotos.map((f, i) => `<span class="anexo-item">📷 ${f.nome}</span>`).join('') : '<small>Nenhuma foto</small>'}
+          </div>
+        </div>
+      </div>
+    `;
   });
   container.innerHTML = html;
 }
 
 // ====================================================================
-// CARREGAR ACIDENTE EXISTENTE
+// VÍTIMAS - CAMPOS FIXOS
 // ====================================================================
-async function carregarAcidenteExistente(id) {
-  const url = `${URL_PLANILHA}?acao=obter_acidente&id=${id}`;
-  const response = await fetch(url);
-  const acidente = await response.json();
-  if (!acidente) return;
-  acidenteAtualId = acidente.id;
-  originalStatus = acidente.status;
-  editMode = true;
-  getEl('acidente-data').value = acidente.dataAcidente || '';
-  getEl('acidente-hora').value = acidente.horaAcidente || '';
-  getEl('acidente-local').value = acidente.local || '';
-  getEl('acidente-prefixo').value = acidente.prefixo || '';
-  getEl('acidente-motorista').value = acidente.motoristaChapa || '';
-  getEl('acidente-descricao').value = acidente.descricaoAnalise || '';
-  bensArray = acidente.bens || [];
-  pessoasArray = acidente.pessoas || [];
-  anexosPrincipaisArray = acidente.anexosPrincipais || [];
-  renderizarListaBens();
-  renderizarListaPessoas();
-  renderizarListaAnexosPrincipais();
-  const currentUser = localStorage.getItem('inspectorApelido');
-  const podeEditar = (window.currentUserRole === 'ADMIN' || window.currentUserRole === 'SAF' || window.currentUserRole === 'ENCARREGADO' || acidente.fiscal === currentUser);
-  if (acidente.status === 'FINALIZADO' || !podeEditar) {
-    desabilitarEdicao();
-    alert('Este relatório está finalizado ou você não tem permissão para editar. Modo somente leitura.');
-  } else {
-    habilitarEdicao();
+function adicionarVitima() {
+  vitimaCounter++;
+  vitimasArray.push({
+    id: vitimaCounter,
+    nome: '',
+    documento: '',
+    contato: '',
+    lesões: '',
+    atendimento: '',
+    fotos: []
+  });
+  renderizarVitimasFixas();
+}
+
+function removerVitima(index) {
+  if (confirm('Remover esta vítima?')) {
+    vitimasArray.splice(index, 1);
+    renderizarVitimasFixas();
   }
 }
 
-function desabilitarEdicao() {
-  const inputs = document.querySelectorAll('#modal-envio-informacoes input, #modal-envio-informacoes textarea, #modal-envio-informacoes select, #modal-envio-informacoes button');
-  inputs.forEach(el => el.disabled = true);
-  const btnFinal = getEl('btn-finalizar-acidente');
-  if (btnFinal) btnFinal.disabled = true;
+function atualizarVitima(index, campo, valor) {
+  vitimasArray[index][campo] = valor;
 }
 
-function habilitarEdicao() {
-  const inputs = document.querySelectorAll('#modal-envio-informacoes input, #modal-envio-informacoes textarea, #modal-envio-informacoes select');
-  inputs.forEach(el => el.disabled = false);
-  const btnFinal = getEl('btn-finalizar-acidente');
-  if (btnFinal) btnFinal.disabled = false;
-  const btnSalvar = getEl('btn-salvar-rascunho');
-  if (btnSalvar) btnSalvar.disabled = false;
+function renderizarVitimasFixas() {
+  const container = getEl('vitimas-fixas-container');
+  if (!container) return;
+  
+  if (vitimasArray.length === 0) {
+    container.innerHTML = '<div class="empty-list"><small>Nenhuma vítima adicionada.</small></div>';
+    return;
+  }
+  
+  let html = '';
+  vitimasArray.forEach((v, idx) => {
+    html += `
+      <div class="vitima-card">
+        <button class="btn-remover-vitima" onclick="removerVitima(${idx})">🗑️</button>
+        <h4>Vítima ${v.id}</h4>
+        <div class="form-row">
+          <div class="field"><label>Nome</label><input type="text" value="${v.nome || ''}" onchange="atualizarVitima(${idx}, 'nome', this.value)"></div>
+          <div class="field"><label>Documento (RG/CPF)</label><input type="text" value="${v.documento || ''}" onchange="atualizarVitima(${idx}, 'documento', this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Contato</label><input type="tel" value="${v.contato || ''}" onchange="atualizarVitima(${idx}, 'contato', this.value)"></div>
+          <div class="field"><label>Lesões</label><input type="text" value="${v.lesões || ''}" onchange="atualizarVitima(${idx}, 'lesões', this.value)"></div>
+        </div>
+        <div class="field"><label>Atendimento</label><input type="text" value="${v.atendimento || ''}" onchange="atualizarVitima(${idx}, 'atendimento', this.value)"></div>
+        <div class="field">
+          <label>Fotos (opcional)</label>
+          <button type="button" class="btn-secundario" onclick="anexarFotosVitima(${idx})">➕ Adicionar fotos</button>
+          <div class="grid-anexos-preview" style="margin-top: 8px;">
+            ${v.fotos && v.fotos.length > 0 ? v.fotos.map((f, i) => `<span class="anexo-item">📷 ${f.nome}</span>`).join('') : '<small>Nenhuma foto</small>'}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// ====================================================================
+// TESTEMUNHAS - CAMPOS FIXOS
+// ====================================================================
+function adicionarTestemunha() {
+  testemunhaCounter++;
+  testemunhasArray.push({
+    id: testemunhaCounter,
+    nome: '',
+    documento: '',
+    contato: '',
+    relato: ''
+  });
+  renderizarTestemunhasFixas();
+}
+
+function removerTestemunha(index) {
+  if (confirm('Remover esta testemunha?')) {
+    testemunhasArray.splice(index, 1);
+    renderizarTestemunhasFixas();
+  }
+}
+
+function atualizarTestemunha(index, campo, valor) {
+  testemunhasArray[index][campo] = valor;
+}
+
+function renderizarTestemunhasFixas() {
+  const container = getEl('testemunhas-fixas-container');
+  if (!container) return;
+  
+  if (testemunhasArray.length === 0) {
+    container.innerHTML = '<div class="empty-list"><small>Nenhuma testemunha adicionada.</small></div>';
+    return;
+  }
+  
+  let html = '';
+  testemunhasArray.forEach((t, idx) => {
+    html += `
+      <div class="testemunha-card">
+        <button class="btn-remover-testemunha" onclick="removerTestemunha(${idx})">🗑️</button>
+        <h4>Testemunha ${t.id}</h4>
+        <div class="form-row">
+          <div class="field"><label>Nome</label><input type="text" value="${t.nome || ''}" onchange="atualizarTestemunha(${idx}, 'nome', this.value)"></div>
+          <div class="field"><label>Documento (RG/CPF)</label><input type="text" value="${t.documento || ''}" onchange="atualizarTestemunha(${idx}, 'documento', this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Contato</label><input type="tel" value="${t.contato || ''}" onchange="atualizarTestemunha(${idx}, 'contato', this.value)"></div>
+        </div>
+        <div class="field"><label>Relato</label><textarea rows="3" onchange="atualizarTestemunha(${idx}, 'relato', this.value)">${t.relato || ''}</textarea></div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// ====================================================================
+// GRAVAÇÃO DE ÁUDIO (HISTÓRICO E PARECER)
+// ====================================================================
+let mediaRecorder = null;
+let audioChunks = [];
+let gravandoHistorico = false;
+let gravandoParecer = false;
+
+async function gravarHistorico() {
+  if (gravandoHistorico) {
+    // Parar gravação
+    mediaRecorder.stop();
+    gravandoHistorico = false;
+    return;
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+    
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const base64 = await blobToBase64(audioBlob);
+      const textarea = getEl('cadastro-historico');
+      if (textarea) {
+        const existing = textarea.value;
+        textarea.value = existing + (existing ? '\n' : '') + '[Áudio gravado]';
+      }
+      stream.getTracks().forEach(track => track.stop());
+    };
+    
+    mediaRecorder.start();
+    gravandoHistorico = true;
+    alert('🎤 Gravando... Clique em "Gravar" novamente para parar.');
+  } catch (e) {
+    console.warn('Erro ao acessar microfone', e);
+    alert('Não foi possível acessar o microfone. Verifique as permissões.');
+  }
+}
+
+async function gravarParecer() {
+  if (gravandoParecer) {
+    mediaRecorder.stop();
+    gravandoParecer = false;
+    return;
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+    
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const textarea = getEl('parecer-visao');
+      if (textarea) {
+        const existing = textarea.value;
+        textarea.value = existing + (existing ? '\n' : '') + '[Áudio gravado]';
+      }
+      stream.getTracks().forEach(track => track.stop());
+    };
+    
+    mediaRecorder.start();
+    gravandoParecer = true;
+    alert('🎤 Gravando... Clique em "Gravar" novamente para parar.');
+  } catch (e) {
+    console.warn('Erro ao acessar microfone', e);
+    alert('Não foi possível acessar o microfone. Verifique as permissões.');
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.readAsDataURL(blob);
+  });
 }
 
 // ====================================================================
 // AUTOCOMPLETE
 // ====================================================================
 function iniciarAutoComplete() {
-  const prefixoInput = getEl('acidente-prefixo');
-  const motoristaInput = getEl('acidente-motorista');
+  const prefixoInput = getEl('cadastro-prefixo');
+  const motoristaInput = getEl('cadastro-chapa');
   const datalistVeiculos = getEl('lista-veiculos');
   const datalistMotoristas = getEl('lista-motoristas');
+  
   if (prefixoInput && datalistVeiculos) {
     prefixoInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
@@ -493,13 +1055,14 @@ function iniciarAutoComplete() {
         const resp = await fetch(url);
         const veiculo = await resp.json();
         if (veiculo && veiculo.prefixo) {
-          datalistVeiculos.innerHTML = `<option value="${veiculo.prefixo}">${veiculo.placa} - ${veiculo.modeloChassi || ''}</option>`;
+          datalistVeiculos.innerHTML = `<option value="${veiculo.prefixo}">${veiculo.placa} - ${veiculo.modelo || ''}</option>`;
         } else {
           datalistVeiculos.innerHTML = '';
         }
       } catch(e) { console.warn(e); }
     }, 500));
   }
+  
   if (motoristaInput && datalistMotoristas) {
     motoristaInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
@@ -519,68 +1082,37 @@ function iniciarAutoComplete() {
 }
 
 // ====================================================================
-// CONSULTA DE ACIDENTES
+// UTILITÁRIOS
 // ====================================================================
-function abrirModalConsultaAcidentes() {
-  const modal = getEl('modal-consulta-acidentes');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  const btnBuscar = getEl('btn-buscar-acidentes');
-  if (btnBuscar) {
-    btnBuscar.onclick = () => {
-      const params = new URLSearchParams({
-        acao: 'consultar_acidentes',
-        prefixo: getEl('filtro-prefixo')?.value || '',
-        motorista: getEl('filtro-motorista')?.value || '',
-        dataInicio: getEl('filtro-data-inicio')?.value || '',
-        dataFim: getEl('filtro-data-fim')?.value || '',
-        status: getEl('filtro-status')?.value || '',
-        papel: window.currentUserRole,
-        apelido: localStorage.getItem('inspectorApelido')
-      });
-      fetch(`${URL_PLANILHA}?${params.toString()}`)
-        .then(res => res.json())
-        .then(acidentes => {
-          const container = getEl('lista-acidentes-resultados');
-          if (!container) return;
-          if (!acidentes.length) {
-            container.innerHTML = '<p>Nenhum acidente encontrado.</p>';
-            return;
-          }
-          let html = '<div class="acidentes-lista">';
-          acidentes.forEach(ac => {
-            html += `
-              <div class="acidente-item">
-                <div><strong>${ac.dataAcidente || 'Data não informada'}</strong> - ${ac.local || 'Local não informado'}</div>
-                <div>Prefixo: ${ac.prefixo || '-'} | Motorista: ${ac.motorista || '-'}</div>
-                <div>Status: ${ac.status} | Fiscal: ${ac.fiscal}</div>
-                <div class="acoes">
-                  <button onclick="abrirModalEnvio('${ac.id}')" class="btn-secundario pequeno">
-                    ${ac.status === 'EM_ANDAMENTO' ? '✏️ Continuar edição' : '👁️ Visualizar'}
-                  </button>
-                </div>
-              </div>
-            `;
-          });
-          html += '</div>';
-          container.innerHTML = html;
-        })
-        .catch(err => {
-          console.error(err);
-          alert('Erro na consulta.');
-        });
-    };
+function getEl(id) {
+  return document.getElementById(id);
+}
+
+function getCheckedValues(name) {
+  const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function getSelectedRadioValue(name) {
+  const radio = document.querySelector(`input[name="${name}"]:checked`);
+  return radio ? radio.value : '';
+}
+
+function preencherDataAtual() {
+  const dataInput = getEl('cadastro-data');
+  if (dataInput && !dataInput.value) {
+    const hoje = new Date().toISOString().split('T')[0];
+    dataInput.value = hoje;
+  }
+  const horaInput = getEl('cadastro-hora');
+  if (horaInput && !horaInput.value) {
+    const agora = new Date();
+    const horas = String(agora.getHours()).padStart(2, '0');
+    const minutos = String(agora.getMinutes()).padStart(2, '0');
+    horaInput.value = `${horas}:${minutos}`;
   }
 }
 
-function fecharModalConsulta() {
-  const modal = getEl('modal-consulta-acidentes');
-  if (modal) modal.style.display = 'none';
-}
-
-// ====================================================================
-// DEBOUNCE OTIMIZADO
-// ====================================================================
 const debounceTimers = new Map();
 function debounce(func, wait) {
   return function executedFunction(...args) {
@@ -597,26 +1129,78 @@ function debounce(func, wait) {
 }
 
 // ====================================================================
-// UTILITÁRIOS
+// CARREGAR ACIDENTE EXISTENTE
 // ====================================================================
-function preencherDataAtual() {
-  const dataInput = getEl('acidente-data');
-  if (dataInput && !dataInput.value) {
-    const hoje = new Date().toISOString().split('T')[0];
-    dataInput.value = hoje;
+async function carregarAcidenteExistente(id) {
+  const url = `${URL_PLANILHA}?acao=obter_acidente&id=${id}`;
+  const response = await fetch(url);
+  const acidente = await response.json();
+  if (!acidente) return;
+  
+  acidenteAtualId = acidente.id;
+  originalStatus = acidente.status;
+  editMode = true;
+  
+  // Preencher formulário com dados existentes
+  preencherFormularioComDados(acidente);
+  
+  const currentUser = localStorage.getItem('inspectorApelido');
+  const podeEditar = (window.currentUserRole === 'ADMIN' || window.currentUserRole === 'SAF' || window.currentUserRole === 'ENCARREGADO' || acidente.fiscal === currentUser);
+  
+  if (acidente.status === 'FINALIZADO' || !podeEditar) {
+    desabilitarEdicao();
+    alert('Este relatório está finalizado ou você não tem permissão para editar. Modo somente leitura.');
+  } else {
+    habilitarEdicao();
   }
 }
 
-// Exportar preencherDataAtual para escopo global
-window.preencherDataAtual = preencherDataAtual;
-window.adicionarBem = adicionarBem;
-window.removerBem = removerBem;
-window.removerPessoa = removerPessoa;
-window.removerAnexoPrincipal = removerAnexoPrincipal;
+function desabilitarEdicao() {
+  const inputs = document.querySelectorAll('#modal-envio-informacoes input, #modal-envio-informacoes textarea, #modal-envio-informacoes select, #modal-envio-informacoes button');
+  inputs.forEach(el => el.disabled = true);
+}
+
+function habilitarEdicao() {
+  const inputs = document.querySelectorAll('#modal-envio-informacoes input, #modal-envio-informacoes textarea, #modal-envio-informacoes select');
+  inputs.forEach(el => el.disabled = false);
+}
+
+// ====================================================================
+// EXPORTAR FUNÇÕES PARA ESCOPO GLOBAL
+// ====================================================================
 window.abrirModalEnvio = abrirModalEnvio;
 window.fecharModalEnvio = fecharModalEnvio;
-window.finalizarAcidente = finalizarAcidente;
-window.salvarRascunhoAcidente = salvarRascunhoAcidente;
-window.abrirModalConsultaAcidentes = abrirModalConsultaAcidentes;
-window.fecharModalConsulta = fecharModalConsulta;
-window.anexarArquivosPrincipais = anexarArquivosPrincipais;
+window.salvarAbaCadastro = salvarAbaCadastro;
+window.salvarAbaAnalise = salvarAbaAnalise;
+window.salvarAbaBens = salvarAbaBens;
+window.salvarAbaVitimas = salvarAbaVitimas;
+window.salvarAbaTestemunhas = salvarAbaTestemunhas;
+window.salvarAbaParecer = salvarAbaParecer;
+window.finalizarAcidenteCompleto = finalizarAcidenteCompleto;
+window.buscarCEP = buscarCEP;
+window.buscarDadosLinha = buscarDadosLinha;
+window.buscarDadosVeiculo = buscarDadosVeiculo;
+window.buscarDadosMotorista = buscarDadosMotorista;
+window.toggleSituacaoOnibus = toggleSituacaoOnibus;
+window.toggleOutrosLocal = toggleOutrosLocal;
+window.toggleOrgaoGestor = toggleOrgaoGestor;
+window.toggleOutrosCulpa = toggleOutrosCulpa;
+window.toggleAutoridadeFields = toggleAutoridadeFields;
+window.anexarFotosColetivo = anexarFotosColetivo;
+window.anexarFotosLocal = anexarFotosLocal;
+window.anexarFotosVeiculo = anexarFotosVeiculo;
+window.anexarFotosVitima = anexarFotosVitima;
+window.handleFotoCNH = handleFotoCNH;
+window.removerFotoColetivo = removerFotoColetivo;
+window.removerFotoLocal = removerFotoLocal;
+window.adicionarVeiculoBem = adicionarVeiculoBem;
+window.removerVeiculoBem = removerVeiculoBem;
+window.atualizarVeiculoBem = atualizarVeiculoBem;
+window.adicionarVitima = adicionarVitima;
+window.removerVitima = removerVitima;
+window.atualizarVitima = atualizarVitima;
+window.adicionarTestemunha = adicionarTestemunha;
+window.removerTestemunha = removerTestemunha;
+window.atualizarTestemunha = atualizarTestemunha;
+window.gravarHistorico = gravarHistorico;
+window.gravarParecer = gravarParecer;

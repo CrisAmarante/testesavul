@@ -112,6 +112,40 @@ textarea { resize: vertical; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* ==================== FIELDSET ==================== */
+.form-fieldset { border: 2px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; background: var(--hover-bg); }
+.form-fieldset legend { font-weight: 700; color: var(--accent); padding: 0 8px; font-size: 0.9rem; }
+
+/* ==================== CHECKBOX GROUPS ==================== */
+.checkbox-group, .checkbox-group-single { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; }
+.checkbox-group label, .checkbox-group-single label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; padding: 6px 10px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); transition: all 0.2s; }
+.checkbox-group label:hover, .checkbox-group-single label:hover { background: var(--hover-bg); }
+.checkbox-group input[type="checkbox"], .checkbox-group input[type="radio"] { accent-color: var(--accent); }
+.checkbox-group-single input[type="radio"] { accent-color: var(--accent); }
+
+/* ==================== HIDDEN FIELDS ==================== */
+.hidden-field { display: none; margin-top: 12px; padding: 12px; background: var(--card-bg); border-radius: 8px; border: 1px dashed var(--border-color); }
+.hidden-field.show { display: block; }
+
+/* ==================== BUTTONS ==================== */
+.btn-salvar-aba { width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+.btn-salvar-aba:hover { background: #218838; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); }
+.btn-gravar { margin-top: 8px; padding: 8px 16px; font-size: 0.85rem; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn-gravar:hover { opacity: 0.9; }
+.btn-buscar-cep { padding: 8px 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 8px; }
+.btn-buscar-cep:hover { opacity: 0.9; }
+
+/* ==================== PREVIEW IMAGEM ==================== */
+.preview-imagem { margin-top: 8px; min-height: 50px; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.preview-imagem img { max-width: 100%; max-height: 150px; border-radius: 8px; }
+
+/* ==================== VEICULO/VITIMA/TESTEMUNHA CARDS ==================== */
+.veiculo-card, .vitima-card, .testemunha-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.veiculo-card h4, .vitima-card h4, .testemunha-card h4 { margin: 0 0 12px 0; color: var(--accent); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+.veiculo-card .form-row, .vitima-card .form-row, .testemunha-card .form-row { margin-bottom: 10px; }
+.btn-remover-veiculo, .btn-remover-vitima, .btn-remover-testemunha { float: right; background: var(--accent); color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.7rem; }
+.btn-remover-veiculo:hover, .btn-remover-vitima:hover, .btn-remover-testemunha:hover { opacity: 0.8; }
+
 /* ==================== LISTAS DINÂMICAS (BENS, PESSOAS) ==================== */
 .bens-container, .pessoas-container { max-height: 400px; overflow-y: auto; margin: 10px 0; }
 .cards-list { display: flex; flex-direction: column; gap: 12px; }
