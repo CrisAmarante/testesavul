@@ -1,39 +1,29 @@
 ```
-# Compilacao e refatoramento
-*.pyc
-__pycache__/
-*.o
-*.obj
-dist/
-build/
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
-# Dependencias
-.venv/
-venv/
-node_modules/
-.mypy_cache/
-.pytest_cache/
-target/
-.gradle/
-
-# Logs e arquivos temporários
+# Logs and temp files
 *.log
 *.tmp
 *.swp
-*.swo
 
-# Desenvolvimento
+# Environment
 .env
 .env.local
 *.env.*
 
-# Editores
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Build artifacts
+dist/
+build/
+target/
+.gradle/
+
+# Editors
 .vscode/
 .idea/
 
@@ -41,10 +31,24 @@ target/
 .DS_Store
 Thumbs.db
 
+# Compiled files
+*.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
+
 # Coverage
 coverage/
 htmlcov/
 .coverage
+
+# Gradle
+.gradle/
 
 # Compressed files
 *.zip
@@ -65,8 +69,4 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```
