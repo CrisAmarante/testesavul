@@ -93,7 +93,7 @@ Os dados estão na aba login da planilha do googlesheets, cujos cabeçalhso são
 ****ABA Cadastro **** - 
 Habilitar a Cãmera para o carregamento da CNH do motorista
 
-O código da linha deve ser escolhido em lista suspensa origirária da ABA Cadastro_LInhas da planilha do Google Sheets (Coluna C) e carregar os dados correspondentes no campo Nome da linha, que estão na coluna B da mesma ABA. O campo sentido deve ser de digitação livre pelo usuário. os cabeçalhos da ABA são: ID	Descrição	Número	Núcleo	Cobrador	Sábado	Domingo	Feriado
+O código da linha deve ser escolhido em lista suspensa originária da ABA Cadastro_LInhas da planilha do Google Sheets (Coluna C) e carregar os dados correspondentes no campo Nome da linha, que estão na coluna B da mesma ABA. O campo sentido deve ser de digitação livre pelo usuário. os cabeçalhos da ABA são: ID	Descrição	Número	Núcleo	Cobrador	Sábado	Domingo	Feriado
 
 Após digitado o Prefixo, os demais campos referentes ao ônibus devem ser preenchidos com os dados da aba Cadastro_Veiculos da planilha do GoogleSheets, cujos cabeçalhos são: PREFIXO	PLACA	RENAVAM	TIPO_VEICULO	TIPO_FROTA	CODIGO_ESTADO	CODIGO_GARAGEM	MODELO_CHASSI	MARCA_CHASSI	MODELO_CARROCERIA	MARCA_CARROCERIA	PADRAO_COR	GARAGEM	SITUACAO;
 
