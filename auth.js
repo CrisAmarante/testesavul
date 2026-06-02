@@ -1,5 +1,5 @@
 // ====================================================================
-// AUTENTICAÇÃO – Login, logout, verificação de sessão e permissões
+// AUTENTICAÇÃO – Login, logout, verificação de sessão e permissões 
 // ====================================================================
 
 // Variável global de papel do usuário (acessível a todos os módulos)

@@ -1,6 +1,6 @@
 // ====================================================================
 // acidente.js - Módulo de Relatório de Acidentes (VERSÃO OTIMIZADA)
-// 6 Abas: Cadastro, Análise, Bens Avariados, Vítimas, Testemunhas, Parecer
+// 
 // ====================================================================
 // ====================================================================
 // VARIÁVEIS GLOBAIS DO MÓDULO

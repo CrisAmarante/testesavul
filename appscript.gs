@@ -1,5 +1,5 @@
 // ====================================================================
-// CONFIGURAÇÕES GLOBAIS
+// CONFIGURAÇÕES GLOBAIS 
 // ====================================================================
 const ID_PASTA_ANEXOS_ACIDENTES = "1vvjL8WtPMJKYsMfWaUdzYHHbKisOwbwF"; 
 
