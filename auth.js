@@ -41,9 +41,16 @@ async function checkLoginStatus() {
 // ====================================================================
 async function login(e) {
   e.preventDefault();
-  const senha = document.getElementById('password').value.trim();
+  const chapa = document.getElementById('chapa').value.trim();
+  const senha = document.getElementById('senha').value.trim();
   const errorMsg = document.getElementById('login-error');
   const btnSubmit = e.target.querySelector('button[type="submit"]');
+  
+  if (!chapa || !senha) {
+    errorMsg.textContent = 'Digite chapa e senha!';
+    errorMsg.style.display = 'block';
+    return;
+  }
   
   const textoOriginal = btnSubmit.innerHTML;
   btnSubmit.innerHTML = 'Verificando...';
@@ -62,6 +69,7 @@ async function login(e) {
       localStorage.setItem('inspectorName', resposta.nome);
       localStorage.setItem('inspectorApelido', resposta.apelido);
       localStorage.setItem('inspectorRole', resposta.funcao);
+      localStorage.setItem('inspectorChapa', resposta.chapa);
       window.currentUserRole = resposta.funcao;
       
       registrarLog(resposta.apelido);
@@ -69,13 +77,14 @@ async function login(e) {
       checkLoginStatus();
     } else {
       errorMsg.style.display = 'block';
-      document.getElementById('password').value = '';
-      document.getElementById('password').focus();
+      document.getElementById('chapa').value = '';
+      document.getElementById('senha').value = '';
+      document.getElementById('chapa').focus();
     }
   };
 
   const script = document.createElement('script');
-  script.src = `${URL_PLANILHA}?acao=login&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
+  script.src = `${URL_PLANILHA}?acao=login&chapa=${encodeURIComponent(chapa)}&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
   script.onerror = () => {
     delete window[callbackName];
     btnSubmit.innerHTML = textoOriginal;
