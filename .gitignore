@@ -1,5 +1,5 @@
 ```
-# Compiled and build artifacts
+# Compilacao e refatoramento
 *.pyc
 __pycache__/
 *.o
@@ -13,7 +13,7 @@ build/
 *.a
 *.out
 
-# Dependencies
+# Dependencias
 .venv/
 venv/
 node_modules/
@@ -22,18 +22,18 @@ node_modules/
 target/
 .gradle/
 
-# Logs and temp files
+# Logs e arquivos temporários
 *.log
 *.tmp
 *.swp
 *.swo
 
-# Environment
+# Desenvolvimento
 .env
 .env.local
 *.env.*
 
-# Editors
+# Editores
 .vscode/
 .idea/
 
