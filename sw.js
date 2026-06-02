@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'penso-acidentes-v1.0.0';
+const CACHE_NAME = 'penso-acidentes-v1.0.2';
 
 // Lista de arquivos para cache imediato (estáticos)
 const ASSETS_TO_CACHE = [
