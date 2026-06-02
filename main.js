@@ -30,7 +30,7 @@ function initEventListeners() {
     btnLogin.addEventListener('click', (e) => {
       e.preventDefault();
       getEl('login-error').style.display = 'none';
-      getEl('password').value = '';
+      getEl('senha').value = '';
       window.modals.login.open();
     });
   }
