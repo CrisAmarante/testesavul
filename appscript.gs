@@ -504,20 +504,22 @@ function doGet(e) {
     
     if (acao === "login") {
       var senhaDigitada = e.parameter.senha;
+      var chapaDigitada = e.parameter.chapa;
       var ss = SpreadsheetApp.getActiveSpreadsheet();
       var sheetLogin = ss.getSheetByName("login");
       var data = sheetLogin.getDataRange().getValues();
       var usuarioEncontrado = { sucesso: false };
       for (var i = 1; i < data.length; i++) {
+        var matricula = data[i][0];
         var nome = data[i][1];
         var apelido = data[i][2];
         var funcao = data[i][4];
         var ativo = data[i][5];
         var hashPlanilha = data[i][6];
-        if (apelido && ativo === "SIM") {
+        if (matricula && String(matricula) === String(chapaDigitada) && ativo === "SIM") {
           var hashCalculado = gerarHashComSalt(senhaDigitada, apelido);
           if (hashCalculado === hashPlanilha) {
-            usuarioEncontrado = { sucesso: true, nome: nome, apelido: apelido, funcao: funcao };
+            usuarioEncontrado = { sucesso: true, nome: nome, apelido: apelido, funcao: funcao, chapa: matricula };
             break;
           }
         }

@@ -65,7 +65,7 @@
 <div id="welcome-toast"><div>Bem-vindo, <span id="toast-name" class="toast-name"></span>!</div><button class="toast-close" onclick="hideWelcomeToast()">×</button></div>
 
 <!-- MODAL DE LOGIN -->
-<div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="password" id="password" placeholder="Digite seu pin exclusivo" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Senha incorreta!</div><button type="submit" class="button">Entrar</button></form></div></div>
+<div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="text" id="chapa" placeholder="Digite sua chapa" required><input type="password" id="senha" placeholder="Digite sua senha" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Chapa ou senha incorretos!</div><button type="submit" class="button">Entrar</button></form></div></div>
 
 <!-- MODAL RELATÓRIO DE ACIDENTES (COM 6 ABAS) -->
 <div id="modal-envio-informacoes" class="modal">
@@ -115,9 +115,9 @@
       <fieldset class="form-fieldset">
         <legend>🚌 Dados da Linha</legend>
         <div class="form-row">
-          <div class="field"><label>Código da Linha *</label><input type="text" id="cadastro-codigo-linha" placeholder="Digite o código" onchange="buscarDadosLinha()"></div>
+          <div class="field"><label>Código da Linha *</label><select id="cadastro-codigo-linha" onchange="buscarDadosLinha()"><option value="">Selecione...</option></select></div>
           <div class="field"><label>Nome da Linha</label><input type="text" id="cadastro-nome-linha" readonly></div>
-          <div class="field"><label>Sentido</label><input type="text" id="cadastro-sentido-linha" readonly></div>
+          <div class="field"><label>Sentido</label><input type="text" id="cadastro-sentido-linha" placeholder="Digite o sentido"></div>
         </div>
       </fieldset>
       
@@ -174,8 +174,8 @@
           <button type="button" class="btn-gravar" onclick="gravarHistorico()"><i class="fas fa-microphone"></i> Gravar</button>
         </div>
         <div class="field">
-          <label>Foto da CNH (para validação)</label>
-          <input type="file" id="cadastro-foto-cnh" accept="image/*" onchange="handleFotoCNH(this)">
+          <label>Foto da CNH (para validação) - Habilitar Câmera</label>
+          <input type="file" id="cadastro-foto-cnh" accept="image/*" capture="environment" onchange="handleFotoCNH(this)">
           <div id="preview-foto-cnh" class="preview-imagem"></div>
         </div>
       </fieldset>
@@ -197,29 +197,29 @@
     <div id="tab-analise" class="tab-content">
       <fieldset class="form-fieldset">
         <legend>🚌 Situação do Ônibus no Momento do Acidente</legend>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="situacao-onibus" value="estacionado" onchange="toggleSituacaoOnibus()"> Estacionado</label>
-          <label><input type="checkbox" name="situacao-onibus" value="parado" onchange="toggleSituacaoOnibus()"> Parado</label>
-          <label><input type="checkbox" name="situacao-onibus" value="transitando" onchange="toggleSituacaoOnibus()"> Transitando</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="situacao-onibus" value="estacionado" onchange="toggleSituacaoOnibus()"> Estacionado</label>
+          <label><input type="radio" name="situacao-onibus" value="parado" onchange="toggleSituacaoOnibus()"> Parado</label>
+          <label><input type="radio" name="situacao-onibus" value="transitando" onchange="toggleSituacaoOnibus()"> Transitando</label>
         </div>
         
         <div id="div-movimentacao" class="hidden-field">
           <label>Movimentação do Ônibus:</label>
-          <div class="checkbox-group">
-            <label><input type="checkbox" name="movimentacao" value="frente"> Em frente</label>
-            <label><input type="checkbox" name="movimentacao" value="re"> Em marcha à ré</label>
-            <label><input type="checkbox" name="movimentacao" value="manobrando"> Manobrando</label>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="movimentacao" value="frente"> Em frente</label>
+            <label><input type="radio" name="movimentacao" value="re"> Em marcha à ré</label>
+            <label><input type="radio" name="movimentacao" value="manobrando"> Manobrando</label>
           </div>
           <div class="field"><label>Velocidade (km/h)</label><input type="number" id="analise-velocidade" placeholder="0"></div>
         </div>
         
         <div id="div-parado" class="hidden-field">
           <label>Situação quando parado:</label>
-          <div class="checkbox-group">
-            <label><input type="checkbox" name="parado-situacao" value="ponto_final"> No ponto final</label>
-            <label><input type="checkbox" name="parado-situacao" value="semaforo"> No semáforo</label>
-            <label><input type="checkbox" name="parado-situacao" value="transito"> No trânsito</label>
-            <label><input type="checkbox" name="parado-situacao" value="embarcando"> Embarcando/Desembarcando</label>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="parado-situacao" value="ponto_final"> No ponto final</label>
+            <label><input type="radio" name="parado-situacao" value="semaforo"> No semáforo</label>
+            <label><input type="radio" name="parado-situacao" value="transito"> No trânsito</label>
+            <label><input type="radio" name="parado-situacao" value="embarcando"> Embarcando/Desembarcando</label>
           </div>
         </div>
         
@@ -246,39 +246,131 @@
       <fieldset class="form-fieldset">
         <legend>🌤️ Condições Climáticas</legend>
         <label>Período:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="periodo" value="dia"> Dia</label>
-          <label><input type="checkbox" name="periodo" value="noite"> Noite</label>
-          <label><input type="checkbox" name="periodo" value="entardecer"> Entardecer/Alvorecer</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="periodo" value="dia"> Dia</label>
+          <label><input type="radio" name="periodo" value="noite"> Noite</label>
+          <label><input type="radio" name="periodo" value="entardecer"> Entardecer/Alvorecer</label>
         </div>
         <label>Clima:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="clima" value="bom_ensolarado"> Tempo Bom / Ensolarado</label>
-          <label><input type="checkbox" name="clima" value="neblina"> Neblina</label>
-          <label><input type="checkbox" name="clima" value="chuvoso"> Chuvoso</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="clima" value="bom_ensolarado"> Tempo Bom / Ensolarado</label>
+          <label><input type="radio" name="clima" value="neblina"> Neblina</label>
+          <label><input type="radio" name="clima" value="chuvoso"> Chuvoso</label>
         </div>
       </fieldset>
       
       <fieldset class="form-fieldset">
         <legend>👁️ Condições de Visibilidade no Acidente</legend>
         <label>Iluminação:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="iluminacao" value="natural_sol"> Natural / Sol</label>
-          <label><input type="checkbox" name="iluminacao" value="noite_artificial"> Noite com iluminação artificial</label>
-          <label><input type="checkbox" name="iluminacao" value="penumbra"> Penumbra</label>
-          <label><input type="checkbox" name="iluminacao" value="noite_sem_luz"> Noite sem iluminação artificial</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="iluminacao" value="natural_sol"> Natural / Sol</label>
+          <label><input type="radio" name="iluminacao" value="noite_artificial"> Noite com iluminação artificial</label>
+          <label><input type="radio" name="iluminacao" value="penumbra"> Penumbra</label>
+          <label><input type="radio" name="iluminacao" value="noite_sem_luz"> Noite sem iluminação artificial</label>
         </div>
         <label>Visibilidade do Acidente:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="visibilidade" value="total"> Total</label>
-          <label><input type="checkbox" name="visibilidade" value="parcial"> Parcial</label>
-          <label><input type="checkbox" name="visibilidade" value="nula"> Nula</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="visibilidade" value="total"> Total</label>
+          <label><input type="radio" name="visibilidade" value="parcial"> Parcial</label>
+          <label><input type="radio" name="visibilidade" value="nula"> Nula</label>
         </div>
         <label>Tipo de Acidente:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="tipo-acidente-analise" value="choque"> Choque</label>
-          <label><input type="checkbox" name="tipo-acidente-analise" value="atropelamento"> Atropelamento</label>
-          <label><input type="checkbox" name="tipo-acidente-analise" value="colisao"> Colisão</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="tipo-acidente-analise" value="choque"> Choque</label>
+          <label><input type="radio" name="tipo-acidente-analise" value="atropelamento"> Atropelamento</label>
+          <label><input type="radio" name="tipo-acidente-analise" value="colisao"> Colisão</label>
+        </div>
+      </fieldset>
+      
+      <!-- PERFIL DA SINALIZAÇÃO -->
+      <fieldset class="form-fieldset">
+        <legend>🚦 Perfil da Sinalização</legend>
+        
+        <label>Perfil da Via:</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="perfil-via-tipo" value="reta"> Reta</label>
+          <label><input type="radio" name="perfil-via-tipo" value="curva"> Curva</label>
+        </div>
+        <div class="checkbox-group-single" style="margin-top: 5px;">
+          <label><input type="radio" name="perfil-via-relevo" value="plano"> Em plano</label>
+          <label><input type="radio" name="perfil-via-relevo" value="aclive"> Em Aclive</label>
+          <label><input type="radio" name="perfil-via-relevo" value="declive"> Em declive</label>
+        </div>
+        
+        <label style="margin-top: 10px;">Tipo de Via:</label>
+        <div class="checkbox-group-single">
+          <label><input type="radio" name="tipo-via" value="normal"> Normal</label>
+          <label><input type="radio" name="tipo-via" value="cruzamento"> cruzamento</label>
+          <label><input type="radio" name="tipo-via" value="bifurcacao"> bifurcação</label>
+          <label><input type="radio" name="tipo-via" value="patio"> pátio / estacionamento</label>
+        </div>
+        
+        <label style="margin-top: 10px;">Sentido da Via:</label>
+        <div class="form-row">
+          <div class="checkbox-group-single" style="flex: 1;">
+            <label><input type="radio" name="sentido-via" value="mao_unica"> Mão única</label>
+            <label><input type="radio" name="sentido-via" value="mao_dupla"> Mão dupla</label>
+          </div>
+          <div class="checkbox-group-single" style="flex: 1;">
+            <label><input type="radio" name="num-faixas" value="uma"> uma</label>
+            <label><input type="radio" name="num-faixas" value="duas"> duas</label>
+            <label><input type="radio" name="num-faixas" value="tres_ou_mais"> três ou mais</label>
+          </div>
+        </div>
+        
+        <label style="margin-top: 10px;">Condição da via:</label>
+        <div style="margin-left: 10px;">
+          <div style="margin-bottom: 5px;"><strong>Pavimentação:</strong></div>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="pavimentacao" value="asfalto"> Asfalto</label>
+            <label><input type="radio" name="pavimentacao" value="cascalho"> Cascalho</label>
+            <label><input type="radio" name="pavimentacao" value="paralelepipedo"> Paralelepído</label>
+            <label><input type="radio" name="pavimentacao" value="concreto"> Concreto</label>
+            <label><input type="radio" name="pavimentacao" value="terra"> Terra</label>
+          </div>
+          
+          <div style="margin-bottom: 5px; margin-top: 10px;"><strong>Conservação:</strong></div>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="conservacao" value="boa"> Boa</label>
+            <label><input type="radio" name="conservacao" value="danificada"> Danificada</label>
+            <label><input type="radio" name="conservacao" value="obras"> Em obras</label>
+          </div>
+          
+          <div style="margin-bottom: 5px; margin-top: 10px;"><strong>Situação:</strong></div>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="situacao-pista" value="seca"> Seca</label>
+            <label><input type="radio" name="situacao-pista" value="molhada"> Molhada</label>
+            <label><input type="radio" name="situacao-pista" value="alagada"> Alagada / enlameada</label>
+          </div>
+          
+          <div style="margin-bottom: 5px; margin-top: 10px;"><strong>Sinalização de solo:</strong></div>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="sinalizacao-solo" value="inexistente"> Inexistente</label>
+            <label><input type="radio" name="sinalizacao-solo" value="faixa_simples"> faixa simples</label>
+            <label><input type="radio" name="sinalizacao-solo" value="faixa_dupla_continua"> faixa dupla contínua</label>
+            <label><input type="radio" name="sinalizacao-solo" value="faixa_dupla_seccionada"> faixa dupla seccionada</label>
+            <label><input type="radio" name="sinalizacao-solo" value="faixa_pedestres"> faixa de pedestres / ciclofaixa</label>
+            <label><input type="radio" name="sinalizacao-solo" value="pare"> PARE</label>
+            <label><input type="radio" name="sinalizacao-solo" value="preferencial"> Preferencial</label>
+          </div>
+          
+          <div style="margin-bottom: 5px; margin-top: 10px;"><strong>Sinalização vertical (placas):</strong></div>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="sinalizacao-vertical" value="pare"> Pare</label>
+            <label><input type="checkbox" name="sinalizacao-vertical" value="sentido_via"> Sentido da via</label>
+            <label><input type="checkbox" name="sinalizacao-vertical" value="velocidade"> Velocidade</label>
+            <label><input type="checkbox" name="sinalizacao-vertical" value="faixa_exclusiva"> Faixa exclusiva</label>
+            <label><input type="checkbox" name="sinalizacao-vertical" value="caminhoes_onibus"> Caminhões e ônibus à direita</label>
+            <label><input type="checkbox" name="sinalizacao-vertical" value="outros" onclick="toggleOutrosSinalizacao('outros-sinalizacao-desc')"> Outros (especifique)</label>
+          </div>
+          <div id="outros-sinalizacao-desc" class="hidden-field field"><label>Especifique:</label><input type="text" id="analise-outros-sinalizacao"></div>
+          
+          <div style="margin-bottom: 5px; margin-top: 10px;"><strong>Semáforo:</strong></div>
+          <div class="checkbox-group-single">
+            <label><input type="radio" name="semaforo" value="inexistente"> Inexistente</label>
+            <label><input type="radio" name="semaforo" value="inoperante"> Inoperante ou com defeito</label>
+            <label><input type="radio" name="semaforo" value="normal"> Normal</label>
+          </div>
         </div>
       </fieldset>
       

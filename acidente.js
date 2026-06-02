@@ -434,6 +434,15 @@ function toggleOutrosLocal(elementId) {
   }
 }
 
+function toggleOutrosSinalizacao(elementId) {
+  const el = getEl(elementId);
+  if (el) {
+    const isChecked = document.querySelector('input[name="sinalizacao-vertical"][value="outros"]')?.checked;
+    if (isChecked) showElement(elementId);
+    else hideElement(elementId);
+  }
+}
+
 function toggleOrgaoGestor(isSim) {
   if (isSim) showElement('orgao-gestor-fields');
   else hideElement('orgao-gestor-fields');
@@ -1185,6 +1194,7 @@ window.toggleOutrosLocal = toggleOutrosLocal;
 window.toggleOrgaoGestor = toggleOrgaoGestor;
 window.toggleOutrosCulpa = toggleOutrosCulpa;
 window.toggleAutoridadeFields = toggleAutoridadeFields;
+window.toggleOutrosSinalizacao = toggleOutrosSinalizacao;
 window.anexarFotosColetivo = anexarFotosColetivo;
 window.anexarFotosLocal = anexarFotosLocal;
 window.anexarFotosVeiculo = anexarFotosVeiculo;
