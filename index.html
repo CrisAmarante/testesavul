@@ -116,7 +116,7 @@
         <legend>🚌 Dados da Linha</legend>
         <div class="form-row">
           <div class="field"><label>Código da Linha *</label><select id="cadastro-codigo-linha" onchange="buscarDadosLinha()"><option value="">Selecione...</option></select></div>
-          <div class="field"><label>Nome da Linha</label><input type="text" id="cadastro-nome-linha" readonly></div>
+          <div class="field"><label>Nome da Linha</label><input type="text" id="cadastro-nome-linha"></div>
           <div class="field"><label>Sentido</label><input type="text" id="cadastro-sentido-linha" placeholder="Digite o sentido"></div>
         </div>
       </fieldset>
@@ -125,15 +125,15 @@
         <legend>🚍 Dados do Ônibus</legend>
         <div class="form-row">
           <div class="field"><label>Prefixo *</label><input type="text" id="cadastro-prefixo" placeholder="Digite o prefixo" onchange="buscarDadosVeiculo()" list="lista-veiculos"></div>
-          <div class="field"><label>Placa</label><input type="text" id="cadastro-placa" readonly></div>
-          <div class="field"><label>Renavan</label><input type="text" id="cadastro-renavan" readonly></div>
-          <div class="field"><label>Ano Fabricação</label><input type="text" id="cadastro-ano-fab" readonly></div>
+          <div class="field"><label>Placa</label><input type="text" id="cadastro-placa"></div>
+          <div class="field"><label>Renavan</label><input type="text" id="cadastro-renavan"></div>
+          <div class="field"><label>Ano Fabricação</label><input type="text" id="cadastro-ano-fab"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Marca</label><input type="text" id="cadastro-marca" readonly></div>
-          <div class="field"><label>Modelo</label><input type="text" id="cadastro-modelo" readonly></div>
-          <div class="field"><label>Cor</label><input type="text" id="cadastro-cor" readonly></div>
-          <div class="field"><label>Cidade</label><input type="text" id="cadastro-cidade-onibus" readonly></div>
+          <div class="field"><label>Marca</label><input type="text" id="cadastro-marca"></div>
+          <div class="field"><label>Modelo</label><input type="text" id="cadastro-modelo"></div>
+          <div class="field"><label>Cor</label><input type="text" id="cadastro-cor"></div>
+          <div class="field"><label>Cidade</label><input type="text" id="cadastro-cidade-onibus"></div>
         </div>
       </fieldset>
       
@@ -141,28 +141,28 @@
         <legend>👨‍✈️ Dados do Motorista</legend>
         <div class="form-row">
           <div class="field"><label>Chapa *</label><input type="text" id="cadastro-chapa" placeholder="Digite a chapa" onchange="buscarDadosMotorista()" list="lista-motoristas"></div>
-          <div class="field"><label>Nome de Escala (Apelido)</label><input type="text" id="cadastro-apelido" readonly></div>
-          <div class="field" style="flex: 2;"><label>Nome Completo</label><input type="text" id="cadastro-nome-completo" readonly></div>
+          <div class="field"><label>Nome de Escala (Apelido)</label><input type="text" id="cadastro-apelido"></div>
+          <div class="field" style="flex: 2;"><label>Nome Completo</label><input type="text" id="cadastro-nome-completo"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>CNH</label><input type="text" id="cadastro-cnh" readonly></div>
-          <div class="field"><label>Validade CNH</label><input type="date" id="cadastro-validade-cnh" readonly></div>
+          <div class="field"><label>CNH</label><input type="text" id="cadastro-cnh"></div>
+          <div class="field"><label>Validade CNH</label><input type="date" id="cadastro-validade-cnh"></div>
         </div>
         <div class="form-row">
-          <div class="field" style="flex: 2;"><label>Logradouro</label><input type="text" id="cadastro-moto-logradouro" readonly></div>
-          <div class="field"><label>Bairro</label><input type="text" id="cadastro-moto-bairro" readonly></div>
+          <div class="field" style="flex: 2;"><label>Logradouro</label><input type="text" id="cadastro-moto-logradouro"></div>
+          <div class="field"><label>Bairro</label><input type="text" id="cadastro-moto-bairro"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Cidade</label><input type="text" id="cadastro-moto-cidade" readonly></div>
-          <div class="field"><label>Complemento</label><input type="text" id="cadastro-moto-complemento" readonly></div>
+          <div class="field"><label>Cidade</label><input type="text" id="cadastro-moto-cidade"></div>
+          <div class="field"><label>Complemento</label><input type="text" id="cadastro-moto-complemento"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Nascimento</label><input type="date" id="cadastro-nascimento" readonly></div>
-          <div class="field"><label>Naturalidade</label><input type="text" id="cadastro-naturalidade" placeholder="Cidade/UF" readonly></div>
+          <div class="field"><label>Nascimento</label><input type="date" id="cadastro-nascimento"></div>
+          <div class="field"><label>Naturalidade</label><input type="text" id="cadastro-naturalidade" placeholder="Cidade/UF"></div>
         </div>
         <div class="form-row">
-          <div class="field" style="flex: 2;"><label>Nome da Mãe</label><input type="text" id="cadastro-nome-mae" readonly></div>
-          <div class="field"><label>Celular</label><input type="tel" id="cadastro-celular" readonly></div>
+          <div class="field" style="flex: 2;"><label>Nome da Mãe</label><input type="text" id="cadastro-nome-mae"></div>
+          <div class="field"><label>Celular</label><input type="tel" id="cadastro-celular"></div>
         </div>
       </fieldset>
       
@@ -312,6 +312,7 @@
             <label><input type="radio" name="sentido-via" value="mao_dupla"> Mão dupla</label>
           </div>
           <div class="checkbox-group-single" style="flex: 1;">
+            <label style="margin-top: 10px;">Nº de faixas:</label>
             <label><input type="radio" name="num-faixas" value="uma"> uma</label>
             <label><input type="radio" name="num-faixas" value="duas"> duas</label>
             <label><input type="radio" name="num-faixas" value="tres_ou_mais"> três ou mais</label>
@@ -462,10 +463,10 @@
       <fieldset class="form-fieldset">
         <legend>👮 Dados do Inspetor</legend>
         <div class="form-row">
-          <div class="field"><label>Inspetor</label><input type="text" id="parecer-inspetor" readonly></div>
-          <div class="field"><label>Chapa</label><input type="text" id="parecer-chapa" readonly></div>
+          <div class="field"><label>Inspetor</label><input type="text" id="parecer-inspetor"></div>
+          <div class="field"><label>Chapa</label><input type="text" id="parecer-chapa"></div>
         </div>
-        <div class="field"><label>Nome Completo</label><input type="text" id="parecer-nome-completo" readonly></div>
+        <div class="field"><label>Nome Completo</label><input type="text" id="parecer-nome-completo"></div>
       </fieldset>
       
       <fieldset class="form-fieldset">

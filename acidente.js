@@ -49,6 +49,9 @@ function initAcidenteModal() {
   // Inicializar autocomplete
   iniciarAutoComplete();
 
+  // Carregar lista de linhas no select
+  carregarListaLinhas();
+
   // Preencher data atual
   preencherDataAtual();
 }
@@ -194,7 +197,7 @@ function preencherFormularioComDados(dados) {
   if (dados.cadastro) {
     Object.keys(dados.cadastro).forEach(key => {
       const el = getEl(`cadastro-${key}`);
-      if (el) el.value = dados.cadastro[key];
+      if (el && key !== 'fotoCNH') el.value = dados.cadastro[key];
     });
   }
   
@@ -210,14 +213,56 @@ function preencherFormularioComDados(dados) {
   if (dados.bens) { bensArray = dados.bens; renderizarBensFixos(); }
   if (dados.vitimas) { vitimasArray = dados.vitimas; renderizarVitimasFixas(); }
   if (dados.testemunhas) { testemunhasArray = dados.testemunhas; renderizarTestemunhasFixas(); }
-  if (dados.fotosColetivo) { fotosColetivoArray = dados.fotosColetivo; renderizarFotosColetivo(); }
-  if (dados.fotosLocal) { fotosLocalArray = dados.fotosLocal; renderizarFotosLocal(); }
+  
+  // Avisar se havia fotos no rascunho original
+  if (dados._temFotos) {
+    console.log('ℹ️ Este rascunho continha fotos que não foram salvas localmente. Você precisará reenviá-las.');
+  } else {
+    if (dados.fotosColetivo) { fotosColetivoArray = dados.fotosColetivo; renderizarFotosColetivo(); }
+    if (dados.fotosLocal) { fotosLocalArray = dados.fotosLocal; renderizarFotosLocal(); }
+  }
 }
 
 function salvarRascunhoLocal() {
-  const dados = montarObjetoAcidenteCompleto();
-  const chave = `rascunho_acidente_${acidenteAtualId}`;
-  localStorage.setItem(chave, JSON.stringify(dados));
+  try {
+    const dados = montarObjetoAcidenteCompleto();
+    
+    // Criar cópia para rascunho SEM as fotos (para não estourar quota do localStorage)
+    const dadosParaRascunho = {
+      id: dados.id,
+      status: dados.status,
+      fiscal: dados.fiscal,
+      cadastro: { ...dados.cadastro, fotoCNH: null }, // Remove foto CNH
+      analise: dados.analise,
+      bens: dados.bens,
+      vitimas: dados.vitimas,
+      testemunhas: dados.testemunhas,
+      parecer: dados.parecer,
+      fotosColetivo: [], // Remove fotos coletivo
+      fotosLocal: [],    // Remove fotos local
+      finalizado: dados.finalizado,
+      _temFotos: !!(dados.cadastro.fotoCNH || dados.fotosColetivo?.length || dados.fotosLocal?.length)
+    };
+    
+    const chave = `rascunho_acidente_${acidenteAtualId}`;
+    const dadosString = JSON.stringify(dadosParaRascunho);
+    
+    // Verificar tamanho antes de salvar
+    const tamanhoEstimado = new Blob([dadosString]).size;
+    if (tamanhoEstimado > 4 * 1024 * 1024) { // 4MB de segurança
+      console.warn('⚠️ Rascunho muito grande (' + Math.round(tamanhoEstimado/1024) + 'KB). Salvamento local pode falhar.');
+    }
+    
+    localStorage.setItem(chave, dadosString);
+    console.log('✓ Rascunho salvo localmente (' + Math.round(tamanhoEstimado/1024) + 'KB)');
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      console.error('❌ Quota do localStorage excedida! Dados podem ter sido perdidos no rascunho local.');
+      alert('⚠️ Aviso: O rascunho local não pôde ser salvo devido ao limite de armazenamento do navegador.\n\nIsso não afeta o salvamento final no servidor. Recomendamos finalizar o relatório o quanto antes.');
+    } else {
+      console.error('Erro ao salvar rascunho local:', e);
+    }
+  }
 }
 
 // ====================================================================
@@ -371,14 +416,17 @@ async function finalizarAcidenteCompleto() {
   dados.status = 'FINALIZADO';
   
   try {
-    // Salvar rascunho final
+    // Salvar rascunho final no backend (com fotos completas)
     await salvarNoBackend(dados, 'salvar_rascunho_acidente');
     
     // Finalizar
     await salvarNoBackend({ id: acidenteAtualId }, 'finalizar_acidente');
     
     alert('✅ Relatório finalizado e enviado com sucesso!');
+    
+    // Limpar rascunho local após salvamento bem-sucedido
     localStorage.removeItem(`rascunho_acidente_${acidenteAtualId}`);
+    
     fecharModalEnvio();
     
     // Recarregar consulta se estiver aberta
@@ -388,7 +436,7 @@ async function finalizarAcidenteCompleto() {
     }
   } catch (error) {
     console.error('Erro ao finalizar:', error);
-    alert('Erro ao finalizar o relatório. Verifique o console.');
+    alert('Erro ao finalizar o relatório. Verifique o console.\n\nDica: Se o erro persistir, verifique sua conexão com a internet.');
   }
 }
 
@@ -528,11 +576,13 @@ async function buscarDadosLinha() {
   if (codigo.length < 2) return;
   
   try {
-    const url = `${URL_PLANILHA}?acao=buscar_linha&codigo=${encodeURIComponent(codigo)}`;
+    const url = `${URL_PLANILHA}?acao=buscar_linhas&termo=${encodeURIComponent(codigo)}`;
     const resp = await fetch(url);
-    const linha = await resp.json();
-    if (linha && linha.codigo) {
-      if (getEl('cadastro-nome-linha')) getEl('cadastro-nome-linha').value = linha.nome || '';
+    const linhas = await resp.json();
+    if (linhas && linhas.length > 0) {
+      // Pega a primeira linha encontrada
+      const linha = linhas[0];
+      if (getEl('cadastro-nome-linha')) getEl('cadastro-nome-linha').value = linha.nome || linha.descricao || '';
       if (getEl('cadastro-sentido-linha')) getEl('cadastro-sentido-linha').value = linha.sentido || '';
     }
   } catch (e) { console.warn('Erro ao buscar linha', e); }
@@ -611,6 +661,7 @@ async function anexarFotosColetivo() {
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
+  input.capture = 'environment'; // Abre câmera por padrão, mas permite escolher galeria
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (fotosColetivoArray.length + files.length > 6) {
@@ -635,6 +686,7 @@ async function anexarFotosLocal() {
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
+  input.capture = 'environment'; // Abre câmera por padrão, mas permite escolher galeria
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (fotosLocalArray.length + files.length > 6) {
@@ -659,6 +711,7 @@ async function anexarFotosVeiculo(index) {
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
+  input.capture = 'environment'; // Abre câmera por padrão, mas permite escolher galeria
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (!bensArray[index].fotos) bensArray[index].fotos = [];
@@ -684,6 +737,7 @@ async function anexarFotosVitima(index) {
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
+  input.capture = 'environment'; // Abre câmera por padrão, mas permite escolher galeria
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (!vitimasArray[index].fotos) vitimasArray[index].fotos = [];
@@ -1090,6 +1144,42 @@ function iniciarAutoComplete() {
 }
 
 // ====================================================================
+// CARREGAR LISTA DE LINHAS
+// ====================================================================
+async function carregarListaLinhas() {
+  const selectLinha = getEl('cadastro-codigo-linha');
+  if (!selectLinha) return;
+  
+  try {
+    const url = `${URL_PLANILHA}?acao=buscar_linhas&termo=`;
+    const resp = await fetch(url);
+    const linhas = await resp.json();
+    
+    // Limpa opções existentes (mantém a primeira vazia)
+    selectLinha.innerHTML = '<option value="">Selecione...</option>';
+    
+    if (linhas && linhas.length > 0) {
+      // Ordena por número da linha
+      linhas.sort((a, b) => {
+        const numA = parseInt(a.numero) || 0;
+        const numB = parseInt(b.numero) || 0;
+        return numA - numB;
+      });
+      
+      // Adiciona todas as linhas ao select
+      linhas.forEach(linha => {
+        const option = document.createElement('option');
+        option.value = linha.numero;
+        option.textContent = `${linha.numero} - ${linha.nome || ''}`;
+        selectLinha.appendChild(option);
+      });
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar lista de linhas:', e);
+  }
+}
+
+// ====================================================================
 // UTILITÁRIOS
 // ====================================================================
 function getEl(id) {
@@ -1189,6 +1279,7 @@ window.buscarCEP = buscarCEP;
 window.buscarDadosLinha = buscarDadosLinha;
 window.buscarDadosVeiculo = buscarDadosVeiculo;
 window.buscarDadosMotorista = buscarDadosMotorista;
+window.carregarListaLinhas = carregarListaLinhas;
 window.toggleSituacaoOnibus = toggleSituacaoOnibus;
 window.toggleOutrosLocal = toggleOutrosLocal;
 window.toggleOrgaoGestor = toggleOrgaoGestor;

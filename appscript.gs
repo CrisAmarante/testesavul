@@ -136,10 +136,28 @@ function buscarLinhas(termo) {
   var dados = sheet.getDataRange().getValues();
   var resultados = [];
   for (var i = 1; i < dados.length; i++) {
-    var descricao = String(dados[i][1]);
-    var numero = String(dados[i][2]);
+    var id = dados[i][0];
+    var descricao = String(dados[i][1] || '');
+    var numero = String(dados[i][2] || '');
+    var nucleo = dados[i][3] || '';
+    var cobrador = dados[i][4] || '';
+    var sabado = dados[i][5] || '';
+    var domingo = dados[i][6] || '';
+    var feriado = dados[i][7] || '';
+    
+    // Busca pelo número da linha (coluna C) ou descrição (coluna B)
     if (descricao.toLowerCase().includes(termo.toLowerCase()) || numero.includes(termo)) {
-      resultados.push({ id: dados[i][0], descricao: descricao, numero: numero });
+      resultados.push({ 
+        id: id, 
+        nome: descricao, 
+        numero: numero,
+        nucleo: nucleo,
+        cobrador: cobrador,
+        sabado: sabado,
+        domingo: domingo,
+        feriado: feriado,
+        sentido: '' // Pode ser preenchido se houver coluna específica
+      });
     }
   }
   return resultados;
