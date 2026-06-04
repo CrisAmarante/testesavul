@@ -87,6 +87,12 @@ body.dark::before { filter: blur(10px) brightness(0.85); }
 .modal-close { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #666; transition: color 0.2s; }
 .modal-close:hover { color: var(--accent); }
 
+/* ==================== LOGIN FORM ==================== */
+#login-form { display: flex; flex-direction: column; gap: 20px; }
+.login-field { display: flex; flex-direction: column; gap: 8px; }
+.login-field label { font-size: 1.2rem; font-weight: 600; color: var(--text); }
+.login-field input { padding: 14px 16px; font-size: 1.2rem; border: 2px solid var(--border-color); border-radius: 10px; background: var(--card-bg); color: var(--text); }
+
 /* ==================== FORMULÁRIOS (ENVIO) ==================== */
 .envio-modal-content { max-width: 750px !important; width: 95% !important; }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }

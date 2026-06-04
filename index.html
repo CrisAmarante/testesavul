@@ -65,7 +65,26 @@
 <div id="welcome-toast"><div>Bem-vindo, <span id="toast-name" class="toast-name"></span>!</div><button class="toast-close" onclick="hideWelcomeToast()">×</button></div>
 
 <!-- MODAL DE LOGIN -->
-<div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form"><input type="text" id="chapa" placeholder="Digite sua chapa" required><input type="password" id="senha" placeholder="Digite sua senha" required><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Chapa ou senha incorretos!</div><button type="submit" class="button">Entrar</button></form></div></div>
+<div id="modal-login" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">🔐 Área logada</h2>
+      <button class="modal-close" onclick="window.modals.login.close()">×</button>
+    </div>
+    <form id="login-form">
+      <div class="login-field">
+        <label for="chapa">Chapa</label>
+        <input type="text" id="chapa" placeholder="Digite sua chapa" required>
+      </div>
+      <div class="login-field">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" placeholder="Digite sua senha" required>
+      </div>
+      <div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Chapa ou senha incorretos!</div>
+      <button type="submit" class="button">Entrar</button>
+    </form>
+  </div>
+</div>
 
 <!-- MODAL RELATÓRIO DE ACIDENTES (COM 6 ABAS) -->
 <div id="modal-envio-informacoes" class="modal">
@@ -108,7 +127,7 @@
         </div>
         <div class="form-row">
           <div class="field"><label>Cidade *</label><input type="text" id="cadastro-cidade" required></div>
-          <div class="field"><label>CEP</label><input type="text" id="cadastro-cep" placeholder="00000-000" maxlength="9"><button type="button" class="btn-buscar-cep" onclick="buscarCEP()">🔍</button></div>
+          <div class="field"><label>CEP</label><input type="text" id="cadastro-cep" placeholder="00000-000" maxlength="9"><button type="button" class="btn-buscar-cep" onclick="buscarCEP()"><i class="fas fa-search"></i></button><button type="button" class="btn-buscar-endereco" onclick="buscarEnderecoPorCEP()"><i class="fas fa-map-marker-alt"></i></button></div>
         </div>
       </fieldset>
       
@@ -174,7 +193,7 @@
           <button type="button" class="btn-gravar" onclick="gravarHistorico()"><i class="fas fa-microphone"></i> Gravar</button>
         </div>
         <div class="field">
-          <label>Foto da CNH (para validação) - Habilitar Câmera</label>
+          <label>Foto da CNH (para validação) - Apenas Câmera</label>
           <input type="file" id="cadastro-foto-cnh" accept="image/*" capture="environment" onchange="handleFotoCNH(this)">
           <div id="preview-foto-cnh" class="preview-imagem"></div>
         </div>
@@ -183,7 +202,7 @@
       <fieldset class="form-fieldset">
         <legend>📎 Anexos - Fotos do Coletivo (até 6)</legend>
         <div class="action-row">
-          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo()">➕ Adicionar fotos</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo(true)">➕ Adicionar fotos</button>
           <div id="lista-fotos-coletivo" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
         </div>
       </fieldset>
@@ -418,7 +437,7 @@
       <fieldset class="form-fieldset">
         <legend>📎 Anexos - Fotos do Local (até 6)</legend>
         <div class="action-row">
-          <button type="button" class="btn-secundario" onclick="anexarFotosLocal()">➕ Adicionar fotos</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosLocal(true)">➕ Adicionar fotos</button>
           <div id="lista-fotos-local" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
         </div>
       </fieldset>
