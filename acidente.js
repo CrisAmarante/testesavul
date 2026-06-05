@@ -54,6 +54,51 @@ function initAcidenteModal() {
 
   // Preencher data atual
   preencherDataAtual();
+  
+  // Restaurar dados da sessionStorage se existirem (para persistência)
+  restaurarDadosSessionStorage();
+}
+
+// ====================================================================
+// RESTAURAR DADOS DO SESSIONSTORAGE
+// ====================================================================
+function restaurarDadosSessionStorage() {
+  const isTestUser = localStorage.getItem('inspectorChapa') === '55555';
+  
+  // Restaurar dados do veículo
+  const veiculoStr = sessionStorage.getItem('veiculo_atual');
+  if (veiculoStr) {
+    try {
+      const veiculo = JSON.parse(veiculoStr);
+      if (getEl('cadastro-placa') && veiculo.placa) getEl('cadastro-placa').value = veiculo.placa;
+      if (getEl('cadastro-renavan') && veiculo.renavan) getEl('cadastro-renavan').value = veiculo.renavan;
+      if (getEl('cadastro-ano-fab') && veiculo.ano) getEl('cadastro-ano-fab').value = veiculo.ano;
+      if (getEl('cadastro-marca') && veiculo.marca) getEl('cadastro-marca').value = veiculo.marca;
+      if (getEl('cadastro-modelo') && veiculo.modelo) getEl('cadastro-modelo').value = veiculo.modelo;
+      if (getEl('cadastro-cor') && veiculo.cor) getEl('cadastro-cor').value = veiculo.cor;
+      if (getEl('cadastro-cidade-onibus') && veiculo.cidade) getEl('cadastro-cidade-onibus').value = veiculo.cidade;
+    } catch(e) { console.warn('Erro ao restaurar veículo:', e); }
+  }
+  
+  // Restaurar dados do motorista
+  const motoristaStr = sessionStorage.getItem('motorista_atual');
+  if (motoristaStr) {
+    try {
+      const motorista = JSON.parse(motoristaStr);
+      if (getEl('cadastro-apelido') && motorista.apelido) getEl('cadastro-apelido').value = motorista.apelido;
+      if (getEl('cadastro-nome-completo') && motorista.nome) getEl('cadastro-nome-completo').value = motorista.nome;
+      if (getEl('cadastro-cnh') && motorista.cnh) getEl('cadastro-cnh').value = motorista.cnh;
+      if (getEl('cadastro-validade-cnh') && motorista.validade_cnh) getEl('cadastro-validade-cnh').value = motorista.validade_cnh;
+      if (getEl('cadastro-moto-logradouro') && motorista.endereco) getEl('cadastro-moto-logradouro').value = motorista.endereco;
+      if (getEl('cadastro-moto-bairro') && motorista.bairro) getEl('cadastro-moto-bairro').value = motorista.bairro;
+      if (getEl('cadastro-moto-cidade') && motorista.cidade) getEl('cadastro-moto-cidade').value = motorista.cidade;
+      if (getEl('cadastro-moto-complemento') && motorista.complemento) getEl('cadastro-moto-complemento').value = motorista.complemento;
+      if (getEl('cadastro-nascimento') && motorista.nascimento) getEl('cadastro-nascimento').value = motorista.nascimento;
+      if (getEl('cadastro-naturalidade') && motorista.naturalidade) getEl('cadastro-naturalidade').value = motorista.naturalidade;
+      if (getEl('cadastro-nome-mae') && motorista.nome_mae) getEl('cadastro-nome-mae').value = motorista.nome_mae;
+      if (getEl('cadastro-celular') && motorista.celular) getEl('cadastro-celular').value = motorista.celular;
+    } catch(e) { console.warn('Erro ao restaurar motorista:', e); }
+  }
 }
 
 function ativarAba(tabId) {
@@ -118,6 +163,10 @@ function iniciarNovoAcidente() {
   renderizarTestemunhasFixas();
   renderizarFotosColetivo();
   renderizarFotosLocal();
+  
+  // Limpar sessionStorage de dados temporários
+  sessionStorage.removeItem('veiculo_atual');
+  sessionStorage.removeItem('motorista_atual');
   
   // Carregar rascunho se existir
   carregarRascunhoLocal();
@@ -213,6 +262,37 @@ function preencherFormularioComDados(dados) {
   if (dados.bens) { bensArray = dados.bens; renderizarBensFixos(); }
   if (dados.vitimas) { vitimasArray = dados.vitimas; renderizarVitimasFixas(); }
   if (dados.testemunhas) { testemunhasArray = dados.testemunhas; renderizarTestemunhasFixas(); }
+  
+  // Salvar dados em sessionStorage para persistência (se houver veículo e motorista)
+  if (dados.cadastro?.prefixo) {
+    sessionStorage.setItem('veiculo_atual', JSON.stringify({
+      prefixo: dados.cadastro.prefixo,
+      placa: dados.cadastro.placa || '',
+      renavan: dados.cadastro.renavan || '',
+      ano: dados.cadastro.anoFab || '',
+      marca: dados.cadastro.marca || '',
+      modelo: dados.cadastro.modelo || '',
+      cor: dados.cadastro.cor || '',
+      cidade: dados.cadastro.cidadeOnibus || ''
+    }));
+  }
+  if (dados.cadastro?.chapa) {
+    sessionStorage.setItem('motorista_atual', JSON.stringify({
+      chapa: dados.cadastro.chapa,
+      apelido: dados.cadastro.apelido || '',
+      nome: dados.cadastro.nomeCompleto || '',
+      cnh: dados.cadastro.cnh || '',
+      validade_cnh: dados.cadastro.validadeCnh || '',
+      endereco: dados.cadastro.motoLogradouro || '',
+      bairro: dados.cadastro.motoBairro || '',
+      cidade: dados.cadastro.motoCidade || '',
+      complemento: dados.cadastro.motoComplemento || '',
+      nascimento: dados.cadastro.nascimento || '',
+      naturalidade: dados.cadastro.naturalidade || '',
+      nome_mae: dados.cadastro.nomeMae || '',
+      celular: dados.cadastro.celular || ''
+    }));
+  }
   
   // Avisar se havia fotos no rascunho original
   if (dados._temFotos) {
@@ -658,52 +738,18 @@ async function buscarDadosLinha() {
 // BUSCAR DADOS DO VEÍCULO
 // ====================================================================
 async function buscarDadosVeiculo() {
-  const prefixo = getEl('cadastro-prefixo')?.value || '';
-  if (prefixo.length < 2) return;
-  
-  try {
-    const url = `${URL_PLANILHA}?acao=buscar_veiculo&prefixo=${encodeURIComponent(prefixo)}`;
-    const resp = await fetch(url);
-    const veiculo = await resp.json();
-    if (veiculo && veiculo.prefixo) {
-      if (getEl('cadastro-placa')) getEl('cadastro-placa').value = veiculo.placa || '';
-      if (getEl('cadastro-renavan')) getEl('cadastro-renavan').value = veiculo.renavan || '';
-      if (getEl('cadastro-ano-fab')) getEl('cadastro-ano-fab').value = veiculo.ano || '';
-      if (getEl('cadastro-marca')) getEl('cadastro-marca').value = veiculo.marca || '';
-      if (getEl('cadastro-modelo')) getEl('cadastro-modelo').value = veiculo.modelo || '';
-      if (getEl('cadastro-cor')) getEl('cadastro-cor').value = veiculo.cor || '';
-      if (getEl('cadastro-cidade-onibus')) getEl('cadastro-cidade-onibus').value = veiculo.cidade || '';
-    }
-  } catch (e) { console.warn('Erro ao buscar veículo', e); }
+  // Esta função foi desativada para evitar interferências
+  // O preenchimento automático é feito exclusivamente em iniciarAutoComplete()
+  console.log('[DEBUG] buscarDadosVeiculo chamada - função desativada');
 }
 
 // ====================================================================
 // BUSCAR DADOS DO MOTORISTA
 // ====================================================================
 async function buscarDadosMotorista() {
-  const chapa = getEl('cadastro-chapa')?.value || '';
-  if (chapa.length < 2) return;
-  
-  try {
-    const url = `${URL_PLANILHA}?acao=buscar_operador&termo=${encodeURIComponent(chapa)}`;
-    const resp = await fetch(url);
-    const operadores = await resp.json();
-    if (operadores && operadores.length > 0) {
-      const op = operadores[0];
-      if (getEl('cadastro-apelido')) getEl('cadastro-apelido').value = op.apelido || '';
-      if (getEl('cadastro-nome-completo')) getEl('cadastro-nome-completo').value = op.nome || '';
-      if (getEl('cadastro-cnh')) getEl('cadastro-cnh').value = op.cnh || '';
-      if (getEl('cadastro-validade-cnh')) getEl('cadastro-validade-cnh').value = op.validade_cnh || '';
-      if (getEl('cadastro-moto-logradouro')) getEl('cadastro-moto-logradouro').value = op.endereco || '';
-      if (getEl('cadastro-moto-bairro')) getEl('cadastro-moto-bairro').value = op.bairro || '';
-      if (getEl('cadastro-moto-cidade')) getEl('cadastro-moto-cidade').value = op.cidade || '';
-      if (getEl('cadastro-moto-complemento')) getEl('cadastro-moto-complemento').value = op.complemento || '';
-      if (getEl('cadastro-nascimento')) getEl('cadastro-nascimento').value = op.nascimento || '';
-      if (getEl('cadastro-naturalidade')) getEl('cadastro-naturalidade').value = op.naturalidade || '';
-      if (getEl('cadastro-nome-mae')) getEl('cadastro-nome-mae').value = op.nome_mae || '';
-      if (getEl('cadastro-celular')) getEl('cadastro-celular').value = op.celular || '';
-    }
-  } catch (e) { console.warn('Erro ao buscar operador', e); }
+  // Esta função foi desativada para evitar interferências
+  // O preenchimento automático é feito exclusivamente em iniciarAutoComplete()
+  console.log('[DEBUG] buscarDadosMotorista chamada - função desativada');
 }
 
 // ====================================================================
@@ -722,15 +768,21 @@ function carregarDadosInspetor() {
 // ====================================================================
 // ANEXOS - FOTOS
 // ====================================================================
-async function anexarFotosColetivo(allowBoth = true) {
+async function anexarFotosColetivo(modo = 'ambos') {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
-  // Se allowBoth for true, permite câmera e galeria. Se false, apenas câmera
-  if (!allowBoth) {
+  
+  // Configura o input baseado no modo selecionado
+  if (modo === 'camera') {
     input.capture = 'environment';
+  } else if (modo === 'galeria') {
+    // Não adiciona capture, permitindo apenas galeria
+    input.removeAttribute('capture');
   }
+  // Se modo === 'ambos', não define capture, permitindo que o navegador decida
+  
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (fotosColetivoArray.length + files.length > 6) {
@@ -750,15 +802,21 @@ async function anexarFotosColetivo(allowBoth = true) {
   input.click();
 }
 
-async function anexarFotosLocal(allowBoth = true) {
+async function anexarFotosLocal(modo = 'ambos') {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
-  // Se allowBoth for true, permite câmera e galeria. Se false, apenas câmera
-  if (!allowBoth) {
+  
+  // Configura o input baseado no modo selecionado
+  if (modo === 'camera') {
     input.capture = 'environment';
+  } else if (modo === 'galeria') {
+    // Não adiciona capture, permitindo apenas galeria
+    input.removeAttribute('capture');
   }
+  // Se modo === 'ambos', não define capture, permitindo que o navegador decida
+  
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (fotosLocalArray.length + files.length > 6) {
@@ -778,15 +836,21 @@ async function anexarFotosLocal(allowBoth = true) {
   input.click();
 }
 
-async function anexarFotosVeiculo(index, allowBoth = true) {
+async function anexarFotosVeiculo(index, modo = 'ambos') {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
-  // Se allowBoth for true, permite câmera e galeria. Se false, apenas câmera
-  if (!allowBoth) {
+  
+  // Configura o input baseado no modo selecionado
+  if (modo === 'camera') {
     input.capture = 'environment';
+  } else if (modo === 'galeria') {
+    // Não adiciona capture, permitindo apenas galeria
+    input.removeAttribute('capture');
   }
+  // Se modo === 'ambos', não define capture, permitindo que o navegador decida
+  
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (!bensArray[index].fotos) bensArray[index].fotos = [];
@@ -807,15 +871,21 @@ async function anexarFotosVeiculo(index, allowBoth = true) {
   input.click();
 }
 
-async function anexarFotosVitima(index, allowBoth = true) {
+async function anexarFotosVitima(index, modo = 'ambos') {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.accept = 'image/*';
-  // Se allowBoth for true, permite câmera e galeria. Se false, apenas câmera
-  if (!allowBoth) {
+  
+  // Configura o input baseado no modo selecionado
+  if (modo === 'camera') {
     input.capture = 'environment';
+  } else if (modo === 'galeria') {
+    // Não adiciona capture, permitindo apenas galeria
+    input.removeAttribute('capture');
   }
+  // Se modo === 'ambos', não define capture, permitindo que o navegador decida
+  
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
     if (!vitimasArray[index].fotos) vitimasArray[index].fotos = [];
@@ -958,7 +1028,10 @@ function renderizarBensFixos() {
         </div>
         <div class="field">
           <label>Fotos do Terceiro (até 6)</label>
-          <button type="button" class="btn-secundario" onclick="anexarFotosVeiculo(${idx})">➕ Adicionar fotos</button>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button type="button" class="btn-secundario" onclick="anexarFotosVeiculo(${idx}, 'camera')">📷 Câmera</button>
+            <button type="button" class="btn-secundario" onclick="anexarFotosVeiculo(${idx}, 'galeria')">🖼️ Galeria</button>
+          </div>
           <div class="grid-anexos-preview" style="margin-top: 8px;">
             ${bem.fotos && bem.fotos.length > 0 ? bem.fotos.map((f, i) => `<span class="anexo-item">📷 ${f.nome}</span>`).join('') : '<small>Nenhuma foto</small>'}
           </div>
@@ -1023,7 +1096,10 @@ function renderizarVitimasFixas() {
         <div class="field"><label>Atendimento</label><input type="text" value="${v.atendimento || ''}" onchange="atualizarVitima(${idx}, 'atendimento', this.value)"></div>
         <div class="field">
           <label>Fotos (opcional)</label>
-          <button type="button" class="btn-secundario" onclick="anexarFotosVitima(${idx})">➕ Adicionar fotos</button>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button type="button" class="btn-secundario" onclick="anexarFotosVitima(${idx}, 'camera')">📷 Câmera</button>
+            <button type="button" class="btn-secundario" onclick="anexarFotosVitima(${idx}, 'galeria')">🖼️ Galeria</button>
+          </div>
           <div class="grid-anexos-preview" style="margin-top: 8px;">
             ${v.fotos && v.fotos.length > 0 ? v.fotos.map((f, i) => `<span class="anexo-item">📷 ${f.nome}</span>`).join('') : '<small>Nenhuma foto</small>'}
           </div>
@@ -1114,12 +1190,39 @@ function iniciarReconhecimentoFala() {
 }
 
 async function gravarHistorico() {
+  // Verifica se é usuário de teste (chapa 55555)
+  const chapa = getEl('cadastro-chapa')?.value || '';
+  const isDemoUser = chapa === '55555';
+
+  if (isDemoUser) {
+    // MODO DEMONSTRAÇÃO: Simula digitação sem usar o microfone real
+    iniciarSimulacaoDitadoHistorico();
+    return;
+  }
+
+  // Validações completas apenas para usuários normais
+  const tipoAcidenteEl = document.querySelector('input[name="tipo-acidente"]:checked');
+  const tipoAcidente = tipoAcidenteEl ? tipoAcidenteEl.value : '';
+  
+  const logradouro = getEl('cadastro-logradouro')?.value || '';
+  const prefixo = getEl('cadastro-prefixo')?.value || '';
+  
+  const demoConditionsMet = isDemoUser && 
+                           tipoAcidente === 'colisao_com_vitimas' && 
+                           logradouro.toLowerCase().includes('av. hum, 1345') && 
+                           prefixo === '210';
+
   if (ditandoHistorico) {
     // Parar ditado
     if (recognitionHistorico) {
       recognitionHistorico.stop();
     }
     ditandoHistorico = false;
+    // Remove estilos ativos
+    const textarea = getEl('cadastro-historico');
+    const btn = document.querySelector('.btn-gravar[onclick="gravarHistorico()"]');
+    if (textarea) textarea.style.borderColor = '';
+    if (btn) btn.innerHTML = '<i class="fas fa-microphone"></i> Gravar';
     return;
   }
   
@@ -1131,6 +1234,11 @@ async function gravarHistorico() {
     const textarea = getEl('cadastro-historico');
     if (!textarea) return;
     
+    // Adiciona moldura verde-clara e muda ícone do botão
+    textarea.style.borderColor = '#90EE90';
+    const btn = document.querySelector('.btn-gravar[onclick="gravarHistorico()"]');
+    if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i> Ouvindo...';
+    
     recognition.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript;
       const existing = textarea.value;
@@ -1138,24 +1246,74 @@ async function gravarHistorico() {
     };
     
     recognition.onerror = (event) => {
+      // Silencia erros comuns de network e no-speech que ocorrem frequentemente
+      if (event.error === 'no-speech' || event.error === 'network') {
+        ditandoHistorico = false;
+        // Remove estilos ativos
+        textarea.style.borderColor = '';
+        if (btn) btn.innerHTML = '<i class="fas fa-microphone"></i> Gravar';
+        return;
+      }
+      
       console.warn('Erro no reconhecimento de fala:', event.error);
       alert('Erro no reconhecimento de fala: ' + event.error);
       ditandoHistorico = false;
+      // Remove estilos ativos
+      textarea.style.borderColor = '';
+      if (btn) btn.innerHTML = '<i class="fas fa-microphone"></i> Gravar';
     };
     
     recognition.onend = () => {
       if (ditandoHistorico) {
         recognition.start(); // Reinicia se ainda estiver no modo ditado
+      } else {
+        // Remove estilos ativos quando parar
+        textarea.style.borderColor = '';
+        if (btn) btn.innerHTML = '<i class="fas fa-microphone"></i> Gravar';
       }
     };
     
     recognition.start();
     ditandoHistorico = true;
-    alert('🎤 Ditando... Clique em \"Gravar\" novamente para parar.');
   } catch (e) {
     console.warn('Erro ao iniciar reconhecimento de fala', e);
     alert('Não foi possível iniciar o reconhecimento de fala. Verifique as permissões e se seu navegador é compatível.');
   }
+}
+
+function iniciarSimulacaoDitadoHistorico() {
+  const textoCompleto = "Eu estava trafegando normalmente com o ônibus pelo local dos fatos, quando eu estava indo para a direita para para no ponto, uma motocicleta foi me ultrapassar pela direita e acabou colidindo com minha lateral direita traseira. Após a queda, o motociclista caiu e sofreu arranhões leves. A moto foi pra debaixo do ônibus e ficou danificada.";
+  
+  // Divide em palavras para simular digitação/fala
+  const palavras = textoCompleto.split(' ');
+  let indice = 0;
+  
+  const textarea = getEl('cadastro-historico');
+  if (!textarea) return;
+  
+  // Adiciona moldura verde-clara e muda ícone do botão
+  textarea.style.borderColor = '#90EE90';
+  const btn = document.querySelector('.btn-gravar[onclick="gravarHistorico()"]');
+  if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i> Ouvindo...';
+  
+  textarea.value = "";
+  ditandoHistorico = true;
+  
+  const intervalo = setInterval(() => {
+    if (indice < palavras.length) {
+      textarea.value += (indice > 0 ? ' ' : '') + palavras[indice];
+      textarea.scrollTop = textarea.scrollHeight; // Auto-scroll
+      indice++;
+    } else {
+      clearInterval(intervalo);
+      ditandoHistorico = false;
+      // Remove estilos ativos
+      textarea.style.borderColor = '';
+      if (btn) btn.innerHTML = '<i class="fas fa-microphone"></i> Gravar';
+      // Salva automaticamente após o ditado
+      salvarRascunho(); 
+    }
+  }, 150); // Velocidade de digitação/fala
 }
 
 async function gravarParecer() {
@@ -1182,6 +1340,13 @@ async function gravarParecer() {
     };
     
     recognition.onerror = (event) => {
+      // Silencia erros comuns de network e no-speech que ocorrem frequentemente
+      if (event.error === 'no-speech' || event.error === 'network') {
+        console.debug('Speech recognition: ', event.error);
+        ditandoParecer = false;
+        return;
+      }
+      
       console.warn('Erro no reconhecimento de fala:', event.error);
       alert('Erro no reconhecimento de fala: ' + event.error);
       ditandoParecer = false;
@@ -1208,42 +1373,159 @@ async function gravarParecer() {
 function iniciarAutoComplete() {
   const prefixoInput = getEl('cadastro-prefixo');
   const motoristaInput = getEl('cadastro-chapa');
+  const logradouroInput = getEl('analise-logradouro');
   const datalistVeiculos = getEl('lista-veiculos');
   const datalistMotoristas = getEl('lista-motoristas');
   
+  // Verifica se é usuário de teste (chapa 55555) - ISOLAMENTO TOTAL
+  const isTestUser = localStorage.getItem('inspectorChapa') === '55555';
+  
+  // ====================================================================
+  // MODO DE DEMONSTRAÇÃO (USUÁRIO 55555) - DADOS FIXOS
+  // ====================================================================
+  if (isTestUser) {
+    // Configura opções fixas para demonstração
+    if (datalistVeiculos) {
+      datalistVeiculos.innerHTML = '<option value="210">STC-4F92 - Mercedes Benz Apache Vip V (Inspetor de Testes)"></option>';
+    }
+    if (datalistMotoristas) {
+      datalistMotoristas.innerHTML = '<option value="98765">João da Silva Teste (Motorista Teste)</option>';
+    }
+    
+    // Evento para veículo (apenas 210)
+    if (prefixoInput) {
+      prefixoInput.addEventListener('input', function() {
+        if (this.value === '210') {
+          preencherDadosVeiculoTeste();
+        }
+      });
+    }
+    
+    // Evento para motorista (apenas 98765)
+    if (motoristaInput) {
+      motoristaInput.addEventListener('input', function() {
+        if (this.value === '98765') {
+          preencherDadosMotoristaTeste();
+        }
+      });
+    }
+    
+    console.log('[MODO DEMO] Autocomplete configurado para usuário 55555');
+    return; // Sai da função - não executa código de produção
+  }
+  
+  // ====================================================================
+  // MODO PRODUÇÃO (OUTROS USUÁRIOS) - API REAL
+  // ====================================================================
+  console.log('[MODO PRODUÇÃO] Autocomplete configurado para usuário comum');
+  
+  // Configura autocomplete de veículos via API
   if (prefixoInput && datalistVeiculos) {
     prefixoInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
       if (termo.length < 2) return;
+      
       const url = `${URL_PLANILHA}?acao=buscar_veiculo&prefixo=${encodeURIComponent(termo)}`;
       try {
         const resp = await fetch(url);
         const veiculo = await resp.json();
         if (veiculo && veiculo.prefixo) {
           datalistVeiculos.innerHTML = `<option value="${veiculo.prefixo}">${veiculo.placa} - ${veiculo.modelo || ''}</option>`;
-        } else {
-          datalistVeiculos.innerHTML = '';
+          sessionStorage.setItem('veiculo_atual', JSON.stringify(veiculo));
         }
-      } catch(e) { console.warn(e); }
+      } catch(e) { 
+        console.warn('Erro ao buscar veículo:', e);
+      }
     }, 500));
   }
   
+  // Configura autocomplete de motoristas via API
   if (motoristaInput && datalistMotoristas) {
     motoristaInput.addEventListener('input', debounce(async function() {
       const termo = this.value;
       if (termo.length < 2) return;
+      
       const url = `${URL_PLANILHA}?acao=buscar_operador&termo=${encodeURIComponent(termo)}`;
       try {
         const resp = await fetch(url);
         const operadores = await resp.json();
         if (operadores && operadores.length) {
           datalistMotoristas.innerHTML = operadores.map(op => `<option value="${op.chapa}">${op.nome} (${op.apelido})</option>`).join('');
-        } else {
-          datalistMotoristas.innerHTML = '';
+          if (operadores[0]) {
+            sessionStorage.setItem('motorista_atual', JSON.stringify(operadores[0]));
+          }
         }
-      } catch(e) { console.warn(e); }
+      } catch(e) { 
+        console.warn('Erro ao buscar operador:', e);
+      }
     }, 500));
   }
+}
+
+// ====================================================================
+// PREENCHER DADOS DE VEÍCULO DE TESTE
+// ====================================================================
+function preencherDadosVeiculoTeste() {
+  const veiculoTeste = {
+    prefixo: '210',
+    placa: 'STC-4F92',
+    renavan: '123456789',
+    ano: '2020',
+    marca: 'Mercedes Benz',
+    modelo: 'Apache Vip V',
+    cor: 'Branco',
+    cidade: 'São Paulo'
+  };
+  
+  // Salva em sessionStorage para persistência
+  sessionStorage.setItem('veiculo_atual', JSON.stringify(veiculoTeste));
+  
+  // Preenche os campos
+  if (getEl('cadastro-placa')) getEl('cadastro-placa').value = veiculoTeste.placa;
+  if (getEl('cadastro-renavan')) getEl('cadastro-renavan').value = veiculoTeste.renavan;
+  if (getEl('cadastro-ano-fab')) getEl('cadastro-ano-fab').value = veiculoTeste.ano;
+  if (getEl('cadastro-marca')) getEl('cadastro-marca').value = veiculoTeste.marca;
+  if (getEl('cadastro-modelo')) getEl('cadastro-modelo').value = veiculoTeste.modelo;
+  if (getEl('cadastro-cor')) getEl('cadastro-cor').value = veiculoTeste.cor;
+  if (getEl('cadastro-cidade-onibus')) getEl('cadastro-cidade-onibus').value = veiculoTeste.cidade;
+}
+
+// ====================================================================
+// PREENCHER DADOS DE MOTORISTA DE TESTE
+// ====================================================================
+function preencherDadosMotoristaTeste() {
+  const motoristaTeste = {
+    chapa: '98765',
+    apelido: 'Motorista Teste',
+    nome: 'João da Silva Teste',
+    cnh: '12345678900',
+    validade_cnh: '12/2025',
+    endereco: 'Rua das Flores, 123',
+    bairro: 'Centro',
+    cidade: 'São Paulo',
+    complemento: 'Apto 45',
+    nascimento: '13/05/1974',
+    naturalidade: 'São Paulo - SP',
+    nome_mae: 'Maria da Silva',
+    celular: '(11) 99999-9999'
+  };
+  
+  // Salva em sessionStorage para persistência
+  sessionStorage.setItem('motorista_atual', JSON.stringify(motoristaTeste));
+  
+  // Preenche os campos
+  if (getEl('cadastro-apelido')) getEl('cadastro-apelido').value = motoristaTeste.apelido;
+  if (getEl('cadastro-nome-completo')) getEl('cadastro-nome-completo').value = motoristaTeste.nome;
+  if (getEl('cadastro-cnh')) getEl('cadastro-cnh').value = motoristaTeste.cnh;
+  if (getEl('cadastro-validade-cnh')) getEl('cadastro-validade-cnh').value = motoristaTeste.validade_cnh;
+  if (getEl('cadastro-moto-logradouro')) getEl('cadastro-moto-logradouro').value = motoristaTeste.endereco;
+  if (getEl('cadastro-moto-bairro')) getEl('cadastro-moto-bairro').value = motoristaTeste.bairro;
+  if (getEl('cadastro-moto-cidade')) getEl('cadastro-moto-cidade').value = motoristaTeste.cidade;
+  if (getEl('cadastro-moto-complemento')) getEl('cadastro-moto-complemento').value = motoristaTeste.complemento;
+  if (getEl('cadastro-nascimento')) getEl('cadastro-nascimento').value = motoristaTeste.nascimento;
+  if (getEl('cadastro-naturalidade')) getEl('cadastro-naturalidade').value = motoristaTeste.naturalidade;
+  if (getEl('cadastro-nome-mae')) getEl('cadastro-nome-mae').value = motoristaTeste.nome_mae;
+  if (getEl('cadastro-celular')) getEl('cadastro-celular').value = motoristaTeste.celular;
 }
 
 // ====================================================================
@@ -1254,12 +1536,20 @@ async function carregarListaLinhas() {
   if (!selectLinha) return;
   
   try {
+    // Para o modo de demonstração, adiciona a linha 033 manualmente
+    // Limpa opções existentes (mantém a primeira vazia)
+    selectLinha.innerHTML = '<option value="">Selecione...</option>';
+    
+    // Adiciona linha de demonstração 033
+    const optionDemo = document.createElement('option');
+    optionDemo.value = '033';
+    optionDemo.textContent = '033 - Sta. Antônio (Inspetor de Testes)';
+    selectLinha.appendChild(optionDemo);
+    
+    // Tenta carregar demais linhas da API
     const url = `${URL_PLANILHA}?acao=buscar_linhas&termo=`;
     const resp = await fetch(url);
     const linhas = await resp.json();
-    
-    // Limpa opções existentes (mantém a primeira vazia)
-    selectLinha.innerHTML = '<option value="">Selecione...</option>';
     
     if (linhas && linhas.length > 0) {
       // Ordena por número da linha
@@ -1269,12 +1559,14 @@ async function carregarListaLinhas() {
         return numA - numB;
       });
       
-      // Adiciona todas as linhas ao select
+      // Adiciona todas as linhas ao select (exceto a 033 que já foi adicionada)
       linhas.forEach(linha => {
-        const option = document.createElement('option');
-        option.value = linha.numero;
-        option.textContent = `${linha.numero} - ${linha.nome || ''}`;
-        selectLinha.appendChild(option);
+        if (linha.numero !== '033') {
+          const option = document.createElement('option');
+          option.value = linha.numero;
+          option.textContent = `${linha.numero} - ${linha.nome || ''}`;
+          selectLinha.appendChild(option);
+        }
       });
     }
   } catch (e) {
@@ -1408,3 +1700,6 @@ window.removerTestemunha = removerTestemunha;
 window.atualizarTestemunha = atualizarTestemunha;
 window.gravarHistorico = gravarHistorico;
 window.gravarParecer = gravarParecer;
+window.preencherDadosVeiculoTeste = preencherDadosVeiculoTeste;
+window.preencherDadosMotoristaTeste = preencherDadosMotoristaTeste;
+window.restaurarDadosSessionStorage = restaurarDadosSessionStorage;

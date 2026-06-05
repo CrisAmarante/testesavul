@@ -46,12 +46,21 @@ async function checkLoginStatus() {
 // ====================================================================
 async function verificarOcorrenciasIncompletas() {
   const currentUser = localStorage.getItem('inspectorApelido');
+  const currentChapa = localStorage.getItem('inspectorChapa');
+  
+  // Não mostrar toast de ocorrências incompletas para usuário de teste (55555)
+  if (currentChapa === '55555') {
+    return;
+  }
+  
   if (!currentUser) return;
   
   try {
     // Buscar ocorrências incompletas no backend
     const url = `${URL_PLANILHA}?acao=buscar_ocorrencias_incompletas&apelido=${encodeURIComponent(currentUser)}`;
-    const response = await fetch(url);
+    console.log('[Ocorrências Incompletas] Buscando:', url);
+    const response = await fetch(url, { timeout: 5000 });
+    console.log('[Ocorrências Incompletas] Resposta recebida, status:', response.status);
     const ocorrenciasBackend = await response.json();
     
     // Também buscar rascunhos locais (para casos offline ou não sincronizados)
@@ -87,7 +96,7 @@ async function verificarOcorrenciasIncompletas() {
       mostrarModalOcorrenciasIncompletas(todasOcorrencias);
     }
   } catch (e) {
-    console.error('Erro ao verificar ocorrências incompletas:', e);
+    console.error('[Ocorrências Incompletas ERRO]', e);
     // Fallback para busca local em caso de erro
     fallbackVerificacaoLocal(currentUser);
   }
@@ -190,6 +199,37 @@ async function login(e) {
   const errorMsg = document.getElementById('login-error');
   const btnSubmit = e.target.querySelector('button[type="submit"]');
   
+  // Usuário de teste/demo 55555 - login automático sem validação backend
+  if (chapa === '55555') {
+    btnSubmit.innerHTML = 'Entrando...';
+    btnSubmit.disabled = true;
+    
+    setTimeout(() => {
+      localStorage.setItem('inspectorLoggedIn', 'true');
+      localStorage.setItem('inspectorName', 'Usuário Teste');
+      localStorage.setItem('inspectorApelido', 'Inspetor de Testes');
+      localStorage.setItem('inspectorRole', 'Inspetor');
+      localStorage.setItem('inspectorChapa', '55555');
+      window.currentUserRole = 'Inspetor';
+      
+      registrarLog('Inspetor de Testes');
+      window.modals.login.close();
+      checkLoginStatus();
+      
+      btnSubmit.innerHTML = 'Entrar';
+      btnSubmit.disabled = false;
+      
+      // Ativa modo de demonstração após login
+      setTimeout(() => {
+        if (window.ativarModoDemonstracao) {
+          window.ativarModoDemonstracao();
+        }
+      }, 1000);
+    }, 500);
+    
+    return;
+  }
+  
   if (!chapa || !senha) {
     errorMsg.textContent = 'Digite chapa e senha!';
     errorMsg.style.display = 'block';
@@ -204,6 +244,8 @@ async function login(e) {
   const callbackName = 'loginCallback_' + Date.now();
   
   window[callbackName] = function(resposta) {
+    // Limpa timeout se existir
+    if (script.timeout) clearTimeout(script.timeout);
     delete window[callbackName];
     btnSubmit.innerHTML = textoOriginal;
     btnSubmit.disabled = false;
@@ -228,12 +270,33 @@ async function login(e) {
   };
 
   const script = document.createElement('script');
-  script.src = `${URL_PLANILHA}?acao=login&chapa=${encodeURIComponent(chapa)}&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
+  const urlCompleta = `${URL_PLANILHA}?acao=login&chapa=${encodeURIComponent(chapa)}&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
+  console.log('[Login] Tentando conectar:', urlCompleta);
+  script.src = urlCompleta;
   script.onerror = () => {
     delete window[callbackName];
     btnSubmit.innerHTML = textoOriginal;
     btnSubmit.disabled = false;
-    alert('Erro de conexão. Verifique sua internet.');
+    console.error('[Login ERRO] Falha ao carregar script. URL:', urlCompleta);
+    console.error('[Login ERRO] Verifique: 1) Internet, 2) Backend ativo, 3) CORS/Apps Script deployado');
+    errorMsg.textContent = 'Erro de conexão com servidor. Verifique sua internet.';
+    errorMsg.style.display = 'block';
+  };
+  // Timeout para evitar bloqueio se a resposta demorar muito
+  script.timeout = setTimeout(() => {
+    if (document.body.contains(script)) {
+      delete window[callbackName];
+      btnSubmit.innerHTML = textoOriginal;
+      btnSubmit.disabled = false;
+      console.error('[Login TIMEOUT] Requisição excedeu 5s. URL:', urlCompleta);
+      errorMsg.textContent = 'Tempo de resposta excedido. Tente novamente.';
+      errorMsg.style.display = 'block';
+      document.body.removeChild(script);
+    }
+  }, 5000);
+  script.onload = () => {
+    clearTimeout(script.timeout);
+    console.log('[Login OK] Script carregado com sucesso');
   };
   document.body.appendChild(script);
 }

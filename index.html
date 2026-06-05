@@ -74,11 +74,11 @@
     <form id="login-form">
       <div class="login-field">
         <label for="chapa">Chapa</label>
-        <input type="text" id="chapa" placeholder="Digite sua chapa" required>
+        <input type="text" id="chapa" placeholder="Digite sua chapa" required autocomplete="username">
       </div>
       <div class="login-field">
         <label for="senha">Senha</label>
-        <input type="password" id="senha" placeholder="Digite sua senha" required>
+        <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password">
       </div>
       <div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Chapa ou senha incorretos!</div>
       <button type="submit" class="button">Entrar</button>
@@ -143,7 +143,7 @@
       <fieldset class="form-fieldset">
         <legend>🚍 Dados do Ônibus</legend>
         <div class="form-row">
-          <div class="field"><label>Prefixo *</label><input type="text" id="cadastro-prefixo" placeholder="Digite o prefixo" onchange="buscarDadosVeiculo()" list="lista-veiculos"></div>
+          <div class="field"><label>Prefixo *</label><input type="text" id="cadastro-prefixo" placeholder="Digite o prefixo" list="lista-veiculos"></div>
           <div class="field"><label>Placa</label><input type="text" id="cadastro-placa"></div>
           <div class="field"><label>Renavan</label><input type="text" id="cadastro-renavan"></div>
           <div class="field"><label>Ano Fabricação</label><input type="text" id="cadastro-ano-fab"></div>
@@ -156,10 +156,14 @@
         </div>
       </fieldset>
       
+      <!-- Datalists para autocomplete -->
+      <datalist id="lista-veiculos"></datalist>
+      <datalist id="lista-motoristas"></datalist>
+      
       <fieldset class="form-fieldset">
         <legend>👨‍✈️ Dados do Motorista</legend>
         <div class="form-row">
-          <div class="field"><label>Chapa *</label><input type="text" id="cadastro-chapa" placeholder="Digite a chapa" onchange="buscarDadosMotorista()" list="lista-motoristas"></div>
+          <div class="field"><label>Chapa *</label><input type="text" id="cadastro-chapa" placeholder="Digite a chapa" list="lista-motoristas"></div>
           <div class="field"><label>Nome de Escala (Apelido)</label><input type="text" id="cadastro-apelido"></div>
           <div class="field" style="flex: 2;"><label>Nome Completo</label><input type="text" id="cadastro-nome-completo"></div>
         </div>
@@ -202,7 +206,8 @@
       <fieldset class="form-fieldset">
         <legend>📎 Anexos - Fotos do Coletivo (até 6)</legend>
         <div class="action-row">
-          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo(true)">➕ Adicionar fotos</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo('camera')">📷 Câmera</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosColetivo('galeria')">🖼️ Galeria</button>
           <div id="lista-fotos-coletivo" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
         </div>
       </fieldset>
@@ -437,7 +442,8 @@
       <fieldset class="form-fieldset">
         <legend>📎 Anexos - Fotos do Local (até 6)</legend>
         <div class="action-row">
-          <button type="button" class="btn-secundario" onclick="anexarFotosLocal(true)">➕ Adicionar fotos</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosLocal('camera')">📷 Câmera</button>
+          <button type="button" class="btn-secundario" onclick="anexarFotosLocal('galeria')">🖼️ Galeria</button>
           <div id="lista-fotos-local" class="grid-anexos-preview"><small>Nenhuma foto</small></div>
         </div>
       </fieldset>
@@ -567,5 +573,6 @@
 <script src="auth.js"></script>
 <script src="acidente.js"></script> <!-- novo arquivo JS para relatório de acidentes -->
 <script src="main.js"></script>
+<script src="demo_teste.js"></script> <!-- Script de demonstração para usuário 55555 -->
 </body>
 </html>

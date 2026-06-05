@@ -17,8 +17,12 @@ async function registrarLog(nomeApelido) {
     const formData = new URLSearchParams();
     formData.append("nome", nomeApelido);
     formData.append("acao", "Login bem-sucedido");
+    console.log('[Log] Registrando login:', nomeApelido);
     await fetch(URL_PLANILHA, { method: "POST", body: formData, mode: "no-cors" });
-  } catch (err) { console.warn("Falha ao registrar log:", err); }
+    console.log('[Log] Registrado com sucesso');
+  } catch (err) { 
+    console.warn("[Log ERRO] Falha ao registrar log:", err); 
+  }
 }
 // ====================================================================
 // TERMINAIS (apenas SIM) com cache e Promise pooling
@@ -40,13 +44,34 @@ function carregarTerminais(forceRefresh = false) {
       resolve(terminais);
     };
     const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=terminais&callback=${callbackName}&_=${Date.now()}`;
+    const urlCompleta = `${URL_PLANILHA}?acao=terminais&callback=${callbackName}&_=${Date.now()}`;
+    console.log('[Terminais] Carregando:', urlCompleta);
+    script.src = urlCompleta;
     script.onerror = () => {
       delete window[callbackName];
       terminaisPromise = null;
       terminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
       terminaisTimestamp = Date.now();
+      console.warn('[Terminais ERRO] Falha ao carregar. URL:', urlCompleta);
+      console.warn('[Terminais] Usando fallback padrão');
       resolve(terminaisCache);
+    };
+    // Timeout para evitar bloqueio
+    const timeoutId = setTimeout(() => {
+      if (document.body.contains(script)) {
+        delete window[callbackName];
+        terminaisPromise = null;
+        terminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
+        terminaisTimestamp = Date.now();
+        document.body.removeChild(script);
+        console.warn('[Terminais TIMEOUT] Requisição excedeu 5s. URL:', urlCompleta);
+        console.warn('[Terminais] Usando fallback padrão');
+        resolve(terminaisCache);
+      }
+    }, 5000);
+    script.onload = () => {
+      clearTimeout(timeoutId);
+      console.log('[Terminais OK] Carregados com sucesso');
     };
     document.body.appendChild(script);
   });
@@ -63,19 +88,37 @@ function carregarTodosTerminais(forceRefresh = false) {
   todosTerminaisPromise = new Promise((resolve) => {
     const callbackName = 'carregarTodosTerminaisCallback_' + Date.now();
     window[callbackName] = function(terminais) {
+      if (timeoutId) clearTimeout(timeoutId);
       todosTerminaisCache = terminais;
       delete window[callbackName];
       todosTerminaisPromise = null;
       resolve(terminais);
     };
     const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=terminais_todos&callback=${callbackName}&_=${Date.now()}`;
+    const urlCompleta = `${URL_PLANILHA}?acao=terminais_todos&callback=${callbackName}&_=${Date.now()}`;
+    console.log('[Todos Terminais] Carregando:', urlCompleta);
+    script.src = urlCompleta;
     script.onerror = () => {
       delete window[callbackName];
       todosTerminaisPromise = null;
       todosTerminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
+      console.warn('[Todos Terminais ERRO] Falha ao carregar. URL:', urlCompleta);
+      console.warn('[Todos Terminais] Usando fallback padrão');
       resolve(todosTerminaisCache);
     };
+    // Timeout para evitar bloqueio
+    const timeoutId = setTimeout(() => {
+      if (document.body.contains(script)) {
+        delete window[callbackName];
+        todosTerminaisPromise = null;
+        todosTerminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
+        document.body.removeChild(script);
+        console.warn('[Todos Terminais TIMEOUT] Requisição excedeu 5s. URL:', urlCompleta);
+        console.warn('[Todos Terminais] Usando fallback padrão');
+        resolve(todosTerminaisCache);
+      }
+    }, 5000);
+    script.onload = () => { if (timeoutId) clearTimeout(timeoutId); console.log('[Todos Terminais OK] Carregados com sucesso'); };
     document.body.appendChild(script);
   });
   return todosTerminaisPromise;
