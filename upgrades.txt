@@ -1,0 +1,7 @@
+Melhorias:
+Mantendo as regras atuais de visualização de envios, e sem prejudicar qualquer outra funcionalidade.
+(Função SAF - AppScript.gs.docx) - Nos usuários com função SAF, apresentar apenas os seguintes modais:
+Relatorio Diario; Consulta Placas; Solicitaçao de imagens; Envio de informações.
+
+No envio de informações, a consulta de envios dos usuarios com funcao SAF deve estar limitada as informaçoes que tiverem SAF como area de destino ou a informações cujo motivo seja AVARIAS, independentemente da área de destino.
+Apenas os usuários com função Encarregado devem poder ver os pedidos de folga.
