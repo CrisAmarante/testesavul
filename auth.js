@@ -171,9 +171,27 @@ function ajustarCardsPorPerfil(role) {
   const cardInspecao = document.getElementById('btn-inspecao-veicular');
   const cardEnvio = document.getElementById('btn-envio-informacoes');
   
+  // Cards específicos para a regra SAF
+  // Relatório Diário: https://docs.google.com/forms/d/e/1FAIpQLSe82OZRZPC_WTgXqF0N2pAuiFaudKONLYRuSnfnBpLPS0fYpw/viewform?usp=dialog
+  const cardRelatorioDiario = document.querySelector('a.inspector-card[href*="docs.google.com/forms/d/e/1FAIpQLSe82OZRZPC_WTgXqF0N2pAuiFaudKONLYRuSnfnBpLPS0fYpw"]');
+  // Consulta Placas: https://app.powerbi.com/view?r=...
+  const cardConsultaPlacas = document.querySelector('a.inspector-card[href*="app.powerbi.com/view"]');
+  // Solicitação Imagem: https://forms.office.com/pages/responsepage.aspx?id=BT9x5o7JaUGYVqezBC5ZcbsSouziSbdKtQ1p901JfchUREIxR1pNUzQ0OEJLUTlGNzFRTEZKMTI1OC4u
+  const cardSolicitacaoImagem = document.querySelector('a.inspector-card[href*="forms.office.com/pages/responsepage.aspx?id=BT9x5o7JaUGYVqezBC5ZcbsSouziSbdKtQ1p901JfchUREIxR1pNUzQ0OEJLUTlGNzFRTEZKMTI1OC4u"]');
+  
   if (role === 'FISCAL') {
     todosCards.forEach(card => {
       if (card === cardInspecao || card === cardEnvio) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  } else if (role === 'SAF') {
+    // SAF vê apenas: Relatório Diário, Consulta Placas, Solicitação Imagem e Envio de Informações
+    todosCards.forEach(card => {
+      if (card === cardRelatorioDiario || card === cardConsultaPlacas || 
+          card === cardSolicitacaoImagem || card === cardEnvio) {
         card.style.display = 'flex';
       } else {
         card.style.display = 'none';
