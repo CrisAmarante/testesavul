@@ -1,7 +1,5 @@
-Melhorias:
-Mantendo as regras atuais de visualização de envios, e sem prejudicar qualquer outra funcionalidade.
-(Função SAF - AppScript.gs.docx) - Nos usuários com função SAF, apresentar apenas os seguintes modais:
-Relatorio Diario; Consulta Placas; Solicitaçao de imagens; Envio de informações.
-
-No envio de informações, a consulta de envios dos usuarios com funcao SAF deve estar limitada as informaçoes que tiverem SAF como area de destino ou a informações cujo motivo seja AVARIAS, independentemente da área de destino.
-Apenas os usuários com função Encarregado devem poder ver os pedidos de folga.
+Permitir o download das fotos salvas
+Reduzir a lista de envios mostrada para os útlimos 4 dias, porém, manter a permissão de consulta por período conforme regras atuais.
+Criar para os perfis Saf e Encarregado um dashboard no canto direito da tela, ao lado da lista de de envios com a lista de informações não lidas por aquele perfil.
+É possível fazer o aplicativo ler telas e interagir com elas, dentro de um aplicativo já logado?
+No Backend, é possível separar as planilhas de login, log de acessos, envios, e inspeções em arquivos separados com códigos do appscripts separados controlados por uma planilha master?
