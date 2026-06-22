@@ -18,12 +18,11 @@ class InspecaoVeicular {
     });
 
     // Configura os checkboxes e inputs de observação/posição
-    document.querySelectorAll('#tabela-inspecao tbody tr').forEach(row => {
-      const cbOk = row.querySelector('.ok');
-      const cbDef = row.querySelector('.defeito');
-      const obsInput = row.querySelector('.obs-input');
-      //const obsInputVen = row.querySelector('.obs-input-ven');
-      const posBtns = row.querySelectorAll('.pos-btn');
+    document.querySelectorAll('.item-inspecao').forEach(item => {
+      const cbOk = item.querySelector('.ok');
+      const cbDef = item.querySelector('.defeito');
+      const obsInput = item.querySelector('.obs-input');
+      const posBtns = item.querySelectorAll('.pos-btn');
 
       const atualizarEstadoLinha = () => {
         const isDefective = cbDef.checked;
@@ -33,7 +32,7 @@ class InspecaoVeicular {
           if (!isDefective) obsInput.value = '';
         }
 
-        if (posBtns) {
+        if (posBtns.length) {
           posBtns.forEach(btn => {
             btn.disabled = !isDefective;
             if (!isDefective) btn.classList.remove('active');
@@ -115,18 +114,15 @@ class InspecaoVeicular {
 
   resetarFormulario() {
     if (getEl('carro')) getEl('carro').value = '';
-    document
-      .querySelectorAll(
-        '#tabela-inspecao tbody tr .ok, #tabela-inspecao tbody tr .defeito'
-      )
+    document.querySelectorAll('.item-inspecao .ok, .item-inspecao .defeito')
       .forEach(cb => (cb.checked = false));
 
-    document.querySelectorAll('.obs-input').forEach(inp => {
+    document.querySelectorAll('.item-inspecao .obs-input').forEach(inp => {
       inp.value = '';
       inp.disabled = true;
     });
 
-    document.querySelectorAll('.pos-btn').forEach(btn => {
+    document.querySelectorAll('.item-inspecao .pos-btn').forEach(btn => {
       btn.classList.remove('active');
       btn.disabled = true;
     });
@@ -143,14 +139,14 @@ class InspecaoVeicular {
       return null;
     }
     const itens = {};
-    document.querySelectorAll('#tabela-inspecao tbody tr').forEach(row => {
-      const item = row.dataset.item;
-      const ok = row.querySelector('.ok').checked;
-      const defeito = row.querySelector('.defeito').checked;
-      const obs = row.querySelector('.obs-input').value.trim();
-      itens[item] = { status: ok ? 'OK' : defeito ? 'DEFEITO' : '', obs: obs };
-      if (item === 'ventilador') {
-        itens[item].posicao = Array.from(row.querySelectorAll('.pos-btn.active'))
+    document.querySelectorAll('.item-inspecao').forEach(item => {
+      const nome = item.dataset.item;
+      const ok = item.querySelector('.ok').checked;
+      const defeito = item.querySelector('.defeito').checked;
+      const obs = item.querySelector('.obs-input').value.trim();
+      itens[nome] = { status: ok ? 'OK' : defeito ? 'DEFEITO' : '', obs: obs };
+      if (nome === 'ventilador') {
+        itens[nome].posicao = Array.from(item.querySelectorAll('.pos-btn.active'))
           .map(btn => btn.dataset.pos)
           .join(',');
       }
