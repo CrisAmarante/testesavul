@@ -461,6 +461,9 @@ function mostrarModalConferir(inspecoes, role, params) {
         if (role !== 'FISCAL' && !isFiscal) {
           html += `<small>Responsável: ${ins.fiscal}</small><br>`;
         }
+        if (ins.dataPreenchimento) {
+          html += `<small>Data Preenchimento: ${ins.dataPreenchimento}</small><br>`;
+        }
         html += `<ul style="margin-top: 8px; list-style: none; padding-left: 0;">${statusHtml}</ul>`;
         html += `</div>`;
       }
@@ -530,6 +533,9 @@ function gerarTextoExportacaoComFiltro(inspecoes, role, isFiscal) {
       texto += `Carro: ${ins.carro} (${ins.terminal})\n`;
       if (role !== 'FISCAL' && !isFiscal) {
         texto += `Responsável: ${ins.fiscal}\n`;
+      }
+      if (ins.dataPreenchimento) {
+        texto += `Data Preenchimento: ${ins.dataPreenchimento}\n`;
       }
       if (itensDefeito.length === 0) {
         texto += `Status: ✅ Nenhum defeito apresentado\n`;
