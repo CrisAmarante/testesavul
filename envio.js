@@ -1052,6 +1052,15 @@ async function exportarParaPDF(envio) {
     doc.setTextColor(80, 80, 80);
     doc.text("Documento gerado eletronicamente • Valide o hash para verificar integridade", pageWidth/2, y, { align: "center" });
 
+    // Adiciona data de preenchimento abaixo do hash e detalhes da exportação
+    if (envio.dataPreenchimento) {
+      y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Data Preenchimento: ${envio.dataPreenchimento}`, margin, y);
+    }
+
     doc.setTextColor(0);
 
     const motoristaNome = (envio.motorista || 'SemMotorista')
