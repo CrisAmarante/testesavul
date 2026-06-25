@@ -1,1 +1,1 @@
-Nothing should be ignored based on the provided file changes. The only modified file is `apppscript.gs.txt`, which appears to be a source code file and should not be ignored.
+Nothing should be ignored based on the provided file changes. The modified files (`apppscript.gs.txt` and `envio.js`) are source code files that should be tracked in version control.
