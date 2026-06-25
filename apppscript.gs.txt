@@ -319,6 +319,13 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       const [dia, mes, ano] = dataEnvioStr.split("/").map(Number);
       const dataRegistro = new Date(ano, mes - 1, dia);
       
+      // Filtro padrão: últimos 4 dias se não houver filtro de período explícito
+      if (!dataInicio && !dataFim) {
+        const quatroDiasAtras = new Date(hoje);
+        quatroDiasAtras.setDate(quatroDiasAtras.getDate() - 4);
+        if (dataRegistro < quatroDiasAtras) continue;
+      }
+      
       // Filtros básicos (já aplicados pelo front-end, mas reforçamos aqui)
       if (fiscalNome && fiscalLinha !== fiscalNome) continue;
       if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
@@ -403,6 +410,59 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       }
       
       if (permitido) {
+        // Processa os anexos para incluir URLs de download direto
+        let anexosProcessados = [];
+        const anexoRaw = linha[idxAnexo] || "";
+        if (anexoRaw && anexoRaw !== "Nenhum" && anexoRaw.trim() !== "") {
+          const links = anexoRaw.split(" ; ");
+          for (let j = 0; j < links.length; j++) {
+            const linkOriginal = links[j].trim();
+            if (linkOriginal) {
+              let fileId = null;
+              // Regex para extrair ID do arquivo do Google Drive
+              var regexId1 = new RegExp("/d/([a-zA-Z0-9_-]+)");
+              var regexId2 = new RegExp("id=([a-zA-Z0-9_-]+)");
+              var regexId3 = new RegExp("file/d/([a-zA-Z0-9_-]+)");
+              var regexId4 = new RegExp("uc\\?id=([a-zA-Z0-9_-]+)");
+              var regexId5 = new RegExp("open\\?id=([a-zA-Z0-9_-]+)");
+              var regexId6 = new RegExp("/u/\\d/d/([a-zA-Z0-9_-]+)");
+              
+              var match;
+              if ((match = linkOriginal.match(regexId1)) && match[1]) {
+                fileId = match[1];
+              } else if ((match = linkOriginal.match(regexId2)) && match[1]) {
+                fileId = match[1];
+              } else if ((match = linkOriginal.match(regexId3)) && match[1]) {
+                fileId = match[1];
+              } else if ((match = linkOriginal.match(regexId4)) && match[1]) {
+                fileId = match[1];
+              } else if ((match = linkOriginal.match(regexId5)) && match[1]) {
+                fileId = match[1];
+              } else if ((match = linkOriginal.match(regexId6)) && match[1]) {
+                fileId = match[1];
+              }
+              // Removido loop 'for (const pattern of patterns)' pois foi substituído pelos regex acima
+              if (fileId) {
+                const downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
+                const viewUrl = "https://drive.google.com/file/d/" + fileId + "/view";
+                anexosProcessados.push({
+                  urlOriginal: linkOriginal,
+                  urlDownload: downloadUrl,
+                  urlVisualizacao: viewUrl,
+                  fileId: fileId
+                });
+              } else {
+                anexosProcessados.push({
+                  urlOriginal: linkOriginal,
+                  urlDownload: linkOriginal,
+                  urlVisualizacao: linkOriginal,
+                  fileId: null
+                });
+              }
+            }
+          }
+        }
+        
         resultados.push({
           areaDestino: area,
           motivo: motivoEnvio,
@@ -410,6 +470,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
           local: linha[idxLocal],
           historico: linha[idxHistorico],
           anexo: linha[idxAnexo],
+          anexosDetalhados: anexosProcessados,
           data: linha[idxData] ? Utilities.formatDate(new Date(linha[idxData]), "America/Sao_Paulo", "dd/MM/yyyy") : "",
           hora: linha[idxHora] || "",
           sentido: linha[idxSentido] || "",

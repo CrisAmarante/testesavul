@@ -716,7 +716,11 @@ function mostrarDetalheEnvio(envio) {
   const dataFormatada = formatarData(envio.data);
 
   let anexosHtml = 'Nenhum anexo';
-  if (envio.anexo && envio.anexo !== 'Nenhum' && envio.anexo.trim() !== '') {
+  // Usa anexosDetalhados se disponível (novo formato do backend), senão usa o método antigo
+  if (envio.anexosDetalhados && Array.isArray(envio.anexosDetalhados) && envio.anexosDetalhados.length > 0) {
+    const anexosProcessados = envio.anexosDetalhados.map(anexo => processarLinkAnexoDetalhado(anexo));
+    anexosHtml = `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;">${anexosProcessados.join('')}</div>`;
+  } else if (envio.anexo && envio.anexo !== 'Nenhum' && envio.anexo.trim() !== '') {
     const links = envio.anexo.split(' ; ');
     const anexosProcessados = links.map(link => processarLinkAnexo(link));
     anexosHtml = `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;">${anexosProcessados.join('')}</div>`;
@@ -790,6 +794,42 @@ function mostrarDetalheEnvio(envio) {
 // ====================================================================
 // PROCESSAR LINK DO ANEXO (THUMBNAIL) - idêntico ao original
 // ====================================================================
+function processarLinkAnexoDetalhado(anexo) {
+  // anexo tem: urlOriginal, urlDownload, urlVisualizacao, fileId
+  if (!anexo || !anexo.urlOriginal) return '';
+  
+  const downloadUrl = anexo.urlDownload || anexo.urlOriginal;
+  const viewUrl = anexo.urlVisualizacao || anexo.urlOriginal;
+  const fileId = anexo.fileId;
+  
+  if (fileId) {
+    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w300`;
+    
+    return `
+      <div style="display: inline-block; margin: 5px; text-align: center; vertical-align: top; width: 130px;">
+        <a href="${viewUrl}" target="_blank" style="text-decoration: none;">
+          <img src="${thumbnailUrl}" 
+               alt="Pré-visualização" 
+               style="max-width: 120px; max-height: 120px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; background: #f0f0f0; object-fit: cover;"
+               onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<a href=\\'${downloadUrl}\\' target=\\'_blank\\' style=\\'color:#10b981; text-decoration:underline;\\'>📎 Anexo (imagem não disponível)</a>'">
+        </a>
+        <div style="margin-top: 5px;">
+          <small><a href="${downloadUrl}" target="_blank" download style="color: #10b981; font-weight: bold;">⬇️ Baixar</a></small>
+        </div>
+        <div><small><a href="${viewUrl}" target="_blank" style="color: #6b7280;">👁️ Visualizar</a></small></div>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="margin: 5px; text-align: center;">
+      <a href="${downloadUrl}" target="_blank" download style="color: #10b981; text-decoration: underline; font-weight: bold;">⬇️ Baixar Anexo</a>
+      <br>
+      <small><a href="${viewUrl}" target="_blank" style="color: #6b7280;">👁️ Visualizar</a></small>
+    </div>
+  `;
+}
+
 function processarLinkAnexo(link) {
   link = link.trim();
   if (!link) return '';
@@ -815,6 +855,7 @@ function processarLinkAnexo(link) {
   if (fileId) {
     const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w300`;
     const originalUrl = `https://drive.google.com/uc?id=${fileId}`;
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
     return `
       <div style="display: inline-block; margin: 5px; text-align: center; vertical-align: top; width: 130px;">
@@ -822,9 +863,12 @@ function processarLinkAnexo(link) {
           <img src="${thumbnailUrl}" 
                alt="Pré-visualização" 
                style="max-width: 120px; max-height: 120px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; background: #f0f0f0; object-fit: cover;"
-               onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<a href=\\'${originalUrl}\\' target=\\'_blank\\' style=\\'color:#10b981; text-decoration:underline;\\'>📎 Anexo (imagem não disponível)</a>'">
+               onerror="this.onerror=null; this.parentElement.parentElement.innerHTML='<a href=\\'${downloadUrl}\\' target=\\'_blank\\' style=\\'color:#10b981; text-decoration:underline;\\'>📎 Anexo (imagem não disponível)</a>'">
         </a>
-        <div><small><a href="${originalUrl}" target="_blank" style="color: #10b981;">Abrir original</a></small></div>
+        <div style="margin-top: 5px;">
+          <small><a href="${downloadUrl}" target="_blank" download style="color: #10b981; font-weight: bold;">⬇️ Baixar</a></small>
+        </div>
+        <div><small><a href="${originalUrl}" target="_blank" style="color: #6b7280;">👁️ Visualizar</a></small></div>
       </div>
     `;
   }
