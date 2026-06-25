@@ -1,0 +1,660 @@
+// ======================= SALVAR INSPEÇÃO VEICULAR =======================
+function salvarInspecao(dadosJson) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Inspecoes_Veiculares");
+  if (!sheet) {
+    sheet = ss.insertSheet("Inspecoes_Veiculares");
+    sheet.appendRow([
+      "DataHora", "Carro", "Terminal", "Fiscal",
+      "THOREB_Status", "THOREB_Obs",
+      "Elevador_Status", "Elevador_Obs",
+      "Limpeza_Status", "Limpeza_Obs",
+      "Ventilador_Status", "Ventilador_Obs", "Ventilador_Posicao"
+    ]);
+  }
+  const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+  const { carro, terminal, fiscal, thoreb, elevador, limpeza, ventilador } = dadosJson;
+  sheet.appendRow([
+    agora, carro, terminal, fiscal,
+    thoreb.status || "", thoreb.obs || "",
+    elevador.status || "", elevador.obs || "",
+    limpeza.status || "", limpeza.obs || "",
+    ventilador.status || "", ventilador.obs || "", ventilador.posicao || ""
+  ]);
+  return true;
+}
+
+// ======================= CONSULTAR INSPEÇÕES (com filtros) =======================
+function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Inspecoes_Veiculares");
+    if (!sheet) return [];
+    const dados = sheet.getDataRange().getValues();
+    if (dados.length < 2) return [];
+    
+    let dataInicioObj = null;
+    if (dataInicio) {
+      const parts = dataInicio.split('-');
+      dataInicioObj = new Date(parts[0], parts[1]-1, parts[2], 0, 0, 0);
+    }
+    let dataFimObj = null;
+    if (dataFim) {
+      const parts = dataFim.split('-');
+      dataFimObj = new Date(parts[0], parts[1]-1, parts[2], 23, 59, 59);
+    }
+
+    const cabecalhos = dados[0].map(h => String(h).trim());
+    const indices = {
+      dataHora: cabecalhos.indexOf("DataHora"),
+      fiscal: cabecalhos.indexOf("Fiscal"),
+      carro: cabecalhos.indexOf("Carro"),
+      terminal: cabecalhos.indexOf("Terminal"),
+      thoreb_status: cabecalhos.indexOf("THOREB_Status"),
+      thoreb_obs: cabecalhos.indexOf("THOREB_Obs"),
+      elevador_status: cabecalhos.indexOf("Elevador_Status"),
+      elevador_obs: cabecalhos.indexOf("Elevador_Obs"),
+      limpeza_status: cabecalhos.indexOf("Limpeza_Status"),
+      limpeza_obs: cabecalhos.indexOf("Limpeza_Obs"),
+      ventilador_status: cabecalhos.indexOf("Ventilador_Status"),
+      ventilador_obs: cabecalhos.indexOf("Ventilador_Obs"),
+      ventilador_pos: cabecalhos.indexOf("Ventilador_Posicao")
+    };
+    
+    const resultados = [];
+    
+    for (let i = 1; i < dados.length; i++) {
+      const linha = dados[i];
+      let dataHora = linha[indices.dataHora];
+      const fiscalLinha = linha[indices.fiscal];
+      if (!dataHora || !fiscalLinha) continue;
+      
+      let dataHoraStr = "";
+      let dataRegistro = null;
+      if (dataHora instanceof Date) {
+        dataHoraStr = Utilities.formatDate(dataHora, "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+        dataRegistro = new Date(dataHora.getFullYear(), dataHora.getMonth(), dataHora.getDate());
+      } else {
+        dataHoraStr = String(dataHora).trim();
+        const partes = dataHoraStr.split(" ")[0].split("/");
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const ano = parseInt(partes[2], 10);
+          dataRegistro = new Date(ano, mes, dia);
+        } else {
+          continue;
+        }
+      }
+      
+      if (dataInicioObj && dataRegistro < dataInicioObj) continue;
+      if (dataFimObj && dataRegistro > dataFimObj) continue;
+      
+      if (carro && linha[indices.carro] && !String(linha[indices.carro]).toLowerCase().includes(carro.toLowerCase())) continue;
+      if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
+      if (fiscalNome && fiscalLinha !== fiscalNome) continue; 
+      
+      resultados.push({
+        dataHora: dataHoraStr,
+        carro: linha[indices.carro] || "",
+        terminal: linha[indices.terminal] || "",
+        fiscal: fiscalLinha,
+        thoreb: { status: linha[indices.thoreb_status] || "", obs: linha[indices.thoreb_obs] || "" },
+        elevador: { status: linha[indices.elevador_status] || "", obs: linha[indices.elevador_obs] || "" },
+        limpeza: { status: linha[indices.limpeza_status] || "", obs: linha[indices.limpeza_obs] || "" },
+        ventilador: { status: linha[indices.ventilador_status] || "", obs: linha[indices.ventilador_obs] || "", posicao: linha[indices.ventilador_pos] || "" }
+      });
+    }
+    return resultados;
+  } catch (err) {
+    Logger.log("ERRO em consultarInspecoes: " + err.message);
+    return [];
+  }
+}
+
+// ======================= LISTAR TERMINAIS (apenas SIM) =======================
+function listarTerminais() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("Terminais");
+    if (!sheet) {
+      sheet = ss.insertSheet("Terminais");
+      sheet.appendRow(["Terminal", "Status"]);
+      sheet.appendRow(["Terminal A", "SIM"]);
+      sheet.appendRow(["Terminal B", "SIM"]);
+      sheet.appendRow(["Terminal C", "SIM"]);
+      sheet.appendRow(["Terminal D", "SIM"]);
+    }
+    const dados = sheet.getDataRange().getValues();
+    const terminais = [];
+    for (let i = 1; i < dados.length; i++) {
+      const terminal = dados[i][0];
+      const status = dados[i][1] ? String(dados[i][1]).trim().toUpperCase() : "";
+      if (terminal && status === "SIM") {
+        terminais.push(String(terminal).trim());
+      }
+    }
+    return terminais;
+  } catch (err) {
+    Logger.log("ERRO em listarTerminais: " + err.message);
+    return ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
+  }
+}
+
+// ======================= LISTAR TODOS OS TERMINAIS =======================
+function listarTodosTerminais() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("Terminais");
+    if (!sheet) {
+      sheet = ss.insertSheet("Terminais");
+      sheet.appendRow(["Terminal", "Status"]);
+      sheet.appendRow(["Terminal A", "SIM"]);
+      sheet.appendRow(["Terminal B", "SIM"]);
+      sheet.appendRow(["Terminal C", "SIM"]);
+      sheet.appendRow(["Terminal D", "SIM"]);
+    }
+    const dados = sheet.getDataRange().getValues();
+    const terminais = [];
+    for (let i = 1; i < dados.length; i++) {
+      const terminal = dados[i][0];
+      if (terminal) terminais.push(String(terminal).trim());
+    }
+    return terminais;
+  } catch (err) {
+    return ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
+  }
+}
+// ======================= FUNÇÃO AUXILIAR PARA TRUNCAR HISTÓRICO =======================
+function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
+  if (!texto) return '';
+  
+  let textoFinal = texto;
+  
+  // Limite por linhas
+  let linhas = textoFinal.split(/\r?\n/);
+  if (linhas.length > maxLinhas) {
+    linhas = linhas.slice(0, maxLinhas);
+    textoFinal = linhas.join('\n');
+  }
+  
+  // Limite por caracteres
+  if (textoFinal.length > maxCaracteres) {
+    textoFinal = textoFinal.substring(0, maxCaracteres);
+    // Remove última palavra truncada se possível
+    const ultimoEspaco = textoFinal.lastIndexOf(' ');
+    if (ultimoEspaco > 0 && ultimoEspaco > maxCaracteres - 50) {
+      textoFinal = textoFinal.substring(0, ultimoEspaco);
+    }
+  }
+  return textoFinal;
+}
+// ======================= SALVAR ENVIO DE INFORMAÇÕES =======================
+function salvarEnvioInformacoes(dadosJson) {
+  const ID_PASTA_ANEXOS = "1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP";
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("EnviosInformacoes");
+  if (!sheet) {
+    sheet = ss.insertSheet("EnviosInformacoes");
+    sheet.appendRow([
+      "DataHora", "Fiscal", "AreaDestino", "Motivo", "Carro", "Linha",
+      "Motorista", "Cobrador", "Hora", "Sentido", "Historico", "Local", "Data", "Anexos"
+    ]);
+  }
+
+  const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+  const { areaDestino, motivo, carro, linha, motorista, cobrador, hora, sentido, historico, local, data, fiscal, anexos } = dadosJson;
+  
+  // ========== TRUNCA O HISTÓRICO ANTES DE SALVAR ==========
+  const historicoTruncado = truncarTexto(historico || '', 1400, 16);
+
+  let linksAnexos = [];
+
+  if (anexos && Array.isArray(anexos) && anexos.length) {
+    const pasta = DriveApp.getFolderById(ID_PASTA_ANEXOS);
+    for (let i = 0; i < anexos.length; i++) {
+      const anexo = anexos[i];
+      try {
+        const dadosDecodificados = Utilities.base64Decode(anexo.base64);
+        const sufixo = Utilities.formatDate(new Date(), "America/Sao_Paulo", "ddMMyyyy_HHmmss") + `_${i+1}`;
+        const extensao = anexo.mimeType.includes("pdf") ? ".pdf" : ".jpg";
+        const nomeArquivo = (carro ? `Carro${carro}_` : "Anexo_") + sufixo + extensao;
+        const blob = Utilities.newBlob(dadosDecodificados, anexo.mimeType, nomeArquivo);
+        const arquivoDrive = pasta.createFile(blob);
+        arquivoDrive.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        linksAnexos.push(arquivoDrive.getUrl());
+      } catch (err) {
+        linksAnexos.push(`ERRO: ${err.message}`);
+      }
+    }
+  }
+
+  const linkFinal = linksAnexos.join(" ; ");
+  sheet.appendRow([
+    agora, fiscal, areaDestino, motivo, carro, linha,
+    motorista, cobrador, hora, sentido, historico, local, data, linkFinal
+  ]);
+
+  return true;
+}
+
+// ======================= CONSULTAR ENVIOS COM PERMISSÕES AVANÇADAS =======================
+function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo, fiscalFiltro, papel, apelido) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("EnviosInformacoes");
+    if (!sheet) return [];
+    const dados = sheet.getDataRange().getValues();
+    if (dados.length < 2) return [];
+    
+    // Converte datas de filtro
+    let dataInicioObj = null;
+    if (dataInicio) {
+      const parts = dataInicio.split('-');
+      dataInicioObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    let dataFimObj = null;
+    if (dataFim) {
+      const parts = dataFim.split('-');
+      dataFimObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    
+    // Carrega a planilha de login para obter os papéis de cada usuário
+    const loginSheet = ss.getSheetByName("login");
+    const loginData = loginSheet.getDataRange().getValues();
+    const fiscaisSet = new Set();     // apelidos com função 'FISCAL'
+    const inspetoresSet = new Set();  // apelidos com função 'INSPETOR'
+    for (let i = 1; i < loginData.length; i++) {
+      const funcao = String(loginData[i][4] || "").trim().toUpperCase();
+      const apelidoLogin = loginData[i][2];
+      if (!apelidoLogin) continue;
+      if (funcao === 'FISCAL') {
+        fiscaisSet.add(apelidoLogin);
+      } else if (funcao === 'INSPETOR') {
+        inspetoresSet.add(apelidoLogin);
+      }
+    }
+    
+    // Índices das colunas da planilha de envios
+    const cabecalhos = dados[0].map(h => String(h).trim());
+    const idxDataHora = cabecalhos.indexOf("DataHora");
+    const idxFiscal = cabecalhos.indexOf("Fiscal");
+    const idxArea = cabecalhos.indexOf("AreaDestino");
+    const idxMotivo = cabecalhos.indexOf("Motivo");
+    const idxCarro = cabecalhos.indexOf("Carro");
+    const idxLocal = cabecalhos.indexOf("Local");
+    const idxHistorico = cabecalhos.indexOf("Historico");
+    const idxAnexo = cabecalhos.indexOf("Anexos");
+    const idxData = cabecalhos.indexOf("Data");
+    const idxHora = cabecalhos.indexOf("Hora");
+    const idxSentido = cabecalhos.indexOf("Sentido");
+    const idxMotorista = cabecalhos.indexOf("Motorista");
+    const idxCobrador = cabecalhos.indexOf("Cobrador");
+    const idxLinha = cabecalhos.indexOf("Linha");
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const resultados = [];
+    
+    for (let i = 1; i < dados.length; i++) {
+      const linha = dados[i];
+      let dataHora = linha[idxDataHora];
+      const fiscalLinha = linha[idxFiscal];
+      if (!dataHora || !fiscalLinha) continue;
+      
+      // Converte data/hora do registro
+      let dataHoraStr = "";
+      if (dataHora instanceof Date) {
+        dataHoraStr = Utilities.formatDate(dataHora, "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+      } else {
+        dataHoraStr = String(dataHora).trim();
+      }
+      const dataEnvioStr = dataHoraStr.split(" ")[0];
+      const [dia, mes, ano] = dataEnvioStr.split("/").map(Number);
+      const dataRegistro = new Date(ano, mes - 1, dia);
+      
+      // Filtros básicos (já aplicados pelo front-end, mas reforçamos aqui)
+      if (fiscalNome && fiscalLinha !== fiscalNome) continue;
+      if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
+      if (dataInicioObj && dataRegistro < dataInicioObj) continue;
+      if (dataFimObj && dataRegistro > dataFimObj) continue;
+      if (motivo && linha[idxMotivo] !== motivo) continue;
+      if (carro && String(linha[idxCarro] || "") !== carro) continue;
+      if (prefixo && !String(linha[idxCarro] || "").toLowerCase().includes(prefixo.toLowerCase())) continue;
+      
+      const area = linha[idxArea] || "";
+      const motivoEnvio = linha[idxMotivo] || "";
+      let permitido = false;
+      
+      // ========== REGRAS DE PERMISSÃO POR PERFIL ==========
+      switch (papel) {
+        case 'FISCAL':
+          // Fiscal vê apenas seus próprios envios
+          permitido = (fiscalLinha === apelido);
+          break;
+          
+        case 'INSPETOR':
+          // Inspetor vê:
+          // 1) Seus próprios envios
+          // 2) Envios de FISCAIS
+          // Desde que não sejam área SAF e nem motivo PEDIDO DE FOLGAS
+          const isProprioInsp = (fiscalLinha === apelido);
+          const isFiscalInsp = fiscaisSet.has(fiscalLinha);
+          if ((isProprioInsp || isFiscalInsp) && area !== 'SAF' && motivoEnvio !== 'PEDIDO DE FOLGAS') {
+            permitido = true;
+          }
+          break;
+          
+        case 'ENCARREGADO':
+          // Encarregado vê envios de FISCAIS, INSPETORES e os próprios, exceto área SAF
+          const isProprioEnc = (fiscalLinha === apelido);
+          const isFiscalEnc = fiscaisSet.has(fiscalLinha);
+          const isInspetorEnc = inspetoresSet.has(fiscalLinha);
+          if ((isProprioEnc || isFiscalEnc || isInspetorEnc) && area !== 'SAF') {
+            permitido = true;
+          }
+          break;
+          
+        case 'SAF':
+          // SAF vê todos os envios para área SAF, ou com motivo AVARIAS/OUTROS (qualquer área)
+          if (area === 'SAF' || motivoEnvio === 'AVARIAS' || motivoEnvio === 'OUTROS') {
+            permitido = true;
+          }
+          break;
+          
+        case 'GERENTE':
+          // Gerente vê todos, exceto pedidos de material e folgas
+          if (motivoEnvio !== 'SOLICITAÇÃO DE MATERIAIS' && motivoEnvio !== 'PEDIDO DE FOLGAS') {
+            permitido = true;
+          }
+          break;
+          
+        case 'ADMIN':
+          // Admin vê tudo
+          permitido = true;
+          break;
+          
+        default:
+          permitido = false;
+      }
+      
+      // ========== LIMITE DE DIAS POR PERFIL ==========
+      if (permitido) {
+        const diffDias = Math.floor((hoje - dataRegistro) / (1000 * 60 * 60 * 24));
+        switch (papel) {
+          case 'FISCAL':
+            if (diffDias > 30) permitido = false;
+            break;
+          case 'INSPETOR':
+            if (diffDias > 60) permitido = false;
+            break;
+          case 'ENCARREGADO':
+          case 'GERENTE':
+            if (diffDias > 90) permitido = false;
+            break;
+          // SAF e ADMIN não têm limite de dias
+        }
+      }
+      
+      if (permitido) {
+        resultados.push({
+          areaDestino: area,
+          motivo: motivoEnvio,
+          carro: linha[idxCarro],
+          local: linha[idxLocal],
+          historico: linha[idxHistorico],
+          anexo: linha[idxAnexo],
+          data: linha[idxData] ? Utilities.formatDate(new Date(linha[idxData]), "America/Sao_Paulo", "dd/MM/yyyy") : "",
+          hora: linha[idxHora] || "",
+          sentido: linha[idxSentido] || "",
+          motorista: linha[idxMotorista] || "",
+          cobrador: linha[idxCobrador] || "",
+          linha: linha[idxLinha] || "",
+          fiscal: fiscalLinha
+        });
+      }
+    }
+    
+    // Ordenação decrescente por data (mais recente primeiro)
+    resultados.sort((a, b) => {
+      const converte = (dataStr) => {
+        if (!dataStr) return 0;
+        const partes = dataStr.split('/');
+        if (partes.length !== 3) return 0;
+        const [dia, mes, ano] = partes.map(Number);
+        return new Date(ano, mes - 1, dia).getTime();
+      };
+      const timeA = converte(a.data);
+      const timeB = converte(b.data);
+      return timeB - timeA;
+    });
+    
+    return resultados;
+  } catch (err) {
+    Logger.log("ERRO em consultarEnvios: " + err.message);
+    return [];
+  }
+}
+// ======================= doPost =======================
+function doPost(e) {
+  try {
+    const { nome, acao, dados } = e.parameter;
+    if (acao === "Login bem-sucedido" || (!dados && nome)) {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let logSheet = ss.getSheetByName("Log_Acessos");
+      if (!logSheet) {
+        logSheet = ss.insertSheet("Log_Acessos");
+        logSheet.appendRow(["Data e Hora", "Apelido", "Nome Completo", "Cargo/Função", "Ação"]);
+      }
+      const sheetLogin = ss.getSheetByName("login");
+      const data = sheetLogin.getDataRange().getValues();
+      let nomeCompleto = "Não encontrado";
+      let cargo = "Não informado";
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][2] === nome) {
+          nomeCompleto = data[i][1] || nome;
+          cargo = data[i][4] || "";
+          break;
+        }
+      }
+      const dataHora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+      logSheet.appendRow([dataHora, nome, nomeCompleto, cargo, acao]);
+      return ContentService.createTextOutput("Log registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
+    }
+    if (acao === "inspecao_veicular" && dados) {
+      const dadosObj = JSON.parse(dados);
+      salvarInspecao(dadosObj);
+      return ContentService.createTextOutput("Inspeção registrada com sucesso").setMimeType(ContentService.MimeType.TEXT);
+    }
+    if (acao === "envio_informacoes" && dados) {
+      const dadosObj = JSON.parse(dados);
+      salvarEnvioInformacoes(dadosObj);
+      return ContentService.createTextOutput("Envio registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
+    }
+    return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Erro: " + err.message).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+// ======================= doGet (rota para JSONP) - VERSÃO CORRIGIDA =======================
+function doGet(e) {
+  const acao = e.parameter.acao;
+  const callback = e.parameter.callback;
+  
+  // Função auxiliar para enviar resposta JSONP
+  function enviarResposta(dados) {
+    if (callback) {
+      const json = JSON.stringify(dados);
+      const resposta = callback + '(' + json + ');';
+      return ContentService
+        .createTextOutput(resposta)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService
+        .createTextOutput(JSON.stringify(dados))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  // Função para enviar erro
+  function enviarErro(mensagem) {
+    const erroObj = { erro: mensagem };
+    if (callback) {
+      const json = JSON.stringify(erroObj);
+      const resposta = callback + '(' + json + ');';
+      return ContentService
+        .createTextOutput(resposta)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService
+        .createTextOutput(JSON.stringify(erroObj))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  try {
+    // TERMINAIS
+    if (acao === "terminais") {
+      const terminais = listarTerminais();
+      return enviarResposta(terminais);
+    }
+    
+    if (acao === "terminais_todos") {
+      const terminais = listarTodosTerminais();
+      return enviarResposta(terminais);
+    }
+    
+    // CONSULTA INSPEÇÕES
+    if (acao === "consultar_inspecoes") {
+      const fiscal = e.parameter.fiscal || null;
+      const dataInicio = e.parameter.dataInicio || null;
+      const dataFim = e.parameter.dataFim || null;
+      const carro = e.parameter.carro || null;
+      const fiscalFiltro = e.parameter.fiscalFiltro || null;
+      const resultado = consultarInspecoes(fiscal, dataInicio, dataFim, carro, fiscalFiltro);
+      return enviarResposta(resultado);
+    }
+  // CONSULTAR ENVIOS  
+  if (acao === "consultar_envios") {
+  const fiscal = e.parameter.fiscal || null;
+  const dataInicio = e.parameter.dataInicio || null;
+  const dataFim = e.parameter.dataFim || null;
+  const motivo = e.parameter.motivo || null;
+  const carro = e.parameter.carro || null;
+  const prefixo = e.parameter.prefixo || null;
+  const fiscalFiltro = e.parameter.fiscalFiltro || null;
+  const papel = e.parameter.papel || '';
+  const apelido = e.parameter.apelido || '';
+  const resultado = consultarEnvios(fiscal, dataInicio, dataFim, motivo, carro, prefixo, fiscalFiltro, papel, apelido);
+  return enviarResposta(resultado);
+}
+    
+    // LOGIN
+    if (acao === "login") {
+      const senhaDigitada = e.parameter.senha;
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheetLogin = ss.getSheetByName("login");
+      const data = sheetLogin.getDataRange().getValues();
+      
+      let usuarioEncontrado = { sucesso: false };
+      
+      for (let i = 1; i < data.length; i++) {
+        const nome = data[i][1];
+        const apelido = data[i][2];
+        const funcao = data[i][4];
+        const ativo = data[i][5];
+        const hashPlanilha = data[i][6];
+        
+        if (apelido && ativo === "SIM") {
+          const hashCalculado = gerarHashComSalt(senhaDigitada, apelido);
+          if (hashCalculado === hashPlanilha) {
+            usuarioEncontrado = {
+              sucesso: true,
+              nome: nome,
+              apelido: apelido,
+              funcao: funcao
+            };
+            break;
+          }
+        }
+      }
+      
+      return enviarResposta(usuarioEncontrado);
+    }
+    
+    // Fallback
+    return enviarErro("Ação inválida: " + acao);
+    
+  } catch (err) {
+    Logger.log("ERRO em doGet: " + err.message);
+    return enviarErro("Erro interno: " + err.message);
+  }
+}
+
+// ======================= HASH E MIGRAÇÃO =======================
+function gerarHashComSalt(senha, salt) {
+  const stringCombinada = senha + salt;
+  const hashBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, stringCombinada, Utilities.Charset.UTF_8);
+  return hashBytes.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+}
+
+function migrarSenhasParaHashComSalt() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("login");
+  const data = sheet.getDataRange().getValues();
+  if (data[0].length < 7 || data[0][6] !== "senha_hash") {
+    sheet.getRange(1, 7).setValue("senha_hash");
+  }
+  let alterados = 0;
+  for (let i = 1; i < data.length; i++) {
+    const senhaPlana = String(data[i][3] || "").trim();
+    const apelido = data[i][2];
+    const hashAtual = String(data[i][6] || "").trim();
+    if (senhaPlana && apelido && !hashAtual) {
+      const novoHash = gerarHashComSalt(senhaPlana, apelido);
+      sheet.getRange(i + 1, 7).setValue(novoHash);
+      alterados++;
+    }
+  }
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert(`Migração concluída!\n\n${alterados} senhas convertidas.`);
+}
+
+// ======================= FUNÇÕES DE TESTE DO DRIVE =======================
+function testDrive() {
+  const pasta = DriveApp.getFolderById("1CSFGmTlH1THeQzG8j-XNTopMw8v_up2h");
+  Logger.log(pasta.getName());
+}
+
+function forcarPermissaoDrive() {
+  DriveApp.getRootFolder();
+}
+
+function testarDrive() {
+  try {
+    const pasta = DriveApp.getFolderById("1CSFGmTlH1THeQzG8j-XNTopMw8v_up2h");
+    console.log("✅ Sucesso! Pasta encontrada: " + pasta.getName());
+    console.log("🔗 URL da Pasta: " + pasta.getUrl());
+    return "Pasta acessada com sucesso!";
+  } catch (e) {
+    console.error("❌ ERRO NO DRIVE: " + e.toString());
+    return "Erro: " + e.toString();
+  }
+}
+
+function testarArrayAnexos() {
+  const testData = {
+    areaDestino: "FISCALIZAÇÃO",
+    motivo: "AVARIAS",
+    carro: "1234",
+    fiscal: "TESTE",
+    anexos: [
+      { base64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", mimeType: "image/png", nome: "teste.png" }
+    ]
+  };
+  const result = salvarEnvioInformacoes(testData);
+  console.log("Resultado:", result);
+}

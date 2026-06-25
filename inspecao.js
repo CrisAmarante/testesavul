@@ -18,39 +18,53 @@ class InspecaoVeicular {
     });
 
     // Configura os checkboxes e inputs de observação/posição
-    document.querySelectorAll('.item-inspecao').forEach(item => {
-      const cbOk = item.querySelector('.ok');
-      const cbDef = item.querySelector('.defeito');
-      const obsInput = item.querySelector('.obs-input');
-      const posBtns = item.querySelectorAll('.pos-btn');
+    const setupRowListeners = () => {
+      document.querySelectorAll('#tabela-inspecao tbody tr.inspection-row').forEach(row => {
+        const cbOk = row.querySelector('.ok');
+        const cbDef = row.querySelector('.defeito');
+        const item = row.dataset.item;
+        const obsRow = document.querySelector(`#tabela-inspecao tbody tr.obs-row[data-item="${item}"]`);
+        const obsInput = obsRow ? obsRow.querySelector('.obs-input') : null;
+        const posBtns = row.querySelectorAll('.pos-btn');
 
-      const atualizarEstadoLinha = () => {
-        const isDefective = cbDef.checked;
+        const atualizarEstadoLinha = () => {
+          const isDefective = cbDef.checked;
 
-        if (obsInput) {
-          obsInput.disabled = !isDefective;
-          if (!isDefective) obsInput.value = '';
-        }
+          if (obsInput) {
+            obsInput.disabled = !isDefective;
+            if (!isDefective) obsInput.value = '';
+          }
 
-        if (posBtns.length) {
-          posBtns.forEach(btn => {
-            btn.disabled = !isDefective;
-            if (!isDefective) btn.classList.remove('active');
+          if (posBtns && posBtns.length > 0) {
+            posBtns.forEach(btn => {
+              btn.disabled = !isDefective;
+              if (!isDefective) btn.classList.remove('active');
+            });
+          }
+        };
+
+        if (cbOk && cbDef) {
+          cbOk.addEventListener('change', () => {
+            if (cbOk.checked) cbDef.checked = false;
+            atualizarEstadoLinha();
+          });
+          cbDef.addEventListener('change', () => {
+            if (cbDef.checked) cbOk.checked = false;
+            atualizarEstadoLinha();
           });
         }
-      };
+        
+        // Inicializa o estado da linha
+        atualizarEstadoLinha();
+      });
+    };
 
-      if (cbOk && cbDef) {
-        cbOk.addEventListener('change', () => {
-          if (cbOk.checked) cbDef.checked = false;
-          atualizarEstadoLinha();
-        });
-        cbDef.addEventListener('change', () => {
-          if (cbDef.checked) cbOk.checked = false;
-          atualizarEstadoLinha();
-        });
-      }
-    });
+    // Aguarda o DOM estar pronto e configura os listeners
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupRowListeners);
+    } else {
+      setupRowListeners();
+    }
 
     // Botões de posição (F, M, T)
     document.querySelectorAll('.pos-btn').forEach(btn =>
@@ -114,15 +128,18 @@ class InspecaoVeicular {
 
   resetarFormulario() {
     if (getEl('carro')) getEl('carro').value = '';
-    document.querySelectorAll('.item-inspecao .ok, .item-inspecao .defeito')
+    document
+      .querySelectorAll(
+        '#tabela-inspecao tbody tr.inspection-row .ok, #tabela-inspecao tbody tr.inspection-row .defeito'
+      )
       .forEach(cb => (cb.checked = false));
 
-    document.querySelectorAll('.item-inspecao .obs-input').forEach(inp => {
+    document.querySelectorAll('.obs-input').forEach(inp => {
       inp.value = '';
       inp.disabled = true;
     });
 
-    document.querySelectorAll('.item-inspecao .pos-btn').forEach(btn => {
+    document.querySelectorAll('.pos-btn').forEach(btn => {
       btn.classList.remove('active');
       btn.disabled = true;
     });
@@ -139,14 +156,15 @@ class InspecaoVeicular {
       return null;
     }
     const itens = {};
-    document.querySelectorAll('.item-inspecao').forEach(item => {
-      const nome = item.dataset.item;
-      const ok = item.querySelector('.ok').checked;
-      const defeito = item.querySelector('.defeito').checked;
-      const obs = item.querySelector('.obs-input').value.trim();
-      itens[nome] = { status: ok ? 'OK' : defeito ? 'DEFEITO' : '', obs: obs };
-      if (nome === 'ventilador') {
-        itens[nome].posicao = Array.from(item.querySelectorAll('.pos-btn.active'))
+    document.querySelectorAll('#tabela-inspecao tbody tr.inspection-row').forEach(row => {
+      const item = row.dataset.item;
+      const ok = row.querySelector('.ok').checked;
+      const defeito = row.querySelector('.defeito').checked;
+      const obsRow = document.querySelector(`#tabela-inspecao tbody tr.obs-row[data-item="${item}"]`);
+      const obs = obsRow ? obsRow.querySelector('.obs-input').value.trim() : '';
+      itens[item] = { status: ok ? 'OK' : defeito ? 'DEFEITO' : '', obs: obs };
+      if (item === 'ventilador') {
+        itens[item].posicao = Array.from(row.querySelectorAll('.pos-btn.active'))
           .map(btn => btn.dataset.pos)
           .join(',');
       }

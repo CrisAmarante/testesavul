@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penso-cache-v1.1.1.0';
+const CACHE_NAME = 'penso-cache-v3.1.7.9.4.3';
 
 // Lista de arquivos para cache imediato (estáticos)
 const ASSETS_TO_CACHE = [
