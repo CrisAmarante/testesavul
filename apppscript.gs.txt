@@ -477,7 +477,8 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
           motorista: linha[idxMotorista] || "",
           cobrador: linha[idxCobrador] || "",
           linha: linha[idxLinha] || "",
-          fiscal: fiscalLinha
+          fiscal: fiscalLinha,
+          dataPreenchimento: dataEnvioStr  // Data de preenchimento pelo fiscal (dd/MM/yyyy)
         });
       }
     }

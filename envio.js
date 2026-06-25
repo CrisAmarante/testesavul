@@ -735,6 +735,7 @@ function mostrarDetalheEnvio(envio) {
       <div><strong>LINHA:</strong> ${envio.linha || 'N/I'}</div>
       <div><strong>LOCAL:</strong> ${envio.local || 'N/I'} <strong>| DATA:</strong> ${dataFormatada}</div>
       <div><strong>RESPONSÁVEL:</strong> ${envio.fiscal || 'N/I'}</div>
+      ${envio.dataPreenchimento ? `<div><strong>DATA PREENCHIMENTO:</strong> ${envio.dataPreenchimento}</div>` : ''}
     </div>
   `;
 
@@ -962,6 +963,18 @@ async function exportarParaPDF(envio) {
     doc.text(`Sent.: ${envio.sentido || '________'}`, rightCol, y);
     y += 16;
 
+    // Adiciona data de preenchimento se disponível
+    if (envio.dataPreenchimento) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Data Preenchimento: ${envio.dataPreenchimento}`, margin, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11.5);
+      doc.setTextColor(0);
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Sr. Chefe", margin, y);
@@ -1123,6 +1136,9 @@ function gerarTextoDetalheEnvio(envio) {
   texto += `MOTORISTA: ${envio.motorista || 'N/I'}\n`;
   texto += `LINHA: ${envio.linha || 'N/I'}  HISTÓRICO: ${envio.historico || 'N/I'}\n`;
   texto += `LOCAL: ${envio.local || 'N/I'}  DATA: ${dataFormatada}\n`;
+  if (envio.dataPreenchimento) {
+    texto += `DATA PREENCHIMENTO: ${envio.dataPreenchimento}\n`;
+  }
   texto += `ANEXOS: ${envio.anexos || 'Nenhum'}\n`;
   texto += `RESPONSÁVEL: ${envio.fiscal || 'N/I'}\n`;
   return texto;
