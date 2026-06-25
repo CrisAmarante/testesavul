@@ -94,8 +94,12 @@ function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro
       if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
       if (fiscalNome && fiscalLinha !== fiscalNome) continue; 
       
+      // Extrai apenas a data (dd/MM/yyyy) da dataHora para exibição como "data de preenchimento"
+      const dataPreenchimento = dataHoraStr.split(" ")[0];
+      
       resultados.push({
         dataHora: dataHoraStr,
+        dataPreenchimento: dataPreenchimento,  // Nova propriedade: data de preenchimento pelo fiscal
         carro: linha[indices.carro] || "",
         terminal: linha[indices.terminal] || "",
         fiscal: fiscalLinha,
