@@ -54,6 +54,10 @@ async function checkLoginStatus() {
     insp.style.display = 'flex';
     showWelcomeToast(apelido);
     
+    // Verifica notificações para perfis SAF e Encarregado
+    if (typeof verificarNotificacoesAoIniciar === 'function') {
+      verificarNotificacoesAoIniciar();
+    }
     const logoutBtn = insp.querySelector('.logout-btn');
     if (logoutBtn) logoutBtn.innerHTML = `Sair<small>${apelido}</small>`;
   } else {

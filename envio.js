@@ -673,6 +673,30 @@ function mostrarListaEnvios(dados) {
       return;
     }
     
+
+    // FILTRO PARA SAF/ENCARREGADO: Adiciona notificações apenas para envios destinados a eles
+    const role = window.currentUserRole || localStorage.getItem('inspectorRole') || '';
+    const perfisFiltramNotificacoes = ['SAF', 'ENCARREGADO'];
+    
+    if (perfisFiltramNotificacoes.includes(role)) {
+      // Filtra apenas envios destinados ao perfil do usuário
+      const areaDestinoEsperada = role === 'SAF' ? 'SAF' : null; // Encarregado pode ver todos
+      
+      dados.forEach((envio, idx) => {
+        // Verifica se o envio é destinado a este perfil
+        const areaEnvio = envio.areaDestino || '';
+        const deveAdicionarNotificacao = areaDestinoEsperada 
+          ? areaEnvio === areaDestinoEsperada 
+          : true; // Encarregado vê todos
+        
+        if (deveAdicionarNotificacao && envio.id) {
+          adicionarNotificacaoNaoLida(envio);
+        }
+      });
+      
+      // Atualiza painel após processar
+      atualizarPainelNotificacoes();
+    }
     let html = '';
     dados.forEach((envio, idx) => {
       // Exibe o responsável (apelido) acima do motivo
@@ -1229,3 +1253,167 @@ function iniciarReconhecimentoVoz() {
 
   reconhecimentoVoz.start();
 }
+
+// ====================================================================
+// SISTEMA DE NOTIFICAÇÕES "LIDOS/NÃO LIDOS" (localStorage)
+// Para perfis SAF e Encarregado
+// ====================================================================
+
+const STORAGE_KEY_NOTIFICACOES = 'penso_notificacoes_nao_lidas';
+
+/**
+ * Adiciona uma notificação ao localStorage
+ * @param {Object} envio - Objeto do envio recebido da API
+ */
+function adicionarNotificacaoNaoLida(envio) {
+  if (!envio || !envio.id) return;
+  
+  const notificacoes = getNotificacoesNaoLidas();
+  
+  // Verifica se já existe
+  const existe = notificacoes.some(n => n.id === envio.id);
+  if (existe) return;
+  
+  const novaNotificacao = {
+    id: envio.id,
+    motivo: envio.motivo || 'N/I',
+    fiscal: envio.fiscal || 'N/I',
+    carro: envio.carro || 'N/I',
+    data: envio.data || '',
+    timestamp: Date.now()
+  };
+  
+  notificacoes.push(novaNotificacao);
+  localStorage.setItem(STORAGE_KEY_NOTIFICACOES, JSON.stringify(notificacoes));
+  atualizarPainelNotificacoes();
+}
+
+/**
+ * Obtém todas as notificações não lidas do localStorage
+ * @returns {Array} Array de notificações
+ */
+function getNotificacoesNaoLidas() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_NOTIFICACOES);
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.error('Erro ao ler notificações:', e);
+    return [];
+  }
+}
+
+/**
+ * Marca uma notificação como lida
+ * @param {string} id - ID do envio/notificação
+ */
+function marcarComoLida(id) {
+  const notificacoes = getNotificacoesNaoLidas();
+  const filtradas = notificacoes.filter(n => n.id !== id);
+  localStorage.setItem(STORAGE_KEY_NOTIFICACOES, JSON.stringify(filtradas));
+  atualizarPainelNotificacoes();
+}
+
+/**
+ * Marca todas as notificações como lidas
+ */
+function marcarTodosComoLidos() {
+  localStorage.removeItem(STORAGE_KEY_NOTIFICACOES);
+  atualizarPainelNotificacoes();
+}
+
+/**
+ * Atualiza o painel lateral de notificações na tela
+ */
+function atualizarPainelNotificacoes() {
+  const painel = document.getElementById('painel-notificacoes');
+  const lista = document.getElementById('lista-notificacoes');
+  const contador = document.getElementById('contador-nao-lidos');
+  
+  if (!painel || !lista || !contador) return;
+  
+  const notificacoes = getNotificacoesNaoLidas();
+  const naoLidasCount = notificacoes.length;
+  
+  // Atualiza contador
+  contador.textContent = naoLidasCount;
+  
+  // Mostra/esconde painel baseado no perfil e se há notificações
+  const role = window.currentUserRole || localStorage.getItem('inspectorRole') || '';
+  const perfisComPainel = ['SAF', 'ENCARREGADO'];
+  
+  if (perfisComPainel.includes(role) && naoLidasCount > 0) {
+    painel.classList.add('visivel');
+  } else {
+    painel.classList.remove('visivel');
+  }
+  
+  // Renderiza lista
+  if (naoLidasCount === 0) {
+    lista.innerHTML = '<p class="sem-notificacoes">Nenhuma notificação não lida</p>';
+  } else {
+    lista.innerHTML = notificacoes.map(notif => `
+      <div class="notificacao-item" onclick="clicarNotificacao('${notif.id}')">
+        <div class="notificacao-motivo">${notif.motivo}</div>
+        <div class="notificacao-detalhes">
+          👤 ${notif.fiscal} | 🚗 ${notif.carro}<br>
+          📅 ${formatarData(notif.data)}
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+/**
+ * Handler para clique em notificação
+ * @param {string} id - ID do envio
+ */
+function clicarNotificacao(id) {
+  // Marca como lida
+  marcarComoLida(id);
+  
+  // Abre modal de detalhes do envio
+  consultarEnviosPorId(id);
+}
+
+/**
+ * Consulta um envio específico por ID e mostra detalhes
+ * @param {string} id - ID do envio
+ */
+function consultarEnviosPorId(id) {
+  const params = new URLSearchParams();
+  params.append('acao', 'consultar_envio_por_id');
+  params.append('id', id);
+  
+  const url = `${URL_PLANILHA}?${params.toString()}`;
+  
+  fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } })
+    .then(response => response.json())
+    .then(envio => {
+      if (envio && !envio.erro) {
+        mostrarDetalheEnvio(envio);
+      } else {
+        alert('Não foi possível carregar os detalhes deste envio.');
+      }
+    })
+    .catch(err => {
+      console.error('Erro ao consultar envio por ID:', err);
+      alert('Erro de conexão. Tente novamente.');
+    });
+}
+
+/**
+ * Verifica e atualiza notificações ao carregar a página
+ */
+function verificarNotificacoesAoIniciar() {
+  const role = window.currentUserRole || localStorage.getItem('inspectorRole') || '';
+  const perfisComPainel = ['SAF', 'ENCARREGADO'];
+  
+  if (perfisComPainel.includes(role)) {
+    atualizarPainelNotificacoes();
+  }
+}
+
+// Exporta funções para o escopo global
+window.marcarTodosComoLidos = marcarTodosComoLidos;
+window.clicarNotificacao = clicarNotificacao;
+window.verificarNotificacoesAoIniciar = verificarNotificacoesAoIniciar;
