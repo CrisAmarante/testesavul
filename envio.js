@@ -963,18 +963,6 @@ async function exportarParaPDF(envio) {
     doc.text(`Sent.: ${envio.sentido || '________'}`, rightCol, y);
     y += 16;
 
-    // Adiciona data de preenchimento se disponível
-    if (envio.dataPreenchimento) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Data Preenchimento: ${envio.dataPreenchimento}`, margin, y);
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11.5);
-      doc.setTextColor(0);
-    }
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Sr. Chefe", margin, y);
