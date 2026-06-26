@@ -1,3 +1,130 @@
+/**
+ * ============================================================================
+ * CONFIGURAÇÃO MASTER E GERENCIAMENTO DE PLANILHAS SEPARADAS
+ * ============================================================================
+ * ESTRUTURA SUGERIDA NO DRIVE:
+ * 1. Crie uma planilha "Master_Config"
+ * 2. Nela, crie uma aba "IDs" com as colunas: [Nome, ID]
+ *    - Login, <ID_DA_PLANILHA_LOGIN>
+ *    - Logs, <ID_DA_PLANILHA_LOGS>
+ *    - Envios, <ID_DA_PLANILHA_ENVIOS>
+ *    - Inspecoes, <ID_DA_PLANILHA_INSPICOES>
+ * 3. Substitua a variável MASTER_SHEET_ID abaixo pelo ID da sua planilha Master.
+ * 
+ * Se MASTER_SHEET_ID não estiver configurado, o sistema usa SpreadsheetApp.getActiveSpreadsheet()
+ * (modo legado/único) para manter compatibilidade.
+ */
+
+const MASTER_SHEET_ID = ''; // Deixe vazio para usar planilha atual, ou coloque o ID da Planilha Master
+
+// Cache para evitar chamadas repetidas ao SpreadsheetApp
+const _sheetCache = {};
+
+/**
+ * Obtém o ID de uma planilha específica baseado na configuração Master.
+ * Se MASTER_SHEET_ID estiver vazio, retorna null para usar a planilha ativa.
+ */
+function getSheetIdByName(name) {
+  // Modo legado: usa planilha ativa se MASTER_SHEET_ID não estiver configurado
+  if (!MASTER_SHEET_ID) {
+    return null;
+  }
+
+  if (_sheetCache[name]) {
+    return _sheetCache[name];
+  }
+
+  try {
+    const masterSpreadsheet = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    const sheet = masterSpreadsheet.getSheetByName('IDs');
+    if (!sheet) throw new Error('Aba "IDs" não encontrada na Planilha Master.');
+    
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === name) {
+        const id = data[i][1];
+        _sheetCache[name] = id;
+        return id;
+      }
+    }
+    throw new Error(`ID para "${name}" não encontrado na Master.`);
+  } catch (e) {
+    Logger.log(`Erro ao buscar ID para ${name}: ${e.message}`);
+    return null;
+  }
+}
+
+/**
+ * Abre uma planilha pelo nome lógico definido na Master.
+ * Se não houver Master configurada, retorna a planilha ativa.
+ */
+function openSheetByName(name) {
+  const id = getSheetIdByName(name);
+  if (id) {
+    return SpreadsheetApp.openById(id);
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+// ============================================================================
+// MÓDULO: LOGS (Simula logs.gs) - Registro de acessos e endpoints
+// ============================================================================
+const LogModule = {
+  getSheet: function() {
+    const ss = openSheetByName('Logs');
+    let sheet = ss.getSheetByName('Acessos');
+    if (!sheet) {
+      sheet = ss.insertSheet('Acessos');
+      sheet.appendRow(['Timestamp', 'Email', 'Ação', 'Detalhes', 'Endpoint']);
+    }
+    return sheet;
+  },
+
+  registrarAcesso: function(email, acao, detalhes, endpoint) {
+    try {
+      const sheet = this.getSheet();
+      sheet.appendRow([new Date(), email || 'Anonimo', acao, detalhes, endpoint || 'N/A']);
+    } catch (e) {
+      Logger.log('Erro ao registrar log: ' + e.message);
+    }
+  },
+  
+  consultarLogs: function(filtroEmail, dataInicio, dataFim) {
+    const sheet = this.getSheet();
+    const data = sheet.getDataRange().getValues();
+    const resultados = [];
+    
+    let dataInicioObj = null;
+    if (dataInicio) {
+      const parts = dataInicio.split('-');
+      dataInicioObj = new Date(parts[0], parts[1]-1, parts[2]);
+    }
+    let dataFimObj = null;
+    if (dataFim) {
+      const parts = dataFim.split('-');
+      dataFimObj = new Date(parts[0], parts[1]-1, parts[2], 23, 59, 59);
+    }
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const timestamp = row[0];
+      
+      if (filtroEmail && row[1] !== filtroEmail) continue;
+      if (dataInicioObj && timestamp < dataInicioObj) continue;
+      if (dataFimObj && timestamp > dataFimObj) continue;
+      
+      resultados.push({
+        timestamp: timestamp,
+        email: row[1],
+        acao: row[2],
+        detalhes: row[3],
+        endpoint: row[4]
+      });
+    }
+    return resultados;
+  }
+};
+
 // ======================= SALVAR INSPEÇÃO VEICULAR =======================
 function salvarInspecao(dadosJson) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -507,6 +634,8 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
 function doPost(e) {
   try {
     const { nome, acao, dados } = e.parameter;
+    const endpoint = `post_${acao || 'desconhecido'}`;
+    
     if (acao === "Login bem-sucedido" || (!dados && nome)) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       let logSheet = ss.getSheetByName("Log_Acessos");
@@ -527,20 +656,32 @@ function doPost(e) {
       }
       const dataHora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
       logSheet.appendRow([dataHora, nome, nomeCompleto, cargo, acao]);
+      
+      // Registrar no LogModule também (padronização)
+      LogModule.registrarAcesso(nome, 'LOGIN_POST', acao, endpoint);
+      
       return ContentService.createTextOutput("Log registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
     if (acao === "inspecao_veicular" && dados) {
       const dadosObj = JSON.parse(dados);
       salvarInspecao(dadosObj);
+      const fiscal = dadosObj.fiscal || 'Desconhecido';
+      LogModule.registrarAcesso(fiscal, 'INSPECAO_SALVA', `Carro: ${dadosObj.carro||''}`, endpoint);
       return ContentService.createTextOutput("Inspeção registrada com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
     if (acao === "envio_informacoes" && dados) {
       const dadosObj = JSON.parse(dados);
       salvarEnvioInformacoes(dadosObj);
+      const fiscal = dadosObj.fiscal || 'Desconhecido';
+      LogModule.registrarAcesso(fiscal, 'ENVIO_SALVO', `Motivo: ${dadosObj.motivo||''}, Area: ${dadosObj.areaDestino||''}`, endpoint);
       return ContentService.createTextOutput("Envio registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
+    
+    LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
+    Logger.log("ERRO em doPost: " + err.message);
+    LogModule.registrarAcesso('Sistema', 'ERRO_POST', err.message, `post_${e.parameter.acao || 'desconhecido'}`);
     return ContentService.createTextOutput("Erro: " + err.message).setMimeType(ContentService.MimeType.TEXT);
   }
 }
@@ -582,14 +723,20 @@ function doGet(e) {
   }
   
   try {
+    // Registrar endpoint acessado
+    const usuario = e.parameter.apelido || e.parameter.fiscal || 'Anonimo';
+    const endpoint = `get_${acao}`;
+    
     // TERMINAIS
     if (acao === "terminais") {
       const terminais = listarTerminais();
+      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS', '', endpoint);
       return enviarResposta(terminais);
     }
     
     if (acao === "terminais_todos") {
       const terminais = listarTodosTerminais();
+      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS_TODOS', '', endpoint);
       return enviarResposta(terminais);
     }
     
@@ -601,9 +748,10 @@ function doGet(e) {
       const carro = e.parameter.carro || null;
       const fiscalFiltro = e.parameter.fiscalFiltro || null;
       const resultado = consultarInspecoes(fiscal, dataInicio, dataFim, carro, fiscalFiltro);
+      LogModule.registrarAcesso(usuario, 'CONSULTA_INSPICOES', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
       return enviarResposta(resultado);
     }
-  // CONSULTAR ENVIOS  
+    // CONSULTAR ENVIOS  
   if (acao === "consultar_envios") {
   const fiscal = e.parameter.fiscal || null;
   const dataInicio = e.parameter.dataInicio || null;
@@ -615,12 +763,23 @@ function doGet(e) {
   const papel = e.parameter.papel || '';
   const apelido = e.parameter.apelido || '';
   const resultado = consultarEnvios(fiscal, dataInicio, dataFim, motivo, carro, prefixo, fiscalFiltro, papel, apelido);
+  LogModule.registrarAcesso(usuario, 'CONSULTA_ENVIOS', `papel:${papel},fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
   return enviarResposta(resultado);
 }
+    
+    // CONSULTAR LOGS DE AUDITORIA
+    if (acao === "consultar_logs") {
+      const filtroEmail = e.parameter.email || null;
+      const dataInicioLogs = e.parameter.dataInicio || null;
+      const dataFimLogs = e.parameter.dataFim || null;
+      const resultado = LogModule.consultarLogs(filtroEmail, dataInicioLogs, dataFimLogs);
+      return enviarResposta(resultado);
+    }
     
     // LOGIN
     if (acao === "login") {
       const senhaDigitada = e.parameter.senha;
+      const apelidoLogin = e.parameter.apelido || e.parameter.fiscal || '';
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const sheetLogin = ss.getSheetByName("login");
       const data = sheetLogin.getDataRange().getValues();
@@ -643,9 +802,14 @@ function doGet(e) {
               apelido: apelido,
               funcao: funcao
             };
+            LogModule.registrarAcesso(apelido, 'LOGIN_SUCESSO', `Perfil: ${funcao}`, endpoint);
             break;
           }
         }
+      }
+      
+      if (!usuarioEncontrado.sucesso) {
+        LogModule.registrarAcesso(apelidoLogin, 'LOGIN_FALHA', '', endpoint);
       }
       
       return enviarResposta(usuarioEncontrado);
@@ -656,6 +820,7 @@ function doGet(e) {
     
   } catch (err) {
     Logger.log("ERRO em doGet: " + err.message);
+    LogModule.registrarAcesso('Sistema', 'ERRO_DOGET', err.message, `get_${e.parameter.acao || 'desconhecido'}`);
     return enviarErro("Erro interno: " + err.message);
   }
 }
