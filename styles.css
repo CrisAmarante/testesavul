@@ -489,3 +489,136 @@ body.dark .grid-anexos-preview {
 .btn-admin:hover {
   transform: scale(1.05);
 }
+
+/* Painel Lateral de Notificações (SAF/Encarregado) */
+.painel-notificacoes {
+  position: fixed;
+  top: 70px;
+  left: 10px;
+  width: 280px;
+  max-height: calc(100vh - 90px);
+  background: var(--modal-bg);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  padding: 16px;
+  z-index: 999;
+  overflow-y: auto;
+  border: 2px solid var(--accent);
+  display: none;
+}
+
+.painel-notificacoes.visivel {
+  display: block;
+}
+
+.painel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.painel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-nao-lidos {
+  background: var(--accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.lista-notificacoes {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.notificacao-item {
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid var(--accent);
+}
+
+.notificacao-item:hover {
+  background: rgba(0,0,0,0.1);
+  transform: translateX(4px);
+}
+
+.notificacao-item.lido {
+  opacity: 0.6;
+  border-left-color: #10b981;
+}
+
+.notificacao-motivo {
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.notificacao-detalhes {
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.sem-notificacoes {
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+  padding: 20px 0;
+}
+
+.btn-marcar-lidos {
+  width: 100%;
+  padding: 10px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-marcar-lidos:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .painel-notificacoes {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-height: none;
+    margin-bottom: 20px;
+  }
+  
+  .lista-notificacoes {
+    max-height: 200px;
+  }
+}
