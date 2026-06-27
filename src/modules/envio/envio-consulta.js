@@ -1,563 +1,7 @@
-// ====================================================================
-// ENVIO DE INFORMAÇÕES (com até 4 anexos, rascunho, upload, preview)
-// ====================================================================
-
-// ====================================================================
-// VARIÁVEIS GLOBAIS
-// ====================================================================
-let rascunhoAtualId = null;
-let enviosLista = [];
-let anexosArray = [];          // cada elemento: { base64, mimeType, nome }
-
-function getEl(id) { return document.getElementById(id); }
-
-// ====================================================================
-// ABRIR/FECHAR MODAL
-// ====================================================================
-function abrirModalEnvio() {
-  const m = getEl('modal-envio-informacoes');
-  if (m) m.classList.add('is-open');
-  preencherDataAtual();
-  preencherResponsavel();
-  preencherSelectLocal();
-  carregarRascunho();
-  habilitarCamposSecundarios(false);
-  anexosArray = [];
-  atualizarListaAnexos();
-  if (!getEl('input-arquivos-multiplos')) criarInputMultiploAnexos();
-  iniciarContadorHistorico();
-  
-  // Evento do microfone
-  const btnMicrofone = getEl('btn-microfone');
-  if (btnMicrofone) {
-    const novoBtn = btnMicrofone.cloneNode(true);
-    btnMicrofone.parentNode.replaceChild(novoBtn, btnMicrofone);
-    novoBtn.addEventListener('click', iniciarReconhecimentoVoz);
-  }
-}
-
-function fecharModalEnvio() {
-  const m = getEl('modal-envio-informacoes');
-  if (m) m.classList.remove('is-open');
-}
-
-// ====================================================================
-// CONTADOR DE CARACTERES DO HISTÓRICO
-// ====================================================================
-function iniciarContadorHistorico() {
-  const historicoField = getEl('envio-historico');
-  const contadorSpan = getEl('historico-contador');
-  if (!historicoField || !contadorSpan) return;
-  
-  const MAX_CARACTERES = 1400;
-  const MAX_LINHAS = 16;
-  
-  const atualizarContador = () => {
-    let texto = historicoField.value;
-    let linhas = texto.split(/\r?\n/);
-    let ultrapassouLinhas = linhas.length > MAX_LINHAS;
-    let ultrapassouCaracteres = texto.length > MAX_CARACTERES;
-    
-    if (ultrapassouLinhas) {
-      const novasLinhas = linhas.slice(0, MAX_LINHAS);
-      historicoField.value = novasLinhas.join('\n');
-      texto = historicoField.value;
-      linhas = texto.split(/\r?\n/);
-      ultrapassouLinhas = false;
-    }
-    
-    if (ultrapassouCaracteres) {
-      historicoField.value = texto.substring(0, MAX_CARACTERES);
-      texto = historicoField.value;
-      ultrapassouCaracteres = false;
-    }
-    
-    const len = historicoField.value.length;
-    const linhasAtuais = historicoField.value.split(/\r?\n/).length;
-    contadorSpan.textContent = `(${len}/${MAX_CARACTERES} | ${linhasAtuais}/${MAX_LINHAS} linhas)`;
-    
-    if (len > MAX_CARACTERES * 0.9 || linhasAtuais > MAX_LINHAS - 2) {
-      contadorSpan.style.color = '#f59e0b';
-    } else {
-      contadorSpan.style.color = '';
-    }
-  };
-  
-  historicoField.addEventListener('input', atualizarContador);
-  historicoField.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      const linhasAtuais = historicoField.value.split(/\r?\n/).length;
-      if (linhasAtuais >= MAX_LINHAS) {
-        e.preventDefault();
-        alert(`Limite de ${MAX_LINHAS} linhas atingido.`);
-        return false;
-      }
-    }
-  });
-  
-  atualizarContador();
-}
-
-// ====================================================================
-// PREENCHIMENTO DE CAMPOS
-// ====================================================================
-function preencherDataAtual() {
-  const d = getEl('envio-data');
-  if (d && !d.value) {
-    const hoje = new Date().toISOString().split('T')[0];
-    d.value = hoje;
-    d.max = hoje;
-  }
-}
-
-function preencherResponsavel() {
-  const resp = getEl('envio-responsavel');
-  if (resp) {
-    const apelido = localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName') || 'Inspetor';
-    resp.value = apelido;
-  }
-}
-
-async function preencherSelectLocal() {
-  const selectLocal = getEl('envio-local');
-  if (!selectLocal) return;
-  selectLocal.innerHTML = '<option value="">Selecione o Local / Terminal</option>';
-  try {
-    const callbackName = 'carregarTerminaisEnvio_' + Date.now();
-    window[callbackName] = function(terminais) {
-      if (Array.isArray(terminais) && terminais.length > 0) {
-        terminais.forEach(terminal => {
-          const option = document.createElement('option');
-          option.value = terminal;
-          option.textContent = terminal;
-          selectLocal.appendChild(option);
-        });
-      } else {
-        const fallback = ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
-        fallback.forEach(t => {
-          const option = document.createElement('option');
-          option.value = t;
-          option.textContent = t;
-          selectLocal.appendChild(option);
-        });
-      }
-      delete window[callbackName];
-    };
-    const url = `${URL_PLANILHA}?acao=terminais_todos&callback=${callbackName}`;
-    const script = document.createElement('script');
-    script.src = url;
-    script.onerror = () => {
-      delete window[callbackName];
-      console.warn('Falha ao carregar terminais via JSONP. Usando fallback.');
-      const fallback = ["Terminal A", "terminal B", "Terminal C", "Terminal D"];
-      fallback.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t;
-        option.textContent = t;
-        selectLocal.appendChild(option);
-      });
-    };
-    document.body.appendChild(script);
-  } catch (err) {
-    console.error('Erro ao preencher locais:', err);
-    const fallback = ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
-    fallback.forEach(t => {
-      const option = document.createElement('option');
-      option.value = t;
-      option.textContent = t;
-      selectLocal.appendChild(option);
-    });
-  }
-}
-
-function habilitarCamposSecundarios(habilitar) {
-  const ids = ['envio-carro', 'envio-linha', 'envio-motorista', 'envio-cobrador', 'envio-hora', 'envio-sentido', 'envio-historico', 'envio-local', 'btn-salvar-rascunho', 'btn-enviar-relatorio'];
-  ids.forEach(id => {
-    const campo = getEl(id);
-    if (campo) campo.disabled = !habilitar;
-  });
-}
-
-// ====================================================================
-// REGRAS DE ÁREA, MOTIVO E VALIDAÇÕES
-// ====================================================================
-function aplicarRegrasPorArea() {
-  const areaSelecionada = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  const campoOutrasArea = getEl('campo-outras-area');
-  const inputOutrasArea = getEl('envio-outras-area');
-  
-  if (areaSelecionada === 'OUTRAS ÁREAS') {
-    campoOutrasArea.style.display = 'block';
-    inputOutrasArea.required = true;
-  } else {
-    campoOutrasArea.style.display = 'none';
-    inputOutrasArea.required = false;
-    inputOutrasArea.value = '';
-  }
-  
-  if (areaSelecionada) habilitarCamposSecundarios(true);
-  else habilitarCamposSecundarios(false);
-  
-  const radiosMotivo = document.querySelectorAll('input[name="motivo"]');
-  radiosMotivo.forEach(radio => radio.disabled = false);
-  if (areaSelecionada === 'SAF' || areaSelecionada === 'PLANTÃO' || areaSelecionada === 'OUTRAS ÁREAS') {
-    radiosMotivo.forEach(radio => {
-      if (radio.value !== 'AVARIAS' && radio.value !== 'OUTROS') {
-        radio.disabled = true;
-        if (radio.checked) radio.checked = false;
-      } else {
-        radio.disabled = false;
-      }
-    });
-    const motivoAtual = document.querySelector('input[name="motivo"]:checked');
-    if (motivoAtual && motivoAtual.disabled) motivoAtual.checked = false;
-  }
-  aplicarRegrasPorMotivo();
-}
-
-function aplicarRegrasPorMotivo() {
-  const motivoSelecionado = document.querySelector('input[name="motivo"]:checked')?.value;
-  const campoOutrosMotivo = getEl('campo-outros-motivo');
-  const inputOutrosMotivo = getEl('envio-outros-motivo');
-  
-  if (motivoSelecionado === 'OUTROS') {
-    campoOutrosMotivo.style.display = 'block';
-    inputOutrosMotivo.required = true;
-  } else {
-    campoOutrosMotivo.style.display = 'none';
-    inputOutrosMotivo.required = false;
-    inputOutrosMotivo.value = '';
-  }
-  
-  if (motivoSelecionado === 'AVARIAS') {
-    habilitarCamposAvarias(true);
-    ['envio-carro', 'envio-linha', 'envio-motorista', 'envio-hora', 'envio-sentido'].forEach(id => {
-      const campo = getEl(id);
-      if (campo) campo.required = true;
-    });
-  } else if (motivoSelecionado === 'OUTROS') {
-    habilitarCamposAvarias(true);
-    ['envio-carro', 'envio-linha', 'envio-motorista', 'envio-hora', 'envio-sentido'].forEach(id => {
-      const campo = getEl(id);
-      if (campo) campo.required = false;
-    });
-  } else if (motivoSelecionado === 'PEDIDO DE FOLGAS' || motivoSelecionado === 'SOLICITAÇÃO DE MATERIAIS') {
-    habilitarCamposAvarias(false);
-    ['envio-carro', 'envio-linha', 'envio-motorista', 'envio-hora', 'envio-sentido'].forEach(id => {
-      const campo = getEl(id);
-      if (campo) campo.required = false;
-    });
-  } else {
-    habilitarCamposAvarias(false);
-  }
-}
-
-function habilitarCamposAvarias(habilitar) {
-  const ids = ['envio-carro', 'envio-linha', 'envio-motorista', 'envio-hora', 'envio-sentido'];
-  ids.forEach(id => {
-    const campo = getEl(id);
-    if (campo) {
-      campo.disabled = !habilitar;
-      if (!habilitar) campo.value = '';
-    }
-  });
-}
-
-function validarFormulario() {
-  const areaSelecionada = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  if (!areaSelecionada) { alert('Selecione a Área de Destino.'); return false; }
-  if (areaSelecionada === 'OUTRAS ÁREAS') {
-    const outrasArea = getEl('envio-outras-area').value.trim();
-    if (!outrasArea) { alert('Digite a Área de Destino.'); return false; }
-  }
-  const motivoSelecionado = document.querySelector('input[name="motivo"]:checked')?.value;
-  if (!motivoSelecionado) { alert('Selecione o Motivo.'); return false; }
-  if (motivoSelecionado === 'OUTROS') {
-    const outrosMotivo = getEl('envio-outros-motivo').value.trim();
-    if (!outrosMotivo) { alert('Descreva o motivo resumidamente.'); return false; }
-  }
-  const carro = getEl('envio-carro').value.trim();
-  if (motivoSelecionado === 'AVARIAS' && !carro) { alert('Para o motivo AVARIAS, o campo CARRO é obrigatório.'); return false; }
-  const data = getEl('envio-data').value;
-  if (!data) { alert('Preencha a Data.'); return false; }
-  const hoje = new Date().toISOString().split('T')[0];
-  if (data > hoje) { alert('A data não pode ser maior que a data atual.'); return false; }
-  const historico = getEl('envio-historico').value;
-  const MAX_CARACTERES = 1400;
-  const MAX_LINHAS = 16;
-  const linhas = historico.split(/\r?\n/).length;
-  
-  if (historico.length > MAX_CARACTERES) {
-    alert(`O histórico excede o limite de ${MAX_CARACTERES} caracteres.`);
-    return false;
-  }
-  
-  if (linhas > MAX_LINHAS) {
-    alert(`O histórico excede o limite de ${MAX_LINHAS} linhas.`);
-    return false;
-  }
-  return true;
-}
-
-// ====================================================================
-// ANEXOS MÚLTIPLOS (até 4) - COMPRESSÃO E BASE64
-// ====================================================================
-function criarInputMultiploAnexos() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.id = 'input-arquivos-multiplos';
-  input.multiple = true;
-  input.accept = 'image/*,application/pdf';
-  input.style.display = 'none';
-  document.body.appendChild(input);
-  input.addEventListener('change', processarArquivosSelecionados);
-}
-
-function anexarArquivos() {
-  const input = getEl('input-arquivos-multiplos');
-  if (input) input.click();
-}
-
-async function processarArquivosSelecionados(event) {
-  const files = Array.from(event.target.files);
-  if (anexosArray.length + files.length > 4) {
-    alert('Máximo de 4 anexos por envio.');
-    event.target.value = '';
-    return;
-  }
-  const promises = files.map(file => processarArquivo(file));
-  const novosAnexos = await Promise.all(promises);
-  const validos = novosAnexos.filter(a => a !== null);
-  anexosArray.push(...validos);
-  atualizarListaAnexos();
-  event.target.value = '';
-}
-
-function processarArquivo(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      if (file.type.includes('pdf')) {
-        resolve({
-          base64: e.target.result.split(',')[1],
-          mimeType: file.type,
-          nome: file.name
-        });
-      } else if (file.type.includes('image')) {
-        comprimirImagem(e.target.result, file.type, (base64Compressed) => {
-          resolve({
-            base64: base64Compressed,
-            mimeType: file.type,
-            nome: file.name
-          });
-        });
-      } else {
-        alert(`Formato não suportado: ${file.name}`);
-        resolve(null);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function comprimirImagem(dataUrl, mimeType, callback) {
-  const img = new Image();
-  img.onload = function() {
-    const canvas = document.createElement('canvas');
-    let width = img.width;
-    let height = img.height;
-    const MAX = 1200;
-    if (width > height) {
-      if (width > MAX) { height *= MAX / width; width = MAX; }
-    } else {
-      if (height > MAX) { width *= MAX / height; height = MAX; }
-    }
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
-    const newDataUrl = canvas.toDataURL(mimeType, 0.7);
-    callback(newDataUrl.split(',')[1]);
-  };
-  img.src = dataUrl;
-}
-
-function atualizarListaAnexos() {
-  const container = getEl('lista-anexos');
-  if (!container) return;
-  if (anexosArray.length === 0) {
-    container.innerHTML = '<small>Nenhum anexo selecionado (máx. 4)</small>';
-    return;
-  }
-  container.innerHTML = anexosArray.map((a, idx) => `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-      <span>📎 ${a.nome}</span>
-      <button type="button" onclick="removerAnexo(${idx})" style="background:#d11a2d; color:white; border:none; border-radius:4px; padding:2px 8px;">❌</button>
-    </div>
-  `).join('');
-}
-
-function removerAnexo(idx) {
-  anexosArray.splice(idx, 1);
-  atualizarListaAnexos();
-}
-
-// ====================================================================
-// RASCUNHO (salva e carrega os anexos)
-// ====================================================================
-function salvarRascunho() {
-  if (!validarFormulario()) return;
-  const areaDestino = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? getEl('envio-outras-area').value.trim() : areaDestino;
-  const motivo = document.querySelector('input[name="motivo"]:checked')?.value;
-  let motivoFinal = motivo === 'OUTROS' ? getEl('envio-outros-motivo').value.trim() : motivo;
-  const dados = {
-    id: rascunhoAtualId || Date.now().toString(),
-    areaDestino: areaDestinoFinal,
-    motivo: motivoFinal,
-    carro: getEl('envio-carro').value,
-    linha: getEl('envio-linha').value,
-    motorista: getEl('envio-motorista').value,
-    cobrador: getEl('envio-cobrador').value,
-    hora: getEl('envio-hora').value,
-    sentido: getEl('envio-sentido').value,
-    historico: getEl('envio-historico').value,
-    local: getEl('envio-local').value,
-    data: getEl('envio-data').value,
-    anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome }))
-  };
-  localStorage.setItem(`rascunho_${dados.id}`, JSON.stringify(dados));
-  rascunhoAtualId = dados.id;
-  alert('Rascunho salvo!');
-}
-
-function carregarRascunho() {
-  if (!rascunhoAtualId) {
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('rascunho_'));
-    if (keys.length) rascunhoAtualId = keys[0].replace('rascunho_', '');
-    else { limparFormularioEnvio(); preencherResponsavel(); return; }
-  }
-  const dados = JSON.parse(localStorage.getItem(`rascunho_${rascunhoAtualId}`));
-  if (dados) {
-    if (['FISCALIZAÇÃO','SAF','PLANTÃO'].includes(dados.areaDestino)) {
-      document.querySelector(`input[name="areaDestino"][value="${dados.areaDestino}"]`).checked = true;
-    } else {
-      document.querySelector(`input[name="areaDestino"][value="OUTRAS ÁREAS"]`).checked = true;
-      getEl('envio-outras-area').value = dados.areaDestino;
-      getEl('campo-outras-area').style.display = 'block';
-    }
-    if (['AVARIAS','PEDIDO DE FOLGAS','SOLICITAÇÃO DE MATERIAIS'].includes(dados.motivo)) {
-      document.querySelector(`input[name="motivo"][value="${dados.motivo}"]`).checked = true;
-    } else {
-      document.querySelector(`input[name="motivo"][value="OUTROS"]`).checked = true;
-      getEl('envio-outros-motivo').value = dados.motivo;
-      getEl('campo-outros-motivo').style.display = 'block';
-    }
-    getEl('envio-carro').value = dados.carro || '';
-    getEl('envio-linha').value = dados.linha || '';
-    getEl('envio-motorista').value = dados.motorista || '';
-    getEl('envio-cobrador').value = dados.cobrador || '';
-    getEl('envio-hora').value = dados.hora || '';
-    getEl('envio-sentido').value = dados.sentido || '';
-    getEl('envio-historico').value = dados.historico || '';
-    getEl('envio-local').value = dados.local || '';
-    getEl('envio-data').value = dados.data || '';
-    if (dados.anexos && Array.isArray(dados.anexos)) {
-      anexosArray = dados.anexos;
-      atualizarListaAnexos();
-    }
-    preencherResponsavel();
-    habilitarCamposSecundarios(true);
-    aplicarRegrasPorArea();
-    aplicarRegrasPorMotivo();
-  } else {
-    limparFormularioEnvio();
-    preencherResponsavel();
-  }
-}
-
-// ====================================================================
-// ENVIO PARA O SERVIDOR (COM ARRAY DE ANEXOS)
-// ====================================================================
-function enviarRelatorio() {
-  if (!validarFormulario()) return;
-  const areaDestino = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? getEl('envio-outras-area').value.trim() : areaDestino;
-  const motivo = document.querySelector('input[name="motivo"]:checked')?.value;
-  let motivoFinal = motivo === 'OUTROS' ? getEl('envio-outros-motivo').value.trim() : motivo;
-
-  const btnEnviar = getEl('btn-enviar-relatorio');
-  const textoBotaoOriginal = btnEnviar.innerHTML;
-  btnEnviar.innerHTML = '⏳ Enviando...';
-  btnEnviar.disabled = true;
-
-  const dadosEnvio = {
-    areaDestino: areaDestinoFinal,
-    motivo: motivoFinal,
-    carro: getEl('envio-carro').value,
-    linha: getEl('envio-linha').value,
-    motorista: getEl('envio-motorista').value,
-    cobrador: getEl('envio-cobrador').value,
-    hora: getEl('envio-hora').value,
-    sentido: getEl('envio-sentido').value,
-    historico: getEl('envio-historico').value,
-    local: getEl('envio-local').value,
-    data: getEl('envio-data').value,
-    anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome })),
-    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName')
-  };
-
-  console.log('📤 Enviando dados:', dadosEnvio);
-  console.log('📎 Número de anexos:', dadosEnvio.anexos.length);
-
-  const formData = new FormData();
-  formData.append('acao', 'envio_informacoes');
-  formData.append('dados', JSON.stringify(dadosEnvio));
-
-  fetch(URL_PLANILHA, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: formData
-  })
-    .then(() => {
-      alert('✅ Relatório e anexos enviados com sucesso!');
-      if (rascunhoAtualId) localStorage.removeItem(`rascunho_${rascunhoAtualId}`);
-      limparFormularioEnvio();
-      fecharModalEnvio();
-    })
-    .catch((error) => {
-      console.error('❌ Erro no fetch:', error);
-      alert('Erro ao enviar. Verifique o console.');
-    })
-    .finally(() => {
-      btnEnviar.innerHTML = textoBotaoOriginal;
-      btnEnviar.disabled = false;
-    });
-}
-
-function limparFormularioEnvio() {
-  document.querySelectorAll('input[name="areaDestino"], input[name="motivo"]').forEach(r => r.checked = false);
-  getEl('envio-outras-area').value = '';
-  getEl('campo-outras-area').style.display = 'none';
-  getEl('envio-outros-motivo').value = '';
-  getEl('campo-outros-motivo').style.display = 'none';
-  getEl('envio-carro').value = '';
-  getEl('envio-linha').value = '';
-  getEl('envio-motorista').value = '';
-  getEl('envio-cobrador').value = '';
-  getEl('envio-hora').value = '';
-  getEl('envio-sentido').value = '';
-  getEl('envio-historico').value = '';
-  getEl('envio-local').value = '';
-  anexosArray = [];
-  atualizarListaAnexos();
-  const inputArq = getEl('input-arquivos-multiplos');
-  if (inputArq) inputArq.value = '';
-  preencherDataAtual();
-  rascunhoAtualId = null;
-  habilitarCamposSecundarios(false);
-  habilitarCamposAvarias(true);
-}
+/**
+ * Módulo de Envio de Informações - Parte 4
+ * Consulta, detalhes, exportação PDF e notificações
+ */
 
 // ====================================================================
 // CONSULTAS DE ENVIOS - COM ENVIO DO PAPEL AO BACKEND
@@ -729,7 +173,7 @@ function mostrarListaEnvios(dados) {
 }
 
 // ====================================================================
-// MOSTRAR DETALHES DO ENVIO (idêntico ao original)
+// MOSTRAR DETALHES DO ENVIO
 // ====================================================================
 function mostrarDetalheEnvio(envio) {
   const modal = getEl('modal-detalhe-envio');
@@ -817,7 +261,7 @@ function mostrarDetalheEnvio(envio) {
 }
 
 // ====================================================================
-// PROCESSAR LINK DO ANEXO (THUMBNAIL) - idêntico ao original
+// PROCESSAR LINK DO ANEXO (THUMBNAIL)
 // ====================================================================
 function processarLinkAnexoDetalhado(anexo) {
   // anexo tem: urlOriginal, urlDownload, urlVisualizacao, fileId
@@ -902,7 +346,7 @@ function processarLinkAnexo(link) {
 }
 
 // ====================================================================
-// EXPORTAÇÃO PARA PDF - idêntico ao original
+// EXPORTAÇÃO PARA PDF
 // ====================================================================
 function limitarHistorico(texto, limiteCaracteres = 1400, limiteLinhas = 16) {
   if (!texto) return { texto: '', foiTruncado: false };
@@ -1176,7 +620,7 @@ function fecharModalListaEnvios() {
 }
 
 // ====================================================================
-// MICROFONE - idêntico ao original
+// MICROFONE - RECONHECIMENTO DE VOZ
 // ====================================================================
 let reconhecimentoVoz = null;
 
@@ -1414,6 +858,27 @@ function verificarNotificacoesAoIniciar() {
 }
 
 // Exporta funções para o escopo global
+window.consultarEnvios = consultarEnvios;
+window.consultarEnviosComFiltro = consultarEnviosComFiltro;
+window.mostrarListaEnvios = mostrarListaEnvios;
+window.mostrarDetalheEnvio = mostrarDetalheEnvio;
+window.processarLinkAnexoDetalhado = processarLinkAnexoDetalhado;
+window.processarLinkAnexo = processarLinkAnexo;
+window.limitarHistorico = limitarHistorico;
+window.exportarParaPDF = exportarParaPDF;
+window.formatarData = formatarData;
+window.formatarHora = formatarHora;
+window.gerarHashValidacao = gerarHashValidacao;
+window.copiarParaAreaDeTransferencia = copiarParaAreaDeTransferencia;
+window.gerarTextoDetalheEnvio = gerarTextoDetalheEnvio;
+window.fecharModalDetalheEnvio = fecharModalDetalheEnvio;
+window.fecharModalListaEnvios = fecharModalListaEnvios;
+window.iniciarReconhecimentoVoz = iniciarReconhecimentoVoz;
+window.adicionarNotificacaoNaoLida = adicionarNotificacaoNaoLida;
+window.getNotificacoesNaoLidas = getNotificacoesNaoLidas;
+window.marcarComoLida = marcarComoLida;
 window.marcarTodosComoLidos = marcarTodosComoLidos;
+window.atualizarPainelNotificacoes = atualizarPainelNotificacoes;
 window.clicarNotificacao = clicarNotificacao;
+window.consultarEnviosPorId = consultarEnviosPorId;
 window.verificarNotificacoesAoIniciar = verificarNotificacoesAoIniciar;
