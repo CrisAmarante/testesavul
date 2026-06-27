@@ -13,6 +13,16 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Scripts refatorados em módulos -->
+    <script src="src/config/config.js"></script>
+    <script src="src/core/utils.js"></script>
+    <script src="src/api/api.js"></script>
+    <script src="src/auth/auth.js"></script>
+    <script src="src/modules/inspecao/inspecao.js"></script>
+    <script src="src/modules/envio/envio-base.js"></script>
+    <script src="src/modules/envio/envio-form.js"></script>
+    <script src="src/modules/envio/envio-actions.js"></script>
+    <script src="src/main.js"></script>
 </head>
 <!-- vConsole - Console móvel para depuração -->
 <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
@@ -227,12 +237,5 @@
   </div>
 </div>
 
-<script src="config.js"></script>
-<script src="utils.js"></script>
-<script src="api.js"></script>
-<script src="auth.js"></script>
-<script src="inspecao.js"></script>
-<script src="envio.js"></script>
-<script src="main.js"></script>
 </body>
 </html>
