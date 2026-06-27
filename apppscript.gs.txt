@@ -1,3 +1,4 @@
+
 /**
  * ============================================================================
  * CONFIGURAÇÃO MASTER E GERENCIAMENTO DE PLANILHAS SEPARADAS
@@ -9,8 +10,9 @@
  *    - Logs, <ID_DA_PLANILHA_LOGS>
  *    - Envios, <ID_DA_PLANILHA_ENVIOS>
  *    - Inspecoes, <ID_DA_PLANILHA_INSPICOES>
+ *    - Admin, <ID_DA_PLANILHA_ADMIN> (nova aba para configurações do painel admin)
  * 3. Substitua a variável MASTER_SHEET_ID abaixo pelo ID da sua planilha Master.
- * 
+ *
  * Se MASTER_SHEET_ID não estiver configurado, o sistema usa SpreadsheetApp.getActiveSpreadsheet()
  * (modo legado/único) para manter compatibilidade.
  */
@@ -19,6 +21,14 @@ const MASTER_SHEET_ID = ''; // Deixe vazio para usar planilha atual, ou coloque 
 
 // Cache para evitar chamadas repetidas ao SpreadsheetApp
 const _sheetCache = {};
+
+// Configurações do sistema
+const CONFIG = {
+  TIMEOUT_INATIVIDADE: 20 * 60 * 1000, // 20 minutos em milissegundos
+  MAX_LINHAS_HISTORICO: 16,
+  MAX_CARACTERES_HISTORICO: 1400,
+  ID_PASTA_ANEXOS: "1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD"
+};
 
 /**
  * Obtém o ID de uma planilha específica baseado na configuração Master.
@@ -38,7 +48,7 @@ function getSheetIdByName(name) {
     const masterSpreadsheet = SpreadsheetApp.openById(MASTER_SHEET_ID);
     const sheet = masterSpreadsheet.getSheetByName('IDs');
     if (!sheet) throw new Error('Aba "IDs" não encontrada na Planilha Master.');
-    
+
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === name) {
@@ -88,12 +98,12 @@ const LogModule = {
       Logger.log('Erro ao registrar log: ' + e.message);
     }
   },
-  
+
   consultarLogs: function(filtroEmail, dataInicio, dataFim) {
     const sheet = this.getSheet();
     const data = sheet.getDataRange().getValues();
     const resultados = [];
-    
+
     let dataInicioObj = null;
     if (dataInicio) {
       const parts = dataInicio.split('-');
@@ -104,15 +114,15 @@ const LogModule = {
       const parts = dataFim.split('-');
       dataFimObj = new Date(parts[0], parts[1]-1, parts[2], 23, 59, 59);
     }
-    
+
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const timestamp = row[0];
-      
+
       if (filtroEmail && row[1] !== filtroEmail) continue;
       if (dataInicioObj && timestamp < dataInicioObj) continue;
       if (dataFimObj && timestamp > dataFimObj) continue;
-      
+
       resultados.push({
         timestamp: timestamp,
         email: row[1],
@@ -159,7 +169,7 @@ function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro
     if (!sheet) return [];
     const dados = sheet.getDataRange().getValues();
     if (dados.length < 2) return [];
-    
+
     let dataInicioObj = null;
     if (dataInicio) {
       const parts = dataInicio.split('-');
@@ -187,15 +197,15 @@ function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro
       ventilador_obs: cabecalhos.indexOf("Ventilador_Obs"),
       ventilador_pos: cabecalhos.indexOf("Ventilador_Posicao")
     };
-    
+
     const resultados = [];
-    
+
     for (let i = 1; i < dados.length; i++) {
       const linha = dados[i];
       let dataHora = linha[indices.dataHora];
       const fiscalLinha = linha[indices.fiscal];
       if (!dataHora || !fiscalLinha) continue;
-      
+
       let dataHoraStr = "";
       let dataRegistro = null;
       if (dataHora instanceof Date) {
@@ -213,17 +223,17 @@ function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro
           continue;
         }
       }
-      
+
       if (dataInicioObj && dataRegistro < dataInicioObj) continue;
       if (dataFimObj && dataRegistro > dataFimObj) continue;
-      
+
       if (carro && linha[indices.carro] && !String(linha[indices.carro]).toLowerCase().includes(carro.toLowerCase())) continue;
       if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
-      if (fiscalNome && fiscalLinha !== fiscalNome) continue; 
-      
+      if (fiscalNome && fiscalLinha !== fiscalNome) continue;
+
       // Extrai apenas a data (dd/MM/yyyy) da dataHora para exibição como "data de preenchimento"
       const dataPreenchimento = dataHoraStr.split(" ")[0];
-      
+
       resultados.push({
         dataHora: dataHoraStr,
         dataPreenchimento: dataPreenchimento,  // Nova propriedade: data de preenchimento pelo fiscal
@@ -297,18 +307,18 @@ function listarTodosTerminais() {
   }
 }
 // ======================= FUNÇÃO AUXILIAR PARA TRUNCAR HISTÓRICO =======================
-function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
+function truncarTexto(texto, maxCaracteres = CONFIG.MAX_CARACTERES_HISTORICO, maxLinhas = CONFIG.MAX_LINHAS_HISTORICO) {
   if (!texto) return '';
-  
+
   let textoFinal = texto;
-  
+
   // Limite por linhas
   let linhas = textoFinal.split(/\r?\n/);
   if (linhas.length > maxLinhas) {
     linhas = linhas.slice(0, maxLinhas);
     textoFinal = linhas.join('\n');
   }
-  
+
   // Limite por caracteres
   if (textoFinal.length > maxCaracteres) {
     textoFinal = textoFinal.substring(0, maxCaracteres);
@@ -322,8 +332,6 @@ function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
 }
 // ======================= SALVAR ENVIO DE INFORMAÇÕES =======================
 function salvarEnvioInformacoes(dadosJson) {
-  const ID_PASTA_ANEXOS = "1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD";
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName("EnviosInformacoes");
   if (!sheet) {
@@ -336,14 +344,14 @@ function salvarEnvioInformacoes(dadosJson) {
 
   const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
   const { areaDestino, motivo, carro, linha, motorista, cobrador, hora, sentido, historico, local, data, fiscal, anexos } = dadosJson;
-  
+
   // ========== TRUNCA O HISTÓRICO ANTES DE SALVAR ==========
-  const historicoTruncado = truncarTexto(historico || '', 1400, 16);
+  const historicoTruncado = truncarTexto(historico || '');
 
   let linksAnexos = [];
 
   if (anexos && Array.isArray(anexos) && anexos.length) {
-    const pasta = DriveApp.getFolderById(ID_PASTA_ANEXOS);
+    const pasta = DriveApp.getFolderById(CONFIG.ID_PASTA_ANEXOS);
     for (let i = 0; i < anexos.length; i++) {
       const anexo = anexos[i];
       try {
@@ -364,7 +372,7 @@ function salvarEnvioInformacoes(dadosJson) {
   const linkFinal = linksAnexos.join(" ; ");
   sheet.appendRow([
     agora, fiscal, areaDestino, motivo, carro, linha,
-    motorista, cobrador, hora, sentido, historico, local, data, linkFinal
+    motorista, cobrador, hora, sentido, historicoTruncado, local, data, linkFinal
   ]);
 
   return true;
@@ -378,7 +386,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
     if (!sheet) return [];
     const dados = sheet.getDataRange().getValues();
     if (dados.length < 2) return [];
-    
+
     // Converte datas de filtro
     let dataInicioObj = null;
     if (dataInicio) {
@@ -390,7 +398,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       const parts = dataFim.split('-');
       dataFimObj = new Date(parts[0], parts[1] - 1, parts[2]);
     }
-    
+
     // Carrega a planilha de login para obter os papéis de cada usuário
     const loginSheet = ss.getSheetByName("login");
     const loginData = loginSheet.getDataRange().getValues();
@@ -406,7 +414,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
         inspetoresSet.add(apelidoLogin);
       }
     }
-    
+
     // Índices das colunas da planilha de envios
     const cabecalhos = dados[0].map(h => String(h).trim());
     const idxDataHora = cabecalhos.indexOf("DataHora");
@@ -423,18 +431,18 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
     const idxMotorista = cabecalhos.indexOf("Motorista");
     const idxCobrador = cabecalhos.indexOf("Cobrador");
     const idxLinha = cabecalhos.indexOf("Linha");
-    
+
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     const resultados = [];
-    
+
     for (let i = 1; i < dados.length; i++) {
       const linha = dados[i];
       let dataHora = linha[idxDataHora];
       const fiscalLinha = linha[idxFiscal];
       if (!dataHora || !fiscalLinha) continue;
-      
+
       // Converte data/hora do registro
       let dataHoraStr = "";
       if (dataHora instanceof Date) {
@@ -445,14 +453,14 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       const dataEnvioStr = dataHoraStr.split(" ")[0];
       const [dia, mes, ano] = dataEnvioStr.split("/").map(Number);
       const dataRegistro = new Date(ano, mes - 1, dia);
-      
+
       // Filtro padrão: últimos 4 dias se não houver filtro de período explícito
       if (!dataInicio && !dataFim) {
         const quatroDiasAtras = new Date(hoje);
         quatroDiasAtras.setDate(quatroDiasAtras.getDate() - 4);
         if (dataRegistro < quatroDiasAtras) continue;
       }
-      
+
       // Filtros básicos (já aplicados pelo front-end, mas reforçamos aqui)
       if (fiscalNome && fiscalLinha !== fiscalNome) continue;
       if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
@@ -461,18 +469,18 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       if (motivo && linha[idxMotivo] !== motivo) continue;
       if (carro && String(linha[idxCarro] || "") !== carro) continue;
       if (prefixo && !String(linha[idxCarro] || "").toLowerCase().includes(prefixo.toLowerCase())) continue;
-      
+
       const area = linha[idxArea] || "";
       const motivoEnvio = linha[idxMotivo] || "";
       let permitido = false;
-      
+
       // ========== REGRAS DE PERMISSÃO POR PERFIL ==========
       switch (papel) {
         case 'FISCAL':
           // Fiscal vê apenas seus próprios envios
           permitido = (fiscalLinha === apelido);
           break;
-          
+
         case 'INSPETOR':
           // Inspetor vê:
           // 1) Seus próprios envios
@@ -484,7 +492,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
             permitido = true;
           }
           break;
-          
+
         case 'ENCARREGADO':
           // Encarregado vê envios de FISCAIS, INSPETORES e os próprios, exceto área SAF
           const isProprioEnc = (fiscalLinha === apelido);
@@ -494,30 +502,30 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
             permitido = true;
           }
           break;
-          
+
         case 'SAF':
           // SAF vê todos os envios para área SAF, ou com motivo AVARIAS/OUTROS (qualquer área)
           if (area === 'SAF' || motivoEnvio === 'AVARIAS' || motivoEnvio === 'OUTROS') {
             permitido = true;
           }
           break;
-          
+
         case 'GERENTE':
           // Gerente vê todos, exceto pedidos de material e folgas
           if (motivoEnvio !== 'SOLICITAÇÃO DE MATERIAIS' && motivoEnvio !== 'PEDIDO DE FOLGAS') {
             permitido = true;
           }
           break;
-          
+
         case 'ADMIN':
           // Admin vê tudo
           permitido = true;
           break;
-          
+
         default:
           permitido = false;
       }
-      
+
       // ========== LIMITE DE DIAS POR PERFIL ==========
       if (permitido) {
         const diffDias = Math.floor((hoje - dataRegistro) / (1000 * 60 * 60 * 24));
@@ -535,7 +543,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
           // SAF e ADMIN não têm limite de dias
         }
       }
-      
+
       if (permitido) {
         // Processa os anexos para incluir URLs de download direto
         let anexosProcessados = [];
@@ -553,7 +561,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
               var regexId4 = new RegExp("uc\\?id=([a-zA-Z0-9_-]+)");
               var regexId5 = new RegExp("open\\?id=([a-zA-Z0-9_-]+)");
               var regexId6 = new RegExp("/u/\\d/d/([a-zA-Z0-9_-]+)");
-              
+
               var match;
               if ((match = linkOriginal.match(regexId1)) && match[1]) {
                 fileId = match[1];
@@ -589,7 +597,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
             }
           }
         }
-        
+
         resultados.push({
           areaDestino: area,
           motivo: motivoEnvio,
@@ -609,7 +617,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
         });
       }
     }
-    
+
     // Ordenação decrescente por data (mais recente primeiro)
     resultados.sort((a, b) => {
       const converte = (dataStr) => {
@@ -623,7 +631,7 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
       const timeB = converte(b.data);
       return timeB - timeA;
     });
-    
+
     return resultados;
   } catch (err) {
     Logger.log("ERRO em consultarEnvios: " + err.message);
@@ -635,7 +643,7 @@ function doPost(e) {
   try {
     const { nome, acao, dados } = e.parameter;
     const endpoint = `post_${acao || 'desconhecido'}`;
-    
+
     if (acao === "Login bem-sucedido" || (!dados && nome)) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       let logSheet = ss.getSheetByName("Log_Acessos");
@@ -656,10 +664,10 @@ function doPost(e) {
       }
       const dataHora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
       logSheet.appendRow([dataHora, nome, nomeCompleto, cargo, acao]);
-      
+
       // Registrar no LogModule também (padronização)
       LogModule.registrarAcesso(nome, 'LOGIN_POST', acao, endpoint);
-      
+
       return ContentService.createTextOutput("Log registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
     if (acao === "inspecao_veicular" && dados) {
@@ -676,7 +684,17 @@ function doPost(e) {
       LogModule.registrarAcesso(fiscal, 'ENVIO_SALVO', `Motivo: ${dadosObj.motivo||''}, Area: ${dadosObj.areaDestino||''}`, endpoint);
       return ContentService.createTextOutput("Envio registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
-    
+    // ADMINISTRAÇÃO - SALVAR CONFIGURAÇÕES
+    if (acao === "admin_save_config" && dados) {
+      const dadosObj = JSON.parse(dados);
+      const resultado = adminSaveConfig(dadosObj);
+      if (resultado.sucesso) {
+        return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
     LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
@@ -690,7 +708,7 @@ function doPost(e) {
 function doGet(e) {
   const acao = e.parameter.acao;
   const callback = e.parameter.callback;
-  
+
   // Função auxiliar para enviar resposta JSONP
   function enviarResposta(dados) {
     if (callback) {
@@ -705,7 +723,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
   }
-  
+
   // Função para enviar erro
   function enviarErro(mensagem) {
     const erroObj = { erro: mensagem };
@@ -721,25 +739,25 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
   }
-  
+
   try {
     // Registrar endpoint acessado
     const usuario = e.parameter.apelido || e.parameter.fiscal || 'Anonimo';
     const endpoint = `get_${acao}`;
-    
+
     // TERMINAIS
     if (acao === "terminais") {
       const terminais = listarTerminais();
       LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS', '', endpoint);
       return enviarResposta(terminais);
     }
-    
+
     if (acao === "terminais_todos") {
       const terminais = listarTodosTerminais();
       LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS_TODOS', '', endpoint);
       return enviarResposta(terminais);
     }
-    
+
     // CONSULTA INSPEÇÕES
     if (acao === "consultar_inspecoes") {
       const fiscal = e.parameter.fiscal || null;
@@ -751,7 +769,7 @@ function doGet(e) {
       LogModule.registrarAcesso(usuario, 'CONSULTA_INSPICOES', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
       return enviarResposta(resultado);
     }
-    // CONSULTAR ENVIOS  
+    // CONSULTAR ENVIOS
   if (acao === "consultar_envios") {
   const fiscal = e.parameter.fiscal || null;
   const dataInicio = e.parameter.dataInicio || null;
@@ -766,7 +784,7 @@ function doGet(e) {
   LogModule.registrarAcesso(usuario, 'CONSULTA_ENVIOS', `papel:${papel},fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
   return enviarResposta(resultado);
 }
-    
+
     // CONSULTAR LOGS DE AUDITORIA
     if (acao === "consultar_logs") {
       const filtroEmail = e.parameter.email || null;
@@ -775,7 +793,13 @@ function doGet(e) {
       const resultado = LogModule.consultarLogs(filtroEmail, dataInicioLogs, dataFimLogs);
       return enviarResposta(resultado);
     }
-    
+
+    // ADMINISTRAÇÃO - OBTER CONFIGURAÇÕES
+    if (acao === "admin_get_config") {
+      const resultado = adminGetConfig();
+      return enviarResposta(resultado);
+    }
+
     // LOGIN
     if (acao === "login") {
       const senhaDigitada = e.parameter.senha;
@@ -783,16 +807,16 @@ function doGet(e) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const sheetLogin = ss.getSheetByName("login");
       const data = sheetLogin.getDataRange().getValues();
-      
+
       let usuarioEncontrado = { sucesso: false };
-      
+
       for (let i = 1; i < data.length; i++) {
         const nome = data[i][1];
         const apelido = data[i][2];
         const funcao = data[i][4];
         const ativo = data[i][5];
         const hashPlanilha = data[i][6];
-        
+
         if (apelido && ativo === "SIM") {
           const hashCalculado = gerarHashComSalt(senhaDigitada, apelido);
           if (hashCalculado === hashPlanilha) {
@@ -807,17 +831,17 @@ function doGet(e) {
           }
         }
       }
-      
+
       if (!usuarioEncontrado.sucesso) {
         LogModule.registrarAcesso(apelidoLogin, 'LOGIN_FALHA', '', endpoint);
       }
-      
+
       return enviarResposta(usuarioEncontrado);
     }
-    
+
     // Fallback
     return enviarErro("Ação inválida: " + acao);
-    
+
   } catch (err) {
     Logger.log("ERRO em doGet: " + err.message);
     LogModule.registrarAcesso('Sistema', 'ERRO_DOGET', err.message, `get_${e.parameter.acao || 'desconhecido'}`);
@@ -888,4 +912,164 @@ function testarArrayAnexos() {
   };
   const result = salvarEnvioInformacoes(testData);
   console.log("Resultado:", result);
+}
+// ============================================================================
+// MÓDULO: ADMINISTRAÇÃO DO SISTEMA (PAINEL ADMIN)
+// ============================================================================
+const AdminModule = {
+  /**
+   * Obtém ou cria a planilha de configurações do Admin
+   */
+  getSheet: function() {
+    const ss = openSheetByName('Admin');
+    let sheet = ss.getSheetByName('Configuracoes');
+    if (!sheet) {
+      sheet = ss.insertSheet('Configuracoes');
+      sheet.appendRow(['Chave', 'Valor', 'Descricao']);
+      // Configurações padrão
+      sheet.appendRow(['TIMEOUT_INATIVIDADE', '1200000', 'Tempo de inatividade em ms (20 min)']);
+      sheet.appendRow(['MODO_DEBUG', 'FALSE', 'Ativa modo debug']);
+      sheet.appendRow(['BOTOES_CLANDESTINOS', '[]', 'Botões personalizados Clandestinos/RTO']);
+      sheet.appendRow(['BOTOES_LEVANTAMENTOS', '[]', 'Botões personalizados Levantamentos']);
+      sheet.appendRow(['BOTOES_INSPICOES_5S', '[]', 'Botões personalizados Inspeções 5S']);
+    }
+    return sheet;
+  },
+
+  /**
+   * Obtém uma configuração específica
+   */
+  getConfig: function(chave, valorPadrao) {
+    try {
+      const sheet = this.getSheet();
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === chave) {
+          return data[i][1];
+        }
+      }
+      return valorPadrao;
+    } catch (e) {
+      Logger.log('Erro ao buscar config ' + chave + ': ' + e.message);
+      return valorPadrao;
+    }
+  },
+
+  /**
+   * Salva uma configuração
+   */
+  setConfig: function(chave, valor, descricao) {
+    try {
+      const sheet = this.getSheet();
+      const data = sheet.getDataRange().getValues();
+      let encontrou = false;
+
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === chave) {
+          sheet.getRange(i + 1, 2).setValue(valor);
+          if (descricao) {
+            sheet.getRange(i + 1, 3).setValue(descricao);
+          }
+          encontrou = true;
+          break;
+        }
+      }
+
+      if (!encontrou) {
+        sheet.appendRow([chave, valor, descricao || '']);
+      }
+
+      return true;
+    } catch (e) {
+      Logger.log('Erro ao salvar config ' + chave + ': ' + e.message);
+      return false;
+    }
+  },
+
+  /**
+   * Obtém todas as configurações de botões
+   */
+  getBotoesConfig: function() {
+    return {
+      clandestinos: JSON.parse(this.getConfig('BOTOES_CLANDESTINOS', '[]')),
+      levantamentos: JSON.parse(this.getConfig('BOTOES_LEVANTAMENTOS', '[]')),
+      inspecoes5s: JSON.parse(this.getConfig('BOTOES_INSPICOES_5S', '[]'))
+    };
+  },
+
+  /**
+   * Salva configurações de botões
+   */
+  saveBotoesConfig: function(botoes) {
+    const success =
+      this.setConfig('BOTOES_CLANDESTINOS', JSON.stringify(botoes.clandestinos || []), 'Botões Clandestinos/RTO') &&
+      this.setConfig('BOTOES_LEVANTAMENTOS', JSON.stringify(botoes.levantamentos || []), 'Botões Levantamentos') &&
+      this.setConfig('BOTOES_INSPICOES_5S', JSON.stringify(botoes.inspecoes5s || []), 'Botões Inspeções 5S');
+    return success;
+  },
+
+  /**
+   * Obtém timeout de inatividade configurado
+   */
+  getTimeoutInatividade: function() {
+    const valor = this.getConfig('TIMEOUT_INATIVIDADE', '1200000');
+    return parseInt(valor, 10) || CONFIG.TIMEOUT_INATIVIDADE;
+  }
+};
+
+// ============================================================================
+// ENDPOINTS DE ADMINISTRAÇÃO (API para o painel admin)
+// ============================================================================
+
+/**
+ * Endpoint para obter configurações do admin
+ * Uso: ?acao=admin_get_config
+ */
+function adminGetConfig() {
+  try {
+    const botoes = AdminModule.getBotoesConfig();
+    const timeout = AdminModule.getTimeoutInatividade();
+    const modoDebug = AdminModule.getConfig('MODO_DEBUG', 'FALSE');
+
+    return {
+      sucesso: true,
+      dados: {
+        botoes: botoes,
+        timeout: timeout,
+        modoDebug: modoDebug === 'TRUE'
+      }
+    };
+  } catch (e) {
+    Logger.log('Erro em adminGetConfig: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Endpoint para salvar configurações do admin
+ * Uso: POST com acao=admin_save_config e dados={botoes: {...}}
+ */
+function adminSaveConfig(dadosJson) {
+  try {
+    const { botoes, timeout, modoDebug } = dadosJson;
+
+    if (botoes) {
+      AdminModule.saveBotoesConfig(botoes);
+    }
+
+    if (timeout) {
+      AdminModule.setConfig('TIMEOUT_INATIVIDADE', String(timeout), 'Tempo de inatividade em ms');
+    }
+
+    if (modoDebug !== undefined) {
+      AdminModule.setConfig('MODO_DEBUG', modoDebug ? 'TRUE' : 'FALSE', 'Ativa modo debug');
+    }
+
+    LogModule.registrarAcesso('ADMIN', 'CONFIG_SALVA', JSON.stringify(dadosJson), 'admin_save_config');
+
+    return { sucesso: true, mensagem: 'Configurações salvas com sucesso!' };
+  } catch (e) {
+    Logger.log('Erro em adminSaveConfig: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
 }
