@@ -322,7 +322,7 @@ function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
 }
 // ======================= SALVAR ENVIO DE INFORMAÇÕES =======================
 function salvarEnvioInformacoes(dadosJson) {
-  const ID_PASTA_ANEXOS = "1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP";
+  const ID_PASTA_ANEXOS = "1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD";
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName("EnviosInformacoes");
@@ -856,7 +856,7 @@ function migrarSenhasParaHashComSalt() {
 
 // ======================= FUNÇÕES DE TESTE DO DRIVE =======================
 function testDrive() {
-  const pasta = DriveApp.getFolderById("1CSFGmTlH1THeQzG8j-XNTopMw8v_up2h");
+  const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
   Logger.log(pasta.getName());
 }
 
@@ -866,7 +866,7 @@ function forcarPermissaoDrive() {
 
 function testarDrive() {
   try {
-    const pasta = DriveApp.getFolderById("1CSFGmTlH1THeQzG8j-XNTopMw8v_up2h");
+    const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
     console.log("✅ Sucesso! Pasta encontrada: " + pasta.getName());
     console.log("🔗 URL da Pasta: " + pasta.getUrl());
     return "Pasta acessada com sucesso!";
