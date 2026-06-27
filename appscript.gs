@@ -9,6 +9,7 @@
  *    - Logs, <ID_DA_PLANILHA_LOGS>
  *    - Envios, <ID_DA_PLANILHA_ENVIOS>
  *    - Inspecoes, <ID_DA_PLANILHA_INSPICOES>
+ *    - Admin, <ID_DA_PLANILHA_ADMIN> (nova aba para configurações do painel admin)
  * 3. Substitua a variável MASTER_SHEET_ID abaixo pelo ID da sua planilha Master.
  * 
  * Se MASTER_SHEET_ID não estiver configurado, o sistema usa SpreadsheetApp.getActiveSpreadsheet()
@@ -19,6 +20,14 @@ const MASTER_SHEET_ID = ''; // Deixe vazio para usar planilha atual, ou coloque 
 
 // Cache para evitar chamadas repetidas ao SpreadsheetApp
 const _sheetCache = {};
+
+// Configurações do sistema
+const CONFIG = {
+  TIMEOUT_INATIVIDADE: 20 * 60 * 1000, // 20 minutos em milissegundos
+  MAX_LINHAS_HISTORICO: 16,
+  MAX_CARACTERES_HISTORICO: 1400,
+  ID_PASTA_ANEXOS: "1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP"
+};
 
 /**
  * Obtém o ID de uma planilha específica baseado na configuração Master.
@@ -297,7 +306,7 @@ function listarTodosTerminais() {
   }
 }
 // ======================= FUNÇÃO AUXILIAR PARA TRUNCAR HISTÓRICO =======================
-function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
+function truncarTexto(texto, maxCaracteres = CONFIG.MAX_CARACTERES_HISTORICO, maxLinhas = CONFIG.MAX_LINHAS_HISTORICO) {
   if (!texto) return '';
   
   let textoFinal = texto;
@@ -322,8 +331,6 @@ function truncarTexto(texto, maxCaracteres = 1400, maxLinhas = 16) {
 }
 // ======================= SALVAR ENVIO DE INFORMAÇÕES =======================
 function salvarEnvioInformacoes(dadosJson) {
-  const ID_PASTA_ANEXOS = "1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP";
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName("EnviosInformacoes");
   if (!sheet) {
@@ -338,12 +345,12 @@ function salvarEnvioInformacoes(dadosJson) {
   const { areaDestino, motivo, carro, linha, motorista, cobrador, hora, sentido, historico, local, data, fiscal, anexos } = dadosJson;
   
   // ========== TRUNCA O HISTÓRICO ANTES DE SALVAR ==========
-  const historicoTruncado = truncarTexto(historico || '', 1400, 16);
+  const historicoTruncado = truncarTexto(historico || '');
 
   let linksAnexos = [];
 
   if (anexos && Array.isArray(anexos) && anexos.length) {
-    const pasta = DriveApp.getFolderById(ID_PASTA_ANEXOS);
+    const pasta = DriveApp.getFolderById(CONFIG.ID_PASTA_ANEXOS);
     for (let i = 0; i < anexos.length; i++) {
       const anexo = anexos[i];
       try {
@@ -364,7 +371,7 @@ function salvarEnvioInformacoes(dadosJson) {
   const linkFinal = linksAnexos.join(" ; ");
   sheet.appendRow([
     agora, fiscal, areaDestino, motivo, carro, linha,
-    motorista, cobrador, hora, sentido, historico, local, data, linkFinal
+    motorista, cobrador, hora, sentido, historicoTruncado, local, data, linkFinal
   ]);
 
   return true;
@@ -676,6 +683,16 @@ function doPost(e) {
       LogModule.registrarAcesso(fiscal, 'ENVIO_SALVO', `Motivo: ${dadosObj.motivo||''}, Area: ${dadosObj.areaDestino||''}`, endpoint);
       return ContentService.createTextOutput("Envio registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
+    // ADMINISTRAÇÃO - SALVAR CONFIGURAÇÕES
+    if (acao === "admin_save_config" && dados) {
+      const dadosObj = JSON.parse(dados);
+      const resultado = adminSaveConfig(dadosObj);
+      if (resultado.sucesso) {
+        return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
     
     LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
@@ -773,6 +790,12 @@ function doGet(e) {
       const dataInicioLogs = e.parameter.dataInicio || null;
       const dataFimLogs = e.parameter.dataFim || null;
       const resultado = LogModule.consultarLogs(filtroEmail, dataInicioLogs, dataFimLogs);
+      return enviarResposta(resultado);
+    }
+    
+    // ADMINISTRAÇÃO - OBTER CONFIGURAÇÕES
+    if (acao === "admin_get_config") {
+      const resultado = adminGetConfig();
       return enviarResposta(resultado);
     }
     
@@ -888,4 +911,164 @@ function testarArrayAnexos() {
   };
   const result = salvarEnvioInformacoes(testData);
   console.log("Resultado:", result);
+}
+// ============================================================================
+// MÓDULO: ADMINISTRAÇÃO DO SISTEMA (PAINEL ADMIN)
+// ============================================================================
+const AdminModule = {
+  /**
+   * Obtém ou cria a planilha de configurações do Admin
+   */
+  getSheet: function() {
+    const ss = openSheetByName('Admin');
+    let sheet = ss.getSheetByName('Configuracoes');
+    if (!sheet) {
+      sheet = ss.insertSheet('Configuracoes');
+      sheet.appendRow(['Chave', 'Valor', 'Descricao']);
+      // Configurações padrão
+      sheet.appendRow(['TIMEOUT_INATIVIDADE', '1200000', 'Tempo de inatividade em ms (20 min)']);
+      sheet.appendRow(['MODO_DEBUG', 'FALSE', 'Ativa modo debug']);
+      sheet.appendRow(['BOTOES_CLANDESTINOS', '[]', 'Botões personalizados Clandestinos/RTO']);
+      sheet.appendRow(['BOTOES_LEVANTAMENTOS', '[]', 'Botões personalizados Levantamentos']);
+      sheet.appendRow(['BOTOES_INSPICOES_5S', '[]', 'Botões personalizados Inspeções 5S']);
+    }
+    return sheet;
+  },
+  
+  /**
+   * Obtém uma configuração específica
+   */
+  getConfig: function(chave, valorPadrao) {
+    try {
+      const sheet = this.getSheet();
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === chave) {
+          return data[i][1];
+        }
+      }
+      return valorPadrao;
+    } catch (e) {
+      Logger.log('Erro ao buscar config ' + chave + ': ' + e.message);
+      return valorPadrao;
+    }
+  },
+  
+  /**
+   * Salva uma configuração
+   */
+  setConfig: function(chave, valor, descricao) {
+    try {
+      const sheet = this.getSheet();
+      const data = sheet.getDataRange().getValues();
+      let encontrou = false;
+      
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === chave) {
+          sheet.getRange(i + 1, 2).setValue(valor);
+          if (descricao) {
+            sheet.getRange(i + 1, 3).setValue(descricao);
+          }
+          encontrou = true;
+          break;
+        }
+      }
+      
+      if (!encontrou) {
+        sheet.appendRow([chave, valor, descricao || '']);
+      }
+      
+      return true;
+    } catch (e) {
+      Logger.log('Erro ao salvar config ' + chave + ': ' + e.message);
+      return false;
+    }
+  },
+  
+  /**
+   * Obtém todas as configurações de botões
+   */
+  getBotoesConfig: function() {
+    return {
+      clandestinos: JSON.parse(this.getConfig('BOTOES_CLANDESTINOS', '[]')),
+      levantamentos: JSON.parse(this.getConfig('BOTOES_LEVANTAMENTOS', '[]')),
+      inspecoes5s: JSON.parse(this.getConfig('BOTOES_INSPICOES_5S', '[]'))
+    };
+  },
+  
+  /**
+   * Salva configurações de botões
+   */
+  saveBotoesConfig: function(botoes) {
+    const success = 
+      this.setConfig('BOTOES_CLANDESTINOS', JSON.stringify(botoes.clandestinos || []), 'Botões Clandestinos/RTO') &&
+      this.setConfig('BOTOES_LEVANTAMENTOS', JSON.stringify(botoes.levantamentos || []), 'Botões Levantamentos') &&
+      this.setConfig('BOTOES_INSPICOES_5S', JSON.stringify(botoes.inspecoes5s || []), 'Botões Inspeções 5S');
+    return success;
+  },
+  
+  /**
+   * Obtém timeout de inatividade configurado
+   */
+  getTimeoutInatividade: function() {
+    const valor = this.getConfig('TIMEOUT_INATIVIDADE', '1200000');
+    return parseInt(valor, 10) || CONFIG.TIMEOUT_INATIVIDADE;
+  }
+};
+
+// ============================================================================
+// ENDPOINTS DE ADMINISTRAÇÃO (API para o painel admin)
+// ============================================================================
+
+/**
+ * Endpoint para obter configurações do admin
+ * Uso: ?acao=admin_get_config
+ */
+function adminGetConfig() {
+  try {
+    const botoes = AdminModule.getBotoesConfig();
+    const timeout = AdminModule.getTimeoutInatividade();
+    const modoDebug = AdminModule.getConfig('MODO_DEBUG', 'FALSE');
+    
+    return {
+      sucesso: true,
+      dados: {
+        botoes: botoes,
+        timeout: timeout,
+        modoDebug: modoDebug === 'TRUE'
+      }
+    };
+  } catch (e) {
+    Logger.log('Erro em adminGetConfig: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Endpoint para salvar configurações do admin
+ * Uso: POST com acao=admin_save_config e dados={botoes: {...}}
+ */
+function adminSaveConfig(dadosJson) {
+  try {
+    const { botoes, timeout, modoDebug } = dadosJson;
+    
+    if (botoes) {
+      AdminModule.saveBotoesConfig(botoes);
+    }
+    
+    if (timeout) {
+      AdminModule.setConfig('TIMEOUT_INATIVIDADE', String(timeout), 'Tempo de inatividade em ms');
+    }
+    
+    if (modoDebug !== undefined) {
+      AdminModule.setConfig('MODO_DEBUG', modoDebug ? 'TRUE' : 'FALSE', 'Ativa modo debug');
+    }
+    
+    LogModule.registrarAcesso('ADMIN', 'CONFIG_SALVA', JSON.stringify(dadosJson), 'admin_save_config');
+    
+    return { sucesso: true, mensagem: 'Configurações salvas com sucesso!' };
+  } catch (e) {
+    Logger.log('Erro em adminSaveConfig: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
 }
