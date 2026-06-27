@@ -176,6 +176,9 @@ function registerServiceWorker() {
 // INICIALIZAÇÃO PRINCIPAL
 // ====================================================================
 async function inicializar() {
+  // Carrega timeout de inatividade do backend antes de iniciar
+  await carregarTimeoutInatividade();
+  
   initModals(); 
   initEventListeners(); 
   initTheme(); 

@@ -11,8 +11,56 @@ let adminData = {
     clandestinos: [],
     levantamentos: [],
     inspecoes5s: []
-  }
+  },
+  timeout: 1200000, // 20 minutos padrão
+  modoDebug: false
 };
+
+// ====================================================================
+// API DE COMUNICAÇÃO COM BACKEND (Admin)
+// ====================================================================
+async function adminGetConfigAPI() {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'adminGetConfigCallback_' + Date.now();
+    
+    window[callbackName] = function(resposta) {
+      delete window[callbackName];
+      if (resposta && resposta.sucesso) {
+        resolve(resposta.dados);
+      } else {
+        reject(new Error(resposta?.erro || 'Falha ao obter configurações'));
+      }
+    };
+    
+    const script = document.createElement('script');
+    script.src = `${URL_PLANILHA}?acao=admin_get_config&callback=${callbackName}&_=${Date.now()}`;
+    script.onerror = () => {
+      delete window[callbackName];
+      reject(new Error('Erro de rede ao buscar configurações'));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+async function adminSaveConfigAPI(dados) {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_save_config');
+    formData.append('dados', JSON.stringify(dados));
+    
+    fetch(URL_PLANILHA, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Configurações salvas com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao salvar configurações: ' + err.message));
+    });
+  });
+}
 
 // ====================================================================
 // CONTROLLER DO MODAL DE ADMINISTRAÇÃO
@@ -21,9 +69,10 @@ class AdminPanelController {
   constructor() {
     this.modalElement = null;
     this.contentElement = null;
+    this.configCarregada = false;
   }
 
-  init() {
+  async init() {
     this.modalElement = getEl('modal-admin-panel');
     this.contentElement = getEl('admin-panel-conteudo');
     
@@ -32,7 +81,55 @@ class AdminPanelController {
       return false;
     }
     
+    // Carrega configurações do backend
+    await this.carregarConfiguracoes();
+    
     return true;
+  }
+
+  async carregarConfiguracoes() {
+    try {
+      const config = await adminGetConfigAPI();
+      adminData.botoes = config.botoes || { clandestinos: [], levantamentos: [], inspecoes5s: [] };
+      adminData.timeout = config.timeout || 1200000;
+      adminData.modoDebug = config.modoDebug || false;
+      this.configCarregada = true;
+      console.log('✅ Configurações admin carregadas:', adminData);
+    } catch (err) {
+      console.warn('⚠️ Falha ao carregar configurações do servidor, usando fallback local:', err);
+      // Fallback: tenta carregar do localStorage
+      const botoesSalvos = JSON.parse(localStorage.getItem('adminBotoes') || '{}');
+      if (Object.keys(botoesSalvos).length > 0) {
+        adminData.botoes = botoesSalvos;
+      }
+      const timeoutLocal = localStorage.getItem('adminTimeout');
+      if (timeoutLocal) adminData.timeout = parseInt(timeoutLocal, 10);
+      const debugLocal = localStorage.getItem('adminModoDebug');
+      if (debugLocal) adminData.modoDebug = debugLocal === 'true';
+      this.configCarregada = true;
+    }
+  }
+
+  async salvarConfiguracoes() {
+    try {
+      await adminSaveConfigAPI({
+        botoes: adminData.botoes,
+        timeout: adminData.timeout,
+        modoDebug: adminData.modoDebug
+      });
+      
+      // Atualiza localStorage como cache
+      localStorage.setItem('adminBotoes', JSON.stringify(adminData.botoes));
+      localStorage.setItem('adminTimeout', String(adminData.timeout));
+      localStorage.setItem('adminModoDebug', String(adminData.modoDebug));
+      
+      alert('✅ Configurações salvas com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('❌ Erro ao salvar configurações:', err);
+      alert('⚠️ Erro ao salvar configurações. Verifique sua conexão.');
+      return false;
+    }
   }
 
   open() {
@@ -79,6 +176,9 @@ class AdminPanelController {
   }
 
   renderTabBotoes() {
+    // Renderiza botões a partir dos dados carregados
+    setTimeout(() => this.renderizarListaBotoes(), 100);
+    
     return `
       <h3>Gerenciar Botões da Tela Inicial</h3>
       <div class="admin-section">
@@ -102,6 +202,27 @@ class AdminPanelController {
     `;
   }
 
+  renderizarListaBotoes() {
+    ['clandestinos', 'levantamentos', 'inspecoes5s'].forEach(tipo => {
+      const container = getEl(`admin-botoes-${tipo}`);
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const botoes = adminData.botoes[tipo] || [];
+      
+      botoes.forEach((botao, idx) => {
+        const div = document.createElement('div');
+        div.className = 'admin-botao-item';
+        div.innerHTML = `
+          <input type="text" placeholder="Texto do botão" class="admin-input-texto" value="${botao.texto || ''}">
+          <input type="url" placeholder="URL" class="admin-input-url" value="${botao.url || ''}">
+          <button class="btn-admin-remove" onclick="adminPanel.removerBotao(this, '${tipo}', ${idx})">🗑️</button>
+        `;
+        container.appendChild(div);
+      });
+    });
+  }
+
   renderTabUsuarios() {
     return `
       <h3>Gerenciar Usuários</h3>
@@ -113,20 +234,51 @@ class AdminPanelController {
   }
 
   renderTabConfig() {
+    // Converte timeout de ms para minutos para exibição
+    const timeoutMinutos = Math.floor(adminData.timeout / 60000);
+    
     return `
       <h3>Configurações do Sistema</h3>
       <div class="admin-section">
+        <h4>Timeout de Inatividade</h4>
         <label>
-          <input type="checkbox" id="admin-debug-mode" onchange="adminPanel.toggleDebugMode(this.checked)">
-          Modo Debug
+          Tempo (minutos): 
+          <input type="number" id="admin-timeout-input" value="${timeoutMinutos}" min="1" max="120" style="width: 80px;">
         </label>
-        <p class="admin-info">Ativa console móvel (vConsole) para depuração.</p>
+        <p class="admin-info">Usuário será deslogado após este período de inatividade.</p>
+        <button class="btn-secundario" onclick="adminPanel.salvarTimeout()">💾 Salvar Timeout</button>
       </div>
       <div class="admin-section">
-        <button class="btn-secundario" onclick="adminPanel.limparCache()">🗑️ Limpar Cache</button>
-        <p class="admin-info">Limpa cache local e recarrega a aplicação.</p>
+        <h4>Modo Debug</h4>
+        <label>
+          <input type="checkbox" id="admin-debug-mode" ${adminData.modoDebug ? 'checked' : ''} onchange="adminPanel.toggleDebugMode(this.checked)">
+          Ativar console móvel (vConsole)
+        </label>
+        <p class="admin-info">Útil para depuração em dispositivos móveis.</p>
+      </div>
+      <div class="admin-section">
+        <h4>Cache</h4>
+        <button class="btn-secundario" onclick="adminPanel.limparCache()">🗑️ Limpar Cache Local</button>
+        <p class="admin-info">Limpa localStorage e sessionStorage, depois recarrega a aplicação.</p>
       </div>
     `;
+  }
+
+  salvarTimeout() {
+    const input = getEl('admin-timeout-input');
+    if (!input) return;
+    
+    const minutos = parseInt(input.value, 10);
+    if (isNaN(minutos) || minutos < 1 || minutos > 120) {
+      alert('⚠️ Digite um valor entre 1 e 120 minutos.');
+      return;
+    }
+    
+    adminData.timeout = minutos * 60000; // Converte para milissegundos
+    
+    this.salvarConfiguracoes().then(() => {
+      alert(`✅ Timeout atualizado para ${minutos} minutos!`);
+    });
   }
 
   attachTabListeners() {
@@ -156,26 +308,34 @@ class AdminPanelController {
     div.innerHTML = `
       <input type="text" placeholder="Texto do botão" class="admin-input-texto" value="Novo Botão">
       <input type="url" placeholder="URL" class="admin-input-url" value="https://">
-      <button class="btn-admin-remove" onclick="adminPanel.removerBotao(this)">🗑️</button>
+      <button class="btn-admin-remove" onclick="adminPanel.removerBotao(this, '${tipo}', -1)">🗑️</button>
     `;
     container.appendChild(div);
   }
 
-  removerBotao(btn) {
+  removerBotao(btn, tipo, idx) {
     const item = btn.closest('.admin-botao-item');
-    if (item) item.remove();
+    if (!item) return;
+    
+    // Se idx >= 0, remove do array adminData
+    if (idx >= 0 && tipo) {
+      adminData.botoes[tipo].splice(idx, 1);
+    }
+    
+    item.remove();
   }
 
   salvarBotoes() {
-    const botoes = {
-      clandestinos: this.capturarBotoes('clandestinos'),
-      levantamentos: this.capturarBotoes('levantamentos'),
-      inspecoes5s: this.capturarBotoes('inspecoes5s')
-    };
+    // Captura botões da UI e atualiza adminData
+    adminData.botoes.clandestinos = this.capturarBotoes('clandestinos');
+    adminData.botoes.levantamentos = this.capturarBotoes('levantamentos');
+    adminData.botoes.inspecoes5s = this.capturarBotoes('inspecoes5s');
     
-    localStorage.setItem('adminBotoes', JSON.stringify(botoes));
-    alert('✅ Botões salvos com sucesso! As alterações serão visíveis após recarregar a página.');
-    this.close();
+    // Salva no backend
+    this.salvarConfiguracoes().then(() => {
+      alert('✅ Botões salvos com sucesso! As alterações serão visíveis após recarregar a página.');
+      this.close();
+    });
   }
 
   capturarBotoes(tipo) {
@@ -336,3 +496,5 @@ window.adicionarBotaoLista = adicionarBotaoLista;
 window.removerBotaoLista = removerBotaoLista;
 window.salvarBotoesLista = salvarBotoesLista;
 window.initAdminPanel = initAdminPanel;
+window.adminGetConfigAPI = adminGetConfigAPI;
+window.adminSaveConfigAPI = adminSaveConfigAPI;
