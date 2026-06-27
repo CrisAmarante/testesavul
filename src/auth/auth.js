@@ -9,6 +9,8 @@
 const ROLES_ALLOWED_INSPECTION = ['INSPETOR', 'ENCARREGADO', 'ADMIN', 'GERENTE', 'FISCAL', 'PLANTONISTA'];
 let currentUserRole = '';
 let canCreateInspection = false;
+let inactivityTimer = null;
+const INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos em milissegundos
 
 // ====================================================================
 // VERIFICAR STATUS DE LOGIN
@@ -56,6 +58,10 @@ async function checkLoginStatus() {
     insp.style.display = 'flex';
     showWelcomeToast(apelido);
     
+    // Inicia timer de inatividade
+    resetInactivityTimer();
+    setupInactivityListeners();
+    
     if (typeof verificarNotificacoesAoIniciar === 'function') {
       verificarNotificacoesAoIniciar();
     }
@@ -100,6 +106,9 @@ async function login(e) {
       localStorage.setItem('inspectorApelido', resposta.apelido);
       localStorage.setItem('inspectorRole', resposta.funcao);
       
+      // Limpa o campo de senha após login bem-sucedido
+      getEl('password').value = '';
+      
       await refreshInspetores();
       registrarLog(resposta.apelido);
       
@@ -128,11 +137,48 @@ async function login(e) {
 // LOGOUT
 // ====================================================================
 function logoutInspector() {
+  // Limpa timer de inatividade
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  
+  // Remove listeners de inatividade
+  document.removeEventListener('click', resetInactivityTimer);
+  document.removeEventListener('keydown', resetInactivityTimer);
+  document.removeEventListener('mousemove', resetInactivityTimer);
+  document.removeEventListener('scroll', resetInactivityTimer);
+  
   localStorage.removeItem('inspectorLoggedIn');
   localStorage.removeItem('inspectorName');
   localStorage.removeItem('inspectorApelido');
   localStorage.removeItem('inspectorRole');
   checkLoginStatus();
+}
+
+// ====================================================================
+// CONTROLE DE INATIVIDADE
+// ====================================================================
+function resetInactivityTimer() {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+  }
+  
+  inactivityTimer = setTimeout(() => {
+    const apelido = localStorage.getItem('inspectorApelido');
+    if (apelido) {
+      alert(`⚠️ Sessão expirada por inatividade.\n\nUsuário: ${apelido}\n\nVocê será deslogado agora.`);
+      logoutInspector();
+    }
+  }, INACTIVITY_TIMEOUT);
+}
+
+function setupInactivityListeners() {
+  document.addEventListener('click', resetInactivityTimer);
+  document.addEventListener('keydown', resetInactivityTimer);
+  document.addEventListener('mousemove', resetInactivityTimer);
+  document.addEventListener('scroll', resetInactivityTimer);
+  document.addEventListener('touchstart', resetInactivityTimer);
 }
 
 // ====================================================================
@@ -144,7 +190,7 @@ function showWelcomeToast(apelido) {
   
   getEl('toast-name').textContent = apelido;
   toast.classList.add('show');
-  setTimeout(() => hideWelcomeToast(), 3500);
+  setTimeout(() => hideWelcomeToast(), 5000); // 5 segundos
   
   const clickHandler = () => { 
     hideWelcomeToast(); 
@@ -233,3 +279,5 @@ window.logoutInspector = logoutInspector;
 window.ajustarCardsPorPerfil = ajustarCardsPorPerfil;
 window.mostrarBannerAviso = mostrarBannerAviso;
 window.aplicarBloqueioDeDatas = aplicarBloqueioDeDatas;
+window.resetInactivityTimer = resetInactivityTimer;
+window.setupInactivityListeners = setupInactivityListeners;
