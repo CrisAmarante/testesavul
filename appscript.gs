@@ -1129,10 +1129,10 @@ function adminGetUsuarios(filtro) {
     
     // Cabeçalho esperado: [id, nome, apelido, hash, funcao, ativo, ...]
     for (let i = 1; i < data.length; i++) {
-      const nome = data[i][1] || '';
-      const apelido = data[i][2] || '';
-      const funcao = data[i][4] || '';
-      const ativo = data[i][5] || 'NAO';
+      const nome = String(data[i][1] || '');
+      const apelido = String(data[i][2] || '');
+      const funcao = String(data[i][4] || '');
+      const ativo = String(data[i][5] || 'NAO');
       
       // Aplica filtro se fornecido (busca por apelido ou nome)
       if (filtro) {

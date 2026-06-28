@@ -1,1 +1,32 @@
-(src/admin/admin.js)
+```
+# Google Apps Script
+*.gs.bak
+*.gs~
+*.bak
+
+# General
+*.tmp
+*.log
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Dependencies
+node_modules/
+.jspm/
+.npm/
+.yarn/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+```
