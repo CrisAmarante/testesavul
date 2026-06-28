@@ -63,6 +63,116 @@ async function adminSaveConfigAPI(dados) {
 }
 
 // ====================================================================
+// API DE USUÁRIOS (Admin)
+// ====================================================================
+async function adminGetUsuariosAPI(filtro = '') {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'adminGetUsuariosCallback_' + Date.now();
+    
+    window[callbackName] = function(resposta) {
+      delete window[callbackName];
+      if (resposta && resposta.sucesso) {
+        resolve(resposta.usuarios);
+      } else {
+        reject(new Error(resposta?.erro || 'Falha ao obter usuários'));
+      }
+    };
+    
+    const script = document.createElement('script');
+    const url = filtro 
+      ? `${URL_PLANILHA}?acao=admin_get_usuarios&filtro=${encodeURIComponent(filtro)}&callback=${callbackName}&_=${Date.now()}`
+      : `${URL_PLANILHA}?acao=admin_get_usuarios&callback=${callbackName}&_=${Date.now()}`;
+    script.src = url;
+    script.onerror = () => {
+      delete window[callbackName];
+      reject(new Error('Erro de rede ao buscar usuários'));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+async function adminSaveUsuarioAPI(usuario) {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_save_usuario');
+    formData.append('dados', JSON.stringify(usuario));
+    
+    fetch(URL_PLANILHA, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário salvo com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao salvar usuário: ' + err.message));
+    });
+  });
+}
+
+async function adminCreateUsuarioAPI(usuario) {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_create_usuario');
+    formData.append('dados', JSON.stringify(usuario));
+    
+    fetch(URL_PLANILHA, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário criado com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao criar usuário: ' + err.message));
+    });
+  });
+}
+
+async function adminDeleteUsuarioAPI(apelido) {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_delete_usuario');
+    formData.append('apelido', apelido);
+    
+    fetch(URL_PLANILHA, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário excluído com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao excluir usuário: ' + err.message));
+    });
+  });
+}
+
+async function adminToggleUsuarioAPI(apelido, ativo) {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_toggle_usuario');
+    formData.append('apelido', apelido);
+    formData.append('ativo', ativo ? 'SIM' : 'NAO');
+    
+    fetch(URL_PLANILHA, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: `Usuário ${ativo ? 'habilitado' : 'desabilitado'} com sucesso!` });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao alterar status do usuário: ' + err.message));
+    });
+  });
+}
+
+// ====================================================================
 // CONTROLLER DO MODAL DE ADMINISTRAÇÃO
 // ====================================================================
 class AdminPanelController {
@@ -226,11 +336,269 @@ class AdminPanelController {
   renderTabUsuarios() {
     return `
       <h3>Gerenciar Usuários</h3>
-      <p class="admin-info">Funcionalidade em desenvolvimento. Gerencie usuários diretamente na planilha.</p>
       <div class="admin-section">
-        <button class="btn-secundario" onclick="window.open('https://sheets.google.com', '_blank')">📊 Abrir Planilha</button>
+        <div class="usuarios-search-bar">
+          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Apelido ou Chapa..." onkeyup="adminPanel.pesquisarUsuarios()">
+          <button class="btn-principal" onclick="adminPanel.pesquisarUsuarios()">🔍 Pesquisar</button>
+        </div>
+        <div id="usuarios-lista-container"></div>
+        <div class="admin-actions">
+          <button class="btn-principal" onclick="adminPanel.abrirModalNovoUsuario()">+ Novo Usuário</button>
+        </div>
       </div>
     `;
+  }
+
+  async pesquisarUsuarios() {
+    const input = getEl('usuario-pesquisa-input');
+    const filtro = input ? input.value.trim() : '';
+    
+    try {
+      const usuarios = await adminGetUsuariosAPI(filtro);
+      this.renderizarListaUsuarios(usuarios);
+    } catch (err) {
+      console.error('Erro ao buscar usuários:', err);
+      alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
+    }
+  }
+
+  renderizarListaUsuarios(usuarios) {
+    const container = getEl('usuarios-lista-container');
+    if (!container) return;
+    
+    if (!usuarios || usuarios.length === 0) {
+      container.innerHTML = '<p class="admin-info">Nenhum usuário encontrado.</p>';
+      return;
+    }
+    
+    container.innerHTML = `
+      <table class="admin-usuarios-tabela">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Apelido/Chapa</th>
+            <th>Função</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${usuarios.map(u => `
+            <tr data-apelido="${u.apelido}">
+              <td>${u.nome}</td>
+              <td>${u.apelido}</td>
+              <td>${u.funcao || ''}</td>
+              <td><span class="status-badge ${u.ativo === 'SIM' ? 'ativo' : 'inativo'}">${u.ativo === 'SIM' ? 'Ativo' : 'Inativo'}</span></td>
+              <td>
+                <button class="btn-admin-action" onclick="adminPanel.editarUsuario('${u.apelido}')" title="Editar">✏️</button>
+                <button class="btn-admin-action" onclick="adminPanel.toggleUsuario('${u.apelido}', ${u.ativo === 'SIM'})" title="${u.ativo === 'SIM' ? 'Desabilitar' : 'Habilitar'}">${u.ativo === 'SIM' ? '🔒' : '🔓'}</button>
+                <button class="btn-admin-action btn-delete" onclick="adminPanel.confirmarExclusao('${u.apelido}')" title="Excluir">🗑️</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  abrirModalNovoUsuario() {
+    const modal = getEl('modal-admin-usuario');
+    const form = getEl('form-admin-usuario');
+    const titulo = getEl('modal-usuario-titulo');
+    
+    if (!modal || !form) {
+      this.criarModalUsuario();
+      return;
+    }
+    
+    titulo.textContent = 'Novo Usuário';
+    form.reset();
+    form.dataset.mode = 'create';
+    form.dataset.apelido = '';
+    
+    // Mostrar campo de apelido para criação
+    const apelidoField = getEl('usuario-apelido-field');
+    if (apelidoField) apelidoField.style.display = 'block';
+    
+    modal.style.display = 'flex';
+  }
+
+  async editarUsuario(apelido) {
+    const usuarios = await adminGetUsuariosAPI(apelido);
+    if (!usuarios || usuarios.length === 0) {
+      alert('⚠️ Usuário não encontrado.');
+      return;
+    }
+    
+    const usuario = usuarios[0];
+    const modal = getEl('modal-admin-usuario');
+    const form = getEl('form-admin-usuario');
+    const titulo = getEl('modal-usuario-titulo');
+    
+    if (!modal || !form) {
+      this.criarModalUsuario();
+      setTimeout(() => this.editarUsuario(apelido), 100);
+      return;
+    }
+    
+    titulo.textContent = 'Editar Usuário: ' + usuario.nome;
+    form.dataset.mode = 'edit';
+    form.dataset.apelido = apelido;
+    
+    // Preencher campos
+    getEl('usuario-nome').value = usuario.nome;
+    getEl('usuario-funcao').value = usuario.funcao || '';
+    getEl('usuario-senha').value = '';
+    getEl('usuario-senha-confirm').value = '';
+    
+    // Esconder campo de apelido na edição
+    const apelidoField = getEl('usuario-apelido-field');
+    if (apelidoField) apelidoField.style.display = 'none';
+    
+    modal.style.display = 'flex';
+  }
+
+  async salvarUsuario() {
+    const form = getEl('form-admin-usuario');
+    if (!form) return;
+    
+    const nome = getEl('usuario-nome').value.trim();
+    const funcao = getEl('usuario-funcao').value.trim();
+    const senha = getEl('usuario-senha').value;
+    const senhaConfirm = getEl('usuario-senha-confirm').value;
+    const mode = form.dataset.mode;
+    const apelido = form.dataset.apelido;
+    
+    if (!nome || !funcao) {
+      alert('⚠️ Nome e Função são obrigatórios.');
+      return;
+    }
+    
+    if (mode === 'create') {
+      const apelidoCriar = getEl('usuario-apelido').value.trim();
+      if (!apelidoCriar) {
+        alert('⚠️ Apelido/Chapa é obrigatório para criar usuário.');
+        return;
+      }
+      if (!senha || !senhaConfirm) {
+        alert('⚠️ Senha e confirmação são obrigatórias para criar usuário.');
+        return;
+      }
+      if (senha !== senhaConfirm) {
+        alert('⚠️ As senhas não coincidem.');
+        return;
+      }
+      
+      try {
+        await adminCreateUsuarioAPI({
+          nome: nome,
+          apelido: apelidoCriar,
+          funcao: funcao,
+          senha: senha
+        });
+        alert('✅ Usuário criado com sucesso!');
+        fecharModalAdminUsuario();
+        this.pesquisarUsuarios();
+      } catch (err) {
+        alert('⚠️ Erro ao criar usuário.');
+      }
+    } else {
+      // Edição - apenas função e senha
+      try {
+        const dadosAtualizar = {
+          apelido: apelido,
+          funcao: funcao
+        };
+        
+        if (senha) {
+          if (!senhaConfirm) {
+            alert('⚠️ Confirme a nova senha.');
+            return;
+          }
+          if (senha !== senhaConfirm) {
+            alert('⚠️ As senhas não coincidem.');
+            return;
+          }
+          dadosAtualizar.senha = senha;
+        }
+        
+        await adminSaveUsuarioAPI(dadosAtualizar);
+        alert('✅ Usuário atualizado com sucesso!');
+        fecharModalAdminUsuario();
+        this.pesquisarUsuarios();
+      } catch (err) {
+        alert('⚠️ Erro ao atualizar usuário.');
+      }
+    }
+  }
+
+  async toggleUsuario(apelido, ativoAtual) {
+    const novoStatus = !ativoAtual;
+    const confirmacao = confirm(`Tem certeza que deseja ${novoStatus ? 'habilitar' : 'desabilitar'} este usuário?`);
+    if (!confirmacao) return;
+    
+    try {
+      await adminToggleUsuarioAPI(apelido, novoStatus);
+      alert(`✅ Usuário ${novoStatus ? 'habilitado' : 'desabilitado'} com sucesso!`);
+      this.pesquisarUsuarios();
+    } catch (err) {
+      alert('⚠️ Erro ao alterar status do usuário.');
+    }
+  }
+
+  async confirmarExclusao(apelido) {
+    const confirmacao = confirm('⚠️ Tem certeza que deseja EXCLUIR este usuário? Esta ação não pode ser desfeita!');
+    if (!confirmacao) return;
+    
+    try {
+      await adminDeleteUsuarioAPI(apelido);
+      alert('✅ Usuário excluído com sucesso!');
+      this.pesquisarUsuarios();
+    } catch (err) {
+      alert('⚠️ Erro ao excluir usuário.');
+    }
+  }
+
+  criarModalUsuario() {
+    // Criar modal dinamicamente se não existir
+    const modalHtml = `
+      <div id="modal-admin-usuario" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="modal-usuario-titulo">Usuário</h2>
+            <button class="modal-close" onclick="fecharModalAdminUsuario()">×</button>
+          </div>
+          <form id="form-admin-usuario" data-mode="" data-apelido="">
+            <div class="form-group" id="usuario-apelido-field">
+              <label>Apelido/Chapa:</label>
+              <input type="text" id="usuario-apelido" placeholder="Digite o apelido/chapa" required>
+            </div>
+            <div class="form-group">
+              <label>Nome Completo:</label>
+              <input type="text" id="usuario-nome" placeholder="Digite o nome completo" required>
+            </div>
+            <div class="form-group">
+              <label>Função:</label>
+              <input type="text" id="usuario-funcao" placeholder="Digite a função" required>
+            </div>
+            <div class="form-group">
+              <label>Nova Senha:</label>
+              <input type="password" id="usuario-senha" placeholder="Digite a senha (deixe em branco para manter na edição)">
+            </div>
+            <div class="form-group">
+              <label>Confirmar Senha:</label>
+              <input type="password" id="usuario-senha-confirm" placeholder="Confirme a senha">
+            </div>
+            <div class="admin-actions">
+              <button type="button" class="btn-secundario" onclick="fecharModalAdminUsuario()">Cancelar</button>
+              <button type="button" class="btn-principal" onclick="adminPanel.salvarUsuario()">💾 Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
 
   renderTabConfig() {
@@ -498,3 +866,14 @@ window.salvarBotoesLista = salvarBotoesLista;
 window.initAdminPanel = initAdminPanel;
 window.adminGetConfigAPI = adminGetConfigAPI;
 window.adminSaveConfigAPI = adminSaveConfigAPI;
+window.adminGetUsuariosAPI = adminGetUsuariosAPI;
+window.adminSaveUsuarioAPI = adminSaveUsuarioAPI;
+window.adminCreateUsuarioAPI = adminCreateUsuarioAPI;
+window.adminDeleteUsuarioAPI = adminDeleteUsuarioAPI;
+window.adminToggleUsuarioAPI = adminToggleUsuarioAPI;
+
+// Função global para fechar modal de usuário
+function fecharModalAdminUsuario() {
+  const modal = getEl('modal-admin-usuario');
+  if (modal) modal.style.display = 'none';
+}

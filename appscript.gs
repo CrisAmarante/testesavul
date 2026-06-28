@@ -694,6 +694,35 @@ function doPost(e) {
       }
     }
     
+    // ADMINISTRAÇÃO - SALVAR USUÁRIO (edição)
+    if (acao === "admin_save_usuario" && dados) {
+      const dadosObj = JSON.parse(dados);
+      const resultado = adminSaveUsuario(dadosObj);
+      return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ADMINISTRAÇÃO - CRIAR USUÁRIO
+    if (acao === "admin_create_usuario" && dados) {
+      const dadosObj = JSON.parse(dados);
+      const resultado = adminCreateUsuario(dadosObj);
+      return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ADMINISTRAÇÃO - EXCLUIR USUÁRIO
+    if (acao === "admin_delete_usuario" && dados) {
+      const apelido = e.parameter.apelido;
+      const resultado = adminDeleteUsuario(apelido);
+      return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ADMINISTRAÇÃO - HABILITAR/DESABILITAR USUÁRIO
+    if (acao === "admin_toggle_usuario" && dados) {
+      const apelido = e.parameter.apelido;
+      const ativo = e.parameter.ativo === 'SIM';
+      const resultado = adminToggleUsuario(apelido, ativo);
+      return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
@@ -796,6 +825,13 @@ function doGet(e) {
     // ADMINISTRAÇÃO - OBTER CONFIGURAÇÕES
     if (acao === "admin_get_config") {
       const resultado = adminGetConfig();
+      return enviarResposta(resultado);
+    }
+    
+    // ADMINISTRAÇÃO - OBTER USUÁRIOS
+    if (acao === "admin_get_usuarios") {
+      const filtro = e.parameter.filtro || '';
+      const resultado = adminGetUsuarios(filtro);
       return enviarResposta(resultado);
     }
     
@@ -1069,6 +1105,211 @@ function adminSaveConfig(dadosJson) {
     return { sucesso: true, mensagem: 'Configurações salvas com sucesso!' };
   } catch (e) {
     Logger.log('Erro em adminSaveConfig: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+// ============================================================================
+// FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS (Admin)
+// ============================================================================
+
+/**
+ * Obtém usuários da planilha de login com filtro opcional por apelido/chapa ou nome
+ */
+function adminGetUsuarios(filtro) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    const data = sheetLogin.getDataRange().getValues();
+    const usuarios = [];
+    
+    // Cabeçalho esperado: [id, nome, apelido, hash, funcao, ativo, ...]
+    for (let i = 1; i < data.length; i++) {
+      const nome = data[i][1] || '';
+      const apelido = data[i][2] || '';
+      const funcao = data[i][4] || '';
+      const ativo = data[i][5] || 'NAO';
+      
+      // Aplica filtro se fornecido (busca por apelido ou nome)
+      if (filtro) {
+        const filtroLower = filtro.toLowerCase();
+        if (apelido.toLowerCase().indexOf(filtroLower) === -1 && 
+            nome.toLowerCase().indexOf(filtroLower) === -1) {
+          continue;
+        }
+      }
+      
+      usuarios.push({
+        nome: nome,
+        apelido: apelido,
+        funcao: funcao,
+        ativo: ativo
+      });
+    }
+    
+    return { sucesso: true, usuarios: usuarios };
+  } catch (e) {
+    Logger.log('Erro em adminGetUsuarios: ' + e.message);
+    return { sucesso: false, erro: e.message, usuarios: [] };
+  }
+}
+
+/**
+ * Salva/Atualiza usuário (edição de função e senha)
+ */
+function adminSaveUsuario(dados) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    const { apelido, funcao, senha } = dados;
+    if (!apelido) {
+      return { sucesso: false, erro: 'Apelido é obrigatório' };
+    }
+    
+    const data = sheetLogin.getDataRange().getValues();
+    let encontrou = false;
+    
+    for (let i = 1; i < data.length; i++) {
+      const rowApelido = data[i][2];
+      if (rowApelido === apelido) {
+        // Atualiza função (coluna 5)
+        if (funcao) {
+          sheetLogin.getRange(i + 1, 5).setValue(funcao);
+        }
+        
+        // Atualiza senha se fornecida (coluna 7 - índice 6)
+        if (senha) {
+          const novoHash = gerarHashComSalt(senha, apelido);
+          sheetLogin.getRange(i + 1, 7).setValue(novoHash);
+        }
+        
+        encontrou = true;
+        break;
+      }
+    }
+    
+    if (!encontrou) {
+      return { sucesso: false, erro: 'Usuário não encontrado' };
+    }
+    
+    LogModule.registrarAcesso('ADMIN', 'USUARIO_ATUALIZADO', `apelido:${apelido}`, 'admin_save_usuario');
+    return { sucesso: true, mensagem: 'Usuário atualizado com sucesso!' };
+  } catch (e) {
+    Logger.log('Erro em adminSaveUsuario: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Cria novo usuário
+ */
+function adminCreateUsuario(dados) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    const { nome, apelido, funcao, senha } = dados;
+    if (!apelido || !nome || !senha) {
+      return { sucesso: false, erro: 'Nome, apelido e senha são obrigatórios' };
+    }
+    
+    // Verifica se apelido já existe
+    const data = sheetLogin.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === apelido) {
+        return { sucesso: false, erro: 'Apelido já cadastrado' };
+      }
+    }
+    
+    // Gera hash da senha
+    const hash = gerarHashComSalt(senha, apelido);
+    
+    // Adiciona nova linha: [id, nome, apelido, hash, funcao, ativo, hash_senha]
+    // Assumindo estrutura: id(auto), nome, apelido, (reservado), funcao, ativo, hash
+    const proximoId = sheetLogin.getLastRow() + 1;
+    sheetLogin.appendRow([proximoId, nome, apelido, '', funcao, 'SIM', hash]);
+    
+    LogModule.registrarAcesso('ADMIN', 'USUARIO_CRIADO', `apelido:${apelido}`, 'admin_create_usuario');
+    return { sucesso: true, mensagem: 'Usuário criado com sucesso!' };
+  } catch (e) {
+    Logger.log('Erro em adminCreateUsuario: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Exclui usuário
+ */
+function adminDeleteUsuario(apelido) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    if (!apelido) {
+      return { sucesso: false, erro: 'Apelido é obrigatório' };
+    }
+    
+    const data = sheetLogin.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === apelido) {
+        sheetLogin.deleteRow(i + 1);
+        LogModule.registrarAcesso('ADMIN', 'USUARIO_EXCLUIDO', `apelido:${apelido}`, 'admin_delete_usuario');
+        return { sucesso: true, mensagem: 'Usuário excluído com sucesso!' };
+      }
+    }
+    
+    return { sucesso: false, erro: 'Usuário não encontrado' };
+  } catch (e) {
+    Logger.log('Erro em adminDeleteUsuario: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Habilita ou desabilita usuário
+ */
+function adminToggleUsuario(apelido, ativo) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    if (!apelido) {
+      return { sucesso: false, erro: 'Apelido é obrigatório' };
+    }
+    
+    const data = sheetLogin.getDataRange().getValues();
+    const valorAtivo = ativo ? 'SIM' : 'NAO';
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === apelido) {
+        // Coluna 6 (índice 5) é o campo 'ativo'
+        sheetLogin.getRange(i + 1, 6).setValue(valorAtivo);
+        LogModule.registrarAcesso('ADMIN', 'USUARIO_TOGGLE', `apelido:${apelido},ativo:${valorAtivo}`, 'admin_toggle_usuario');
+        return { sucesso: true, mensagem: `Usuário ${ativo ? 'habilitado' : 'desabilitado'} com sucesso!` };
+      }
+    }
+    
+    return { sucesso: false, erro: 'Usuário não encontrado' };
+  } catch (e) {
+    Logger.log('Erro em adminToggleUsuario: ' + e.message);
     return { sucesso: false, erro: e.message };
   }
 }
