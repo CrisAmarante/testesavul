@@ -338,7 +338,7 @@ class AdminPanelController {
       <h3>Gerenciar Usuários</h3>
       <div class="admin-section">
         <div class="usuarios-search-bar">
-          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Apelido ou Chapa..." onkeyup="adminPanel.pesquisarUsuarios()">
+          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Apelido ou Chapa..." oninput="adminPanel.pesquisarUsuarios()">
           <button class="btn-principal" onclick="adminPanel.pesquisarUsuarios()">🔍 Pesquisar</button>
         </div>
         <div id="usuarios-lista-container"></div>
@@ -353,12 +353,20 @@ class AdminPanelController {
     const input = getEl('usuario-pesquisa-input');
     const filtro = input ? input.value.trim() : '';
     
+    // Se estiver digitando (menos de 2 caracteres), não faz busca
+    if (filtro.length > 0 && filtro.length < 2) {
+      return;
+    }
+    
     try {
       const usuarios = await adminGetUsuariosAPI(filtro);
       this.renderizarListaUsuarios(usuarios);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
-      alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
+      // Não mostra alert durante a digitação, apenas no log
+      if (filtro.length >= 2) {
+        alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
+      }
     }
   }
 
