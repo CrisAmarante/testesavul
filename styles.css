@@ -715,3 +715,136 @@ body.dark .grid-anexos-preview {
   margin-bottom: 20px;
   color: var(--text);
 }
+
+/* Estilos para a tabela de usuários */
+.usuarios-search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.usuarios-search-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.admin-usuarios-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-bottom: 20px;
+}
+
+.admin-usuarios-tabela th {
+  background: var(--accent);
+  color: white;
+  padding: 12px 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.admin-usuarios-tabela td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.admin-usuarios-tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.ativo {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.status-badge.inativo {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-admin-action {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  background: transparent;
+  margin-right: 4px;
+}
+
+.btn-admin-action:hover {
+  transform: scale(1.1);
+}
+
+.btn-admin-action.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Modal de usuário */
+#form-admin-usuario .form-group {
+  margin-bottom: 16px;
+}
+
+#form-admin-usuario label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+#form-admin-usuario input[type="text"],
+#form-admin-usuario input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+#form-admin-usuario input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .usuarios-search-bar {
+    flex-direction: column;
+  }
+  
+  .admin-usuarios-tabela {
+    font-size: 0.75rem;
+  }
+  
+  .admin-usuarios-tabela th,
+  .admin-usuarios-tabela td {
+    padding: 8px 4px;
+  }
+  
+  .btn-admin-action {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+}
