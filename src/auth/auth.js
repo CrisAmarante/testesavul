@@ -10,7 +10,23 @@ const ROLES_ALLOWED_INSPECTION = ['INSPETOR', 'ENCARREGADO', 'ADMIN', 'GERENTE',
 let currentUserRole = '';
 let canCreateInspection = false;
 let inactivityTimer = null;
-const INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos em milissegundos
+let INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos padrão (pode ser atualizado pelo admin)
+
+// ====================================================================
+// CARREGAR TIMEOUT DO BACKEND
+// ====================================================================
+async function carregarTimeoutInatividade() {
+  try {
+    const response = await fetch(`${URL_PLANILHA}?acao=admin_get_config&_=${Date.now()}`);
+    const data = await response.json();
+    if (data && data.sucesso && data.dados && data.dados.timeout) {
+      INACTIVITY_TIMEOUT = data.dados.timeout;
+      console.log(`✅ Timeout de inatividade carregado: ${INACTIVITY_TIMEOUT / 60000} minutos`);
+    }
+  } catch (err) {
+    console.warn('⚠️ Falha ao carregar timeout do servidor, usando padrão:', err);
+  }
+}
 
 // ====================================================================
 // VERIFICAR STATUS DE LOGIN
@@ -51,6 +67,20 @@ async function checkLoginStatus() {
     
     if (btnEnvio && role !== 'MONITOR') btnEnvio.style.display = 'flex';
     else if (btnEnvio) btnEnvio.style.display = 'none';
+    
+    // Mostra botão do Painel Admin apenas para ADMIN
+    const btnAdmin = getEl('btn-painel-admin');
+    if (btnAdmin) {
+      if (role === 'ADMIN') {
+        btnAdmin.style.display = 'flex';
+        btnAdmin.onclick = function(e) {
+          e.preventDefault();
+          abrirModalAdmin();
+        };
+      } else {
+        btnAdmin.style.display = 'none';
+      }
+    }
     
     ajustarCardsPorPerfil(role);
     
@@ -281,3 +311,4 @@ window.mostrarBannerAviso = mostrarBannerAviso;
 window.aplicarBloqueioDeDatas = aplicarBloqueioDeDatas;
 window.resetInactivityTimer = resetInactivityTimer;
 window.setupInactivityListeners = setupInactivityListeners;
+window.carregarTimeoutInatividade = carregarTimeoutInatividade;
