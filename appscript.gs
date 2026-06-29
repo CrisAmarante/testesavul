@@ -846,11 +846,12 @@ function doGet(e) {
       let usuarioEncontrado = { sucesso: false };
       
       for (let i = 1; i < data.length; i++) {
+        const matricula = data[i][0];
         const nome = data[i][1];
         const apelido = data[i][2];
+        const hashPlanilha = data[i][3];
         const funcao = data[i][4];
         const ativo = data[i][5];
-        const hashPlanilha = data[i][6];
         
         if (apelido && ativo === "SIM") {
           const hashCalculado = gerarHashComSalt(senhaDigitada, apelido);
@@ -895,17 +896,17 @@ function migrarSenhasParaHashComSalt() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName("login");
   const data = sheet.getDataRange().getValues();
-  if (data[0].length < 7 || data[0][6] !== "senha_hash") {
-    sheet.getRange(1, 7).setValue("senha_hash");
-  }
+  // Estrutura: [matricula, nome, apelido, senha/hash, funcao, ativo]
+  // Colunas: A=0, B=1, C=2, D=3, E=4, F=5
   let alterados = 0;
   for (let i = 1; i < data.length; i++) {
     const senhaPlana = String(data[i][3] || "").trim();
     const apelido = data[i][2];
-    const hashAtual = String(data[i][6] || "").trim();
-    if (senhaPlana && apelido && !hashAtual) {
+    // Verifica se já é um hash (SHA256 tem 64 caracteres hexadecimais)
+    const ehHash = senhaPlana.length === 64 && /^[a-f0-9]+$/i.test(senhaPlana);
+    if (senhaPlana && apelido && !ehHash) {
       const novoHash = gerarHashComSalt(senhaPlana, apelido);
-      sheet.getRange(i + 1, 7).setValue(novoHash);
+      sheet.getRange(i + 1, 4).setValue(novoHash);
       alterados++;
     }
   }
@@ -1127,12 +1128,12 @@ function adminGetUsuarios(filtro) {
     const data = sheetLogin.getDataRange().getValues();
     const usuarios = [];
     
-    // Cabeçalho esperado: [id, matricula, nome, apelido, funcao, ativo, hash_senha]
-    // Índices:         0   1          2     3       4       5     6
+    // Cabeçalho esperado: [matricula, nome, apelido, senha, funcao, ativo]
+    // Índices:            0           1     2       3       4        5
     for (let i = 1; i < data.length; i++) {
-      const matricula = String(data[i][1] || '');
-      const nome = String(data[i][2] || '');
-      const apelido = String(data[i][3] || '');
+      const matricula = String(data[i][0] || '');
+      const nome = String(data[i][1] || '');
+      const apelido = String(data[i][2] || '');
       const funcao = String(data[i][4] || '');
       const ativo = String(data[i][5] || 'NAO');
       
@@ -1184,15 +1185,15 @@ function adminSaveUsuario(dados) {
     for (let i = 1; i < data.length; i++) {
       const rowApelido = data[i][2];
       if (rowApelido === apelido) {
-        // Atualiza função (coluna 5)
+        // Atualiza função (coluna E - índice 4)
         if (funcao) {
           sheetLogin.getRange(i + 1, 5).setValue(funcao);
         }
         
-        // Atualiza senha se fornecida (coluna 7 - índice 6)
+        // Atualiza senha se fornecida (coluna D - índice 3)
         if (senha) {
           const novoHash = gerarHashComSalt(senha, apelido);
-          sheetLogin.getRange(i + 1, 7).setValue(novoHash);
+          sheetLogin.getRange(i + 1, 4).setValue(novoHash);
         }
         
         encontrou = true;
@@ -1239,10 +1240,9 @@ function adminCreateUsuario(dados) {
     // Gera hash da senha
     const hash = gerarHashComSalt(senha, apelido);
     
-    // Adiciona nova linha na estrutura: [id, matricula, nome, apelido, funcao, ativo, hash_senha]
-    // Colunas: A=id, B=matricula, C=nome, D=apelido, E=funcao, F=ativo, G=hash_senha
-    const proximoId = sheetLogin.getLastRow() + 1;
-    sheetLogin.appendRow([proximoId, matricula, nome, apelido, funcao, 'SIM', hash]);
+    // Adiciona nova linha na estrutura: [matricula, nome, apelido, senha, funcao, ativo]
+    // Colunas: A=matricula, B=nome, C=apelido, D=senha, E=funcao, F=ativo
+    sheetLogin.appendRow([matricula, nome, apelido, hash, funcao, 'SIM']);
     
     LogModule.registrarAcesso('ADMIN', 'USUARIO_CRIADO', `apelido:${apelido}`, 'admin_create_usuario');
     return { sucesso: true, mensagem: 'Usuário criado com sucesso!' };

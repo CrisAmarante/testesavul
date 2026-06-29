@@ -1,23 +1,32 @@
 ```
-# Google Apps Script build artifacts
-*.gs.bak
-*.gs~
-*.js.bak
-*.js~
-
-# General build artifacts
-build/
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
 dist/
-*.min.js
-*.min.css
+build/
+target/
 
 # Dependencies
+.venv/
+venv/
 node_modules/
+.julia/
+zig-cache/
+.dep/
+*.dep
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
@@ -25,22 +34,46 @@ node_modules/
 *.swp
 *.swo
 
-# Logs
-*.log
+# System
+.DS_Store
+Thumbs.db
 
-# Python (if applicable)
-__pycache__/
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python specific
 *.pyc
+__pycache__/
 *.pyo
 *.pyd
 .Python
 *.so
+*.egg-info/
+.eggs/
 
 # Compressed files
 *.zip
-*.tar.gz
-*.tgz
 *.gz
-*.rar
+*.tar
+*.tgz
+*.bz2
+*.xz
 *.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```
