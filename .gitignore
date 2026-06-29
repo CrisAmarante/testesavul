@@ -1,32 +1,46 @@
 ```
-# Google Apps Script
+# Google Apps Script build artifacts
 *.gs.bak
 *.gs~
-*.bak
+*.js.bak
+*.js~
 
-# General
-*.tmp
-*.log
-*.swp
+# General build artifacts
+build/
+dist/
+*.min.js
+*.min.css
+
+# Dependencies
+node_modules/
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
-# Dependencies
-node_modules/
-.jspm/
-.npm/
-.yarn/
-
-# IDE
+# Editors
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
+*.swp
+*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Logs
+*.log
+
+# Python (if applicable)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Compressed files
+*.zip
+*.tar.gz
+*.tgz
+*.gz
+*.rar
+*.7z
 ```

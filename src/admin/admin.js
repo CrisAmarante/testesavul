@@ -338,7 +338,7 @@ class AdminPanelController {
       <h3>Gerenciar Usuários</h3>
       <div class="admin-section">
         <div class="usuarios-search-bar">
-          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Apelido ou Chapa..." oninput="adminPanel.pesquisarUsuarios()">
+          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Matrícula, Apelido/Chapa ou Nome..." oninput="adminPanel.pesquisarUsuarios()">
           <button class="btn-principal" onclick="adminPanel.pesquisarUsuarios()">🔍 Pesquisar</button>
         </div>
         <div id="usuarios-lista-container"></div>
@@ -383,6 +383,7 @@ class AdminPanelController {
       <table class="admin-usuarios-tabela">
         <thead>
           <tr>
+            <th>Matrícula</th>
             <th>Nome</th>
             <th>Apelido/Chapa</th>
             <th>Função</th>
@@ -393,6 +394,7 @@ class AdminPanelController {
         <tbody>
           ${usuarios.map(u => `
             <tr data-apelido="${u.apelido}">
+              <td>${u.matricula || ''}</td>
               <td>${u.nome}</td>
               <td>${u.apelido}</td>
               <td>${u.funcao || ''}</td>
@@ -424,8 +426,10 @@ class AdminPanelController {
     form.dataset.mode = 'create';
     form.dataset.apelido = '';
     
-    // Mostrar campo de apelido para criação
+    // Mostrar campos de matrícula e apelido para criação
+    const matriculaField = getEl('usuario-matricula-field');
     const apelidoField = getEl('usuario-apelido-field');
+    if (matriculaField) matriculaField.style.display = 'block';
     if (apelidoField) apelidoField.style.display = 'block';
     
     modal.style.display = 'flex';
@@ -454,13 +458,16 @@ class AdminPanelController {
     form.dataset.apelido = apelido;
     
     // Preencher campos
+    getEl('usuario-matricula').value = usuario.matricula || '';
     getEl('usuario-nome').value = usuario.nome;
     getEl('usuario-funcao').value = usuario.funcao || '';
     getEl('usuario-senha').value = '';
     getEl('usuario-senha-confirm').value = '';
     
-    // Esconder campo de apelido na edição
+    // Esconder campos de matrícula e apelido na edição (não editáveis)
+    const matriculaField = getEl('usuario-matricula-field');
     const apelidoField = getEl('usuario-apelido-field');
+    if (matriculaField) matriculaField.style.display = 'none';
     if (apelidoField) apelidoField.style.display = 'none';
     
     modal.style.display = 'flex';
@@ -470,7 +477,9 @@ class AdminPanelController {
     const form = getEl('form-admin-usuario');
     if (!form) return;
     
+    const matricula = getEl('usuario-matricula').value.trim();
     const nome = getEl('usuario-nome').value.trim();
+    const apelidoInput = getEl('usuario-apelido').value.trim();
     const funcao = getEl('usuario-funcao').value.trim();
     const senha = getEl('usuario-senha').value;
     const senhaConfirm = getEl('usuario-senha-confirm').value;
@@ -483,8 +492,11 @@ class AdminPanelController {
     }
     
     if (mode === 'create') {
-      const apelidoCriar = getEl('usuario-apelido').value.trim();
-      if (!apelidoCriar) {
+      if (!matricula) {
+        alert('⚠️ Matrícula é obrigatória para criar usuário.');
+        return;
+      }
+      if (!apelidoInput) {
         alert('⚠️ Apelido/Chapa é obrigatório para criar usuário.');
         return;
       }
@@ -499,8 +511,9 @@ class AdminPanelController {
       
       try {
         await adminCreateUsuarioAPI({
+          matricula: matricula,
           nome: nome,
-          apelido: apelidoCriar,
+          apelido: apelidoInput,
           funcao: funcao,
           senha: senha
         });
@@ -508,7 +521,7 @@ class AdminPanelController {
         fecharModalAdminUsuario();
         this.pesquisarUsuarios();
       } catch (err) {
-        alert('⚠️ Erro ao criar usuário.');
+        alert('⚠️ Erro ao criar usuário: ' + err.message);
       }
     } else {
       // Edição - apenas função e senha
@@ -535,7 +548,7 @@ class AdminPanelController {
         fecharModalAdminUsuario();
         this.pesquisarUsuarios();
       } catch (err) {
-        alert('⚠️ Erro ao atualizar usuário.');
+        alert('⚠️ Erro ao atualizar usuário: ' + err.message);
       }
     }
   }
@@ -577,6 +590,10 @@ class AdminPanelController {
             <button class="modal-close" onclick="fecharModalAdminUsuario()">×</button>
           </div>
           <form id="form-admin-usuario" data-mode="" data-apelido="">
+            <div class="form-group" id="usuario-matricula-field">
+              <label>Matrícula:</label>
+              <input type="text" id="usuario-matricula" placeholder="Digite a matrícula" required>
+            </div>
             <div class="form-group" id="usuario-apelido-field">
               <label>Apelido/Chapa:</label>
               <input type="text" id="usuario-apelido" placeholder="Digite o apelido/chapa" required>

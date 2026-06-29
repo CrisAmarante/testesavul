@@ -1127,23 +1127,27 @@ function adminGetUsuarios(filtro) {
     const data = sheetLogin.getDataRange().getValues();
     const usuarios = [];
     
-    // Cabeçalho esperado: [id, nome, apelido, hash, funcao, ativo, ...]
+    // Cabeçalho esperado: [id, matricula, nome, apelido, funcao, ativo, hash_senha]
+    // Índices:         0   1          2     3       4       5     6
     for (let i = 1; i < data.length; i++) {
-      const nome = String(data[i][1] || '');
-      const apelido = String(data[i][2] || '');
+      const matricula = String(data[i][1] || '');
+      const nome = String(data[i][2] || '');
+      const apelido = String(data[i][3] || '');
       const funcao = String(data[i][4] || '');
       const ativo = String(data[i][5] || 'NAO');
       
-      // Aplica filtro se fornecido (busca por apelido ou nome)
+      // Aplica filtro se fornecido (busca por apelido, matrícula ou nome)
       if (filtro) {
         const filtroLower = filtro.toLowerCase();
         if (apelido.toLowerCase().indexOf(filtroLower) === -1 && 
-            nome.toLowerCase().indexOf(filtroLower) === -1) {
+            nome.toLowerCase().indexOf(filtroLower) === -1 &&
+            matricula.toLowerCase().indexOf(filtroLower) === -1) {
           continue;
         }
       }
       
       usuarios.push({
+        matricula: matricula,
         nome: nome,
         apelido: apelido,
         funcao: funcao,
@@ -1219,9 +1223,9 @@ function adminCreateUsuario(dados) {
       return { sucesso: false, erro: 'Planilha de login não encontrada' };
     }
     
-    const { nome, apelido, funcao, senha } = dados;
-    if (!apelido || !nome || !senha) {
-      return { sucesso: false, erro: 'Nome, apelido e senha são obrigatórios' };
+    const { matricula, nome, apelido, funcao, senha } = dados;
+    if (!matricula || !apelido || !nome || !senha) {
+      return { sucesso: false, erro: 'Matrícula, nome, apelido e senha são obrigatórios' };
     }
     
     // Verifica se apelido já existe
@@ -1235,10 +1239,10 @@ function adminCreateUsuario(dados) {
     // Gera hash da senha
     const hash = gerarHashComSalt(senha, apelido);
     
-    // Adiciona nova linha: [id, nome, apelido, hash, funcao, ativo, hash_senha]
-    // Assumindo estrutura: id(auto), nome, apelido, (reservado), funcao, ativo, hash
+    // Adiciona nova linha na estrutura: [id, matricula, nome, apelido, funcao, ativo, hash_senha]
+    // Colunas: A=id, B=matricula, C=nome, D=apelido, E=funcao, F=ativo, G=hash_senha
     const proximoId = sheetLogin.getLastRow() + 1;
-    sheetLogin.appendRow([proximoId, nome, apelido, '', funcao, 'SIM', hash]);
+    sheetLogin.appendRow([proximoId, matricula, nome, apelido, funcao, 'SIM', hash]);
     
     LogModule.registrarAcesso('ADMIN', 'USUARIO_CRIADO', `apelido:${apelido}`, 'admin_create_usuario');
     return { sucesso: true, mensagem: 'Usuário criado com sucesso!' };
