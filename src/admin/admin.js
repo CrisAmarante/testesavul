@@ -12,7 +12,7 @@ let adminData = {
     levantamentos: [],
     inspecoes5s: []
   },
-  timeout: 1200000, // 20 minutos padrão
+  timeout: 900000, // 15 minutos
   modoDebug: false
 };
 
@@ -201,7 +201,7 @@ class AdminPanelController {
     try {
       const config = await adminGetConfigAPI();
       adminData.botoes = config.botoes || { clandestinos: [], levantamentos: [], inspecoes5s: [] };
-      adminData.timeout = config.timeout || 1200000;
+      adminData.timeout = config.timeout || 900000;
       adminData.modoDebug = config.modoDebug || false;
       this.configCarregada = true;
       console.log('✅ Configurações admin carregadas:', adminData);
@@ -352,9 +352,7 @@ class AdminPanelController {
   async pesquisarUsuarios() {
     const input = getEl('usuario-pesquisa-input');
     const filtro = input ? input.value.trim() : '';
-    
-    // Se estiver digitando (menos de 2 caracteres), não faz busca
-    if (filtro.length > 0 && filtro.length < 2) {
+    if (filtro.length > 0 && filtro.length < 3) {
       return;
     }
     
@@ -383,9 +381,9 @@ class AdminPanelController {
       <table class="admin-usuarios-tabela">
         <thead>
           <tr>
-            <th>Matrícula</th>
+            <th>Chapa</th>
             <th>Nome</th>
-            <th>Apelido/Chapa</th>
+            <th>Apelido</th>
             <th>Função</th>
             <th>Status</th>
             <th>Ações</th>
