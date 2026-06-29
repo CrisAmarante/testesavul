@@ -1,67 +1,98 @@
-```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-dist/
-build/
-target/
+# Google Apps Script build artifacts
+**/appsscript.json.bak
+**/appsscript.json~
+**/*.gs.bak
+**/*.gs~
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-.julia/
-zig-cache/
-.dep/
-*.dep
-
-# Logs and temp files
-*.log
+# General temp files
 *.tmp
 *.swp
-*.swo
+*~
+
+# Logs
+*.log
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/refs/heads/*
+!.git/config
+
+# Build results
+dist/
+build/
+*.egg
+*.egg-info/
+.eggs/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+pypy*
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+coverage.lcov
+.coveralls.yml
+cover/
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# System
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python specific
-*.pyc
-__pycache__/
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg-info/
-.eggs/
-
-# Compressed files
+# Compression
 *.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
 *.gz
-*.tar
-*.tgz
+*.rar
+*.7z
 *.bz2
 *.xz
-*.7z
-*.rar
 *.zst
 *.lz4
 *.lzh
@@ -72,8 +103,12 @@ __pycache__/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
-```
+
+# Project specific
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+.julia/
+zig-cache/
+zig-out/

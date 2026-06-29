@@ -84,15 +84,15 @@ const LogModule = {
     let sheet = ss.getSheetByName('Acessos');
     if (!sheet) {
       sheet = ss.insertSheet('Acessos');
-      sheet.appendRow(['Timestamp', 'Email', 'Ação', 'Detalhes', 'Endpoint']);
+      sheet.appendRow(['Timestamp', 'Email', 'Ação', 'Detalhes', 'Endpoint', 'IMEI/Dispositivo', 'Localizacao_GPS']);
     }
     return sheet;
   },
 
-  registrarAcesso: function(email, acao, detalhes, endpoint) {
+  registrarAcesso: function(email, acao, detalhes, endpoint, imei, localizacaoGps) {
     try {
       const sheet = this.getSheet();
-      sheet.appendRow([new Date(), email || 'Anonimo', acao, detalhes, endpoint || 'N/A']);
+      sheet.appendRow([new Date(), email || 'Anonimo', acao, detalhes, endpoint || 'N/A', imei || '', localizacaoGps || '']);
     } catch (e) {
       Logger.log('Erro ao registrar log: ' + e.message);
     }
@@ -127,7 +127,9 @@ const LogModule = {
         email: row[1],
         acao: row[2],
         detalhes: row[3],
-        endpoint: row[4]
+        endpoint: row[4],
+        imei: row[5] || '',
+        localizacaoGps: row[6] || ''
       });
     }
     return resultados;
@@ -305,6 +307,129 @@ function listarTodosTerminais() {
     return ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
   }
 }
+// ======================= LIMPEZA DE INSPEÇÕES COM BACKUP =======================
+/**
+ * Realiza a limpeza das inspeções mais antigas que 7 dias, criando um backup em arquivo CSV
+ * no Google Drive antes de remover os dados.
+ */
+function limparInspecoesAntigas() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Inspecoes_Veiculares");
+    if (!sheet) {
+      return { sucesso: false, erro: 'Planilha de Inspeções não encontrada' };
+    }
+    
+    const dados = sheet.getDataRange().getValues();
+    if (dados.length < 2) {
+      return { sucesso: true, mensagem: 'Nenhuma inspeção para limpar', removidas: 0 };
+    }
+    
+    // Calcula data de corte (7 dias atrás)
+    const hoje = new Date();
+    const dataCorte = new Date(hoje);
+    dataCorte.setDate(dataCorte.getDate() - 7);
+    dataCorte.setHours(0, 0, 0, 0);
+    
+    const cabecalhos = dados[0].map(h => String(h).trim());
+    const idxDataHora = cabecalhos.indexOf("DataHora");
+    
+    if (idxDataHora === -1) {
+      return { sucesso: false, erro: 'Coluna DataHora não encontrada' };
+    }
+    
+    const linhasManter = [dados[0]]; // Mantém cabeçalho
+    const linhasRemover = [];
+    
+    for (let i = 1; i < dados.length; i++) {
+      const linha = dados[i];
+      let dataHora = linha[idxDataHora];
+      
+      let dataRegistro = null;
+      if (dataHora instanceof Date) {
+        dataRegistro = new Date(dataHora.getFullYear(), dataHora.getMonth(), dataHora.getDate());
+      } else {
+        const dataHoraStr = String(dataHora).trim();
+        const partes = dataHoraStr.split(" ")[0].split("/");
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const ano = parseInt(partes[2], 10);
+          dataRegistro = new Date(ano, mes, dia);
+        }
+      }
+      
+      if (dataRegistro && dataRegistro >= dataCorte) {
+        linhasManter.push(linha);
+      } else {
+        linhasRemover.push(linha);
+      }
+    }
+    
+    // Cria backup se houver linhas para remover
+    let arquivoBackupUrl = null;
+    if (linhasRemover.length > 0) {
+      arquivoBackupUrl = criarBackupCSV(linhasRemover, cabecalhos, "Inspecoes_RemoVIDAS");
+    }
+    
+    // Limpa a planilha e reinsere apenas as linhas mantidas
+    sheet.clearContents();
+    for (let i = 0; i < linhasManter.length; i++) {
+      sheet.appendRow(linhasManter[i]);
+    }
+    
+    LogModule.registrarAcesso('SISTEMA', 'LIMPEZA_INSPICOES', 
+      `Removidas: ${linhasRemover.length}, Mantidas: ${linhasManter.length - 1}`, 'limpeza_inspecoes');
+    
+    return {
+      sucesso: true,
+      mensagem: `Limpeza concluída! ${linhasRemover.length} inspeções removidas.`,
+      removidas: linhasRemover.length,
+      mantidas: linhasManter.length - 1,
+      backupUrl: arquivoBackupUrl
+    };
+    
+  } catch (e) {
+    Logger.log('Erro em limparInspecoesAntigas: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Cria um arquivo CSV de backup no Google Drive
+ */
+function criarBackupCSV(linhas, cabecalhos, nomeArquivo) {
+  try {
+    const pastaId = CONFIG.ID_PASTA_ANEXOS;
+    const pasta = DriveApp.getFolderById(pastaId);
+    
+    const timestamp = Utilities.formatDate(new Date(), "America/Sao_Paulo", "ddMMyyyy_HHmmss");
+    const nomeCompleto = `${nomeArquivo}_${timestamp}.csv`;
+    
+    // Constrói o conteúdo CSV
+    let csvContent = cabecalhos.join(";") + "\n";
+    for (let i = 0; i < linhas.length; i++) {
+      const linhaFormatada = linhas[i].map(cell => {
+        if (cell instanceof Date) {
+          return Utilities.formatDate(cell, "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+        }
+        return String(cell || "").replace(/;/g, ","); // Evita conflito com separador
+      });
+      csvContent += linhaFormatada.join(";") + "\n";
+    }
+    
+    // Cria o arquivo
+    const blob = Utilities.newBlob(csvContent, MimeType.PLAIN_TEXT, nomeCompleto);
+    const arquivo = pasta.createFile(blob);
+    arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return arquivo.getUrl();
+  } catch (e) {
+    Logger.log('Erro ao criar backup CSV: ' + e.message);
+    return null;
+  }
+}
+
 // ======================= FUNÇÃO AUXILIAR PARA TRUNCAR HISTÓRICO =======================
 function truncarTexto(texto, maxCaracteres = CONFIG.MAX_CARACTERES_HISTORICO, maxLinhas = CONFIG.MAX_LINHAS_HISTORICO) {
   if (!texto) return '';
@@ -483,42 +608,28 @@ function consultarEnvios(fiscalNome, dataInicio, dataFim, motivo, carro, prefixo
         case 'INSPETOR':
           // Inspetor vê:
           // 1) Seus próprios envios
-          // 2) Envios de FISCAIS
-          // Desde que não sejam área SAF e nem motivo PEDIDO DE FOLGAS
+          // 2) Envios de FISCAIS (exceto PEDIDO DE FOLGAS)
+          // Não vê envios de outros inspetores
           const isProprioInsp = (fiscalLinha === apelido);
           const isFiscalInsp = fiscaisSet.has(fiscalLinha);
-          if ((isProprioInsp || isFiscalInsp) && area !== 'SAF' && motivoEnvio !== 'PEDIDO DE FOLGAS') {
+          // Inspetor vê próprios envios ou envios de fiscais, exceto pedidos de folga
+          if (isProprioInsp || (isFiscalInsp && motivoEnvio !== 'PEDIDO DE FOLGAS')) {
             permitido = true;
           }
           break;
           
         case 'ENCARREGADO':
-          // Encarregado vê envios de FISCAIS, INSPETORES e os próprios, exceto área SAF
-          const isProprioEnc = (fiscalLinha === apelido);
-          const isFiscalEnc = fiscaisSet.has(fiscalLinha);
-          const isInspetorEnc = inspetoresSet.has(fiscalLinha);
-          if ((isProprioEnc || isFiscalEnc || isInspetorEnc) && area !== 'SAF') {
-            permitido = true;
-          }
+        case 'GERENTE':
+        case 'ADMIN':
+          // Encarregado, Gerente e Admin veem todas as informações
+          permitido = true;
           break;
           
         case 'SAF':
-          // SAF vê todos os envios para área SAF, ou com motivo AVARIAS/OUTROS (qualquer área)
-          if (area === 'SAF' || motivoEnvio === 'AVARIAS' || motivoEnvio === 'OUTROS') {
+          // SAF vê todos os envios para área SAF, ou com motivo AVARIAS (qualquer área)
+          if (area === 'SAF' || motivoEnvio === 'AVARIAS') {
             permitido = true;
           }
-          break;
-          
-        case 'GERENTE':
-          // Gerente vê todos, exceto pedidos de material e folgas
-          if (motivoEnvio !== 'SOLICITAÇÃO DE MATERIAIS' && motivoEnvio !== 'PEDIDO DE FOLGAS') {
-            permitido = true;
-          }
-          break;
-          
-        case 'ADMIN':
-          // Admin vê tudo
-          permitido = true;
           break;
           
         default:
@@ -642,6 +753,8 @@ function doPost(e) {
   try {
     const { nome, acao, dados } = e.parameter;
     const endpoint = `post_${acao || 'desconhecido'}`;
+    const imei = e.parameter.imei || '';
+    const localizacaoGps = e.parameter.localizacaoGps || '';
     
     if (acao === "Login bem-sucedido" || (!dados && nome)) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -665,7 +778,7 @@ function doPost(e) {
       logSheet.appendRow([dataHora, nome, nomeCompleto, cargo, acao]);
       
       // Registrar no LogModule também (padronização)
-      LogModule.registrarAcesso(nome, 'LOGIN_POST', acao, endpoint);
+      LogModule.registrarAcesso(nome, 'LOGIN_POST', acao, endpoint, imei, localizacaoGps);
       
       return ContentService.createTextOutput("Log registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
@@ -673,14 +786,14 @@ function doPost(e) {
       const dadosObj = JSON.parse(dados);
       salvarInspecao(dadosObj);
       const fiscal = dadosObj.fiscal || 'Desconhecido';
-      LogModule.registrarAcesso(fiscal, 'INSPECAO_SALVA', `Carro: ${dadosObj.carro||''}`, endpoint);
+      LogModule.registrarAcesso(fiscal, 'INSPECAO_SALVA', `Carro: ${dadosObj.carro||''}`, endpoint, imei, localizacaoGps);
       return ContentService.createTextOutput("Inspeção registrada com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
     if (acao === "envio_informacoes" && dados) {
       const dadosObj = JSON.parse(dados);
       salvarEnvioInformacoes(dadosObj);
       const fiscal = dadosObj.fiscal || 'Desconhecido';
-      LogModule.registrarAcesso(fiscal, 'ENVIO_SALVO', `Motivo: ${dadosObj.motivo||''}, Area: ${dadosObj.areaDestino||''}`, endpoint);
+      LogModule.registrarAcesso(fiscal, 'ENVIO_SALVO', `Motivo: ${dadosObj.motivo||''}, Area: ${dadosObj.areaDestino||''}`, endpoint, imei, localizacaoGps);
       return ContentService.createTextOutput("Envio registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
     // ADMINISTRAÇÃO - SALVAR CONFIGURAÇÕES
@@ -772,17 +885,19 @@ function doGet(e) {
     // Registrar endpoint acessado
     const usuario = e.parameter.apelido || e.parameter.fiscal || 'Anonimo';
     const endpoint = `get_${acao}`;
+    const imei = e.parameter.imei || '';
+    const localizacaoGps = e.parameter.localizacaoGps || '';
     
     // TERMINAIS
     if (acao === "terminais") {
       const terminais = listarTerminais();
-      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS', '', endpoint);
+      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS', '', endpoint, imei, localizacaoGps);
       return enviarResposta(terminais);
     }
     
     if (acao === "terminais_todos") {
       const terminais = listarTodosTerminais();
-      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS_TODOS', '', endpoint);
+      LogModule.registrarAcesso(usuario, 'CONSULTA_TERMINAIS_TODOS', '', endpoint, imei, localizacaoGps);
       return enviarResposta(terminais);
     }
     
@@ -794,7 +909,7 @@ function doGet(e) {
       const carro = e.parameter.carro || null;
       const fiscalFiltro = e.parameter.fiscalFiltro || null;
       const resultado = consultarInspecoes(fiscal, dataInicio, dataFim, carro, fiscalFiltro);
-      LogModule.registrarAcesso(usuario, 'CONSULTA_INSPICOES', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
+      LogModule.registrarAcesso(usuario, 'CONSULTA_INSPICOES', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint, imei, localizacaoGps);
       return enviarResposta(resultado);
     }
     // CONSULTAR ENVIOS  
@@ -809,7 +924,7 @@ function doGet(e) {
   const papel = e.parameter.papel || '';
   const apelido = e.parameter.apelido || '';
   const resultado = consultarEnvios(fiscal, dataInicio, dataFim, motivo, carro, prefixo, fiscalFiltro, papel, apelido);
-  LogModule.registrarAcesso(usuario, 'CONSULTA_ENVIOS', `papel:${papel},fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint);
+  LogModule.registrarAcesso(usuario, 'CONSULTA_ENVIOS', `papel:${papel},fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint, imei, localizacaoGps);
   return enviarResposta(resultado);
 }
     
@@ -832,6 +947,13 @@ function doGet(e) {
     if (acao === "admin_get_usuarios") {
       const filtro = e.parameter.filtro || '';
       const resultado = adminGetUsuarios(filtro);
+      return enviarResposta(resultado);
+    }
+    
+    // ADMINISTRAÇÃO - LIMPAR INSPEÇÕES ANTIGAS (com backup)
+    if (acao === "limpar_inspecoes_antigas") {
+      const resultado = limparInspecoesAntigas();
+      LogModule.registrarAcesso(usuario, 'LIMPEZA_INSPICOES', JSON.stringify(resultado), endpoint);
       return enviarResposta(resultado);
     }
     
