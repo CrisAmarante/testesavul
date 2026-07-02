@@ -836,11 +836,11 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
     }
     
-    LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint);
+    LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint, imei, localizacaoGps);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
     Logger.log("ERRO em doPost: " + err.message);
-    LogModule.registrarAcesso('Sistema', 'ERRO_POST', err.message, `post_${e.parameter.acao || 'desconhecido'}`);
+    LogModule.registrarAcesso('Sistema', 'ERRO_POST', err.message, `post_${e.parameter.acao || 'desconhecido'}`, e.parameter.imei || '', e.parameter.localizacaoGps || '');
     return ContentService.createTextOutput("Erro: " + err.message).setMimeType(ContentService.MimeType.TEXT);
   }
 }
@@ -953,7 +953,7 @@ function doGet(e) {
     // ADMINISTRAÇÃO - LIMPAR INSPEÇÕES ANTIGAS (com backup)
     if (acao === "limpar_inspecoes_antigas") {
       const resultado = limparInspecoesAntigas();
-      LogModule.registrarAcesso(usuario, 'LIMPEZA_INSPICOES', JSON.stringify(resultado), endpoint);
+      LogModule.registrarAcesso(usuario, 'LIMPEZA_INSPICOES', JSON.stringify(resultado), endpoint, imei, localizacaoGps);
       return enviarResposta(resultado);
     }
     
@@ -968,10 +968,17 @@ function doGet(e) {
       let usuarioEncontrado = { sucesso: false };
       
       for (let i = 1; i < data.length; i++) {
-        const matricula = data[i][0];
+        // Estrutura da planilha login:
+        // Coluna 0: ID/Matrícula (opcional)
+        // Coluna 1: Nome completo
+        // Coluna 2: Apelido (username)
+        // Coluna 3: (reservado)
+        // Coluna 4: Função
+        // Coluna 5: Ativo (SIM/NAO)
+        // Coluna 6: Hash da senha
         const nome = data[i][1];
         const apelido = data[i][2];
-        const hashPlanilha = data[i][3];
+        const hashPlanilha = data[i][6];
         const funcao = data[i][4];
         const ativo = data[i][5];
         
@@ -984,14 +991,14 @@ function doGet(e) {
               apelido: apelido,
               funcao: funcao
             };
-            LogModule.registrarAcesso(apelido, 'LOGIN_SUCESSO', `Perfil: ${funcao}`, endpoint);
+            LogModule.registrarAcesso(apelido, 'LOGIN_SUCESSO', `Perfil: ${funcao}`, endpoint, imei, localizacaoGps);
             break;
           }
         }
       }
       
       if (!usuarioEncontrado.sucesso) {
-        LogModule.registrarAcesso(apelidoLogin, 'LOGIN_FALHA', '', endpoint);
+        LogModule.registrarAcesso(apelidoLogin, 'LOGIN_FALHA', '', endpoint, imei, localizacaoGps);
       }
       
       return enviarResposta(usuarioEncontrado);
@@ -1002,7 +1009,7 @@ function doGet(e) {
     
   } catch (err) {
     Logger.log("ERRO em doGet: " + err.message);
-    LogModule.registrarAcesso('Sistema', 'ERRO_DOGET', err.message, `get_${e.parameter.acao || 'desconhecido'}`);
+    LogModule.registrarAcesso('Sistema', 'ERRO_DOGET', err.message, `get_${e.parameter.acao || 'desconhecido'}`, e.parameter.imei || '', e.parameter.localizacaoGps || '');
     return enviarErro("Erro interno: " + err.message);
   }
 }
@@ -1018,17 +1025,17 @@ function migrarSenhasParaHashComSalt() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName("login");
   const data = sheet.getDataRange().getValues();
-  // Estrutura: [matricula, nome, apelido, senha/hash, funcao, ativo]
-  // Colunas: A=0, B=1, C=2, D=3, E=4, F=5
+  if (data[0].length < 7 || data[0][6] !== "senha_hash") {
+    sheet.getRange(1, 7).setValue("senha_hash");
+  }
   let alterados = 0;
   for (let i = 1; i < data.length; i++) {
     const senhaPlana = String(data[i][3] || "").trim();
     const apelido = data[i][2];
-    // Verifica se já é um hash (SHA256 tem 64 caracteres hexadecimais)
-    const ehHash = senhaPlana.length === 64 && /^[a-f0-9]+$/i.test(senhaPlana);
-    if (senhaPlana && apelido && !ehHash) {
+    const hashAtual = String(data[i][6] || "").trim();
+    if (senhaPlana && apelido && !hashAtual) {
       const novoHash = gerarHashComSalt(senhaPlana, apelido);
-      sheet.getRange(i + 1, 4).setValue(novoHash);
+      sheet.getRange(i + 1, 7).setValue(novoHash);
       alterados++;
     }
   }
@@ -1250,8 +1257,7 @@ function adminGetUsuarios(filtro) {
     const data = sheetLogin.getDataRange().getValues();
     const usuarios = [];
     
-    // Cabeçalho esperado: [matricula, nome, apelido, senha, funcao, ativo]
-    // Índices:            0           1     2       3       4        5
+    // Cabeçalho esperado: [matricula, nome, apelido, senha, funcao, ativo, hash]
     for (let i = 1; i < data.length; i++) {
       const matricula = String(data[i][0] || '');
       const nome = String(data[i][1] || '');
@@ -1312,10 +1318,10 @@ function adminSaveUsuario(dados) {
           sheetLogin.getRange(i + 1, 5).setValue(funcao);
         }
         
-        // Atualiza senha se fornecida (coluna D - índice 3)
+        // Atualiza senha se fornecida (coluna G - índice 6)
         if (senha) {
           const novoHash = gerarHashComSalt(senha, apelido);
-          sheetLogin.getRange(i + 1, 4).setValue(novoHash);
+          sheetLogin.getRange(i + 1, 7).setValue(novoHash);
         }
         
         encontrou = true;
@@ -1362,9 +1368,8 @@ function adminCreateUsuario(dados) {
     // Gera hash da senha
     const hash = gerarHashComSalt(senha, apelido);
     
-    // Adiciona nova linha na estrutura: [matricula, nome, apelido, senha, funcao, ativo]
-    // Colunas: A=matricula, B=nome, C=apelido, D=senha, E=funcao, F=ativo
-    sheetLogin.appendRow([matricula, nome, apelido, hash, funcao, 'SIM']);
+    // Adiciona nova linha na estrutura: [matricula, nome, apelido, (reservado), funcao, ativo, hash]
+    sheetLogin.appendRow([matricula, nome, apelido, '', funcao, 'SIM', hash]);
     
     LogModule.registrarAcesso('ADMIN', 'USUARIO_CRIADO', `apelido:${apelido}`, 'admin_create_usuario');
     return { sucesso: true, mensagem: 'Usuário criado com sucesso!' };
