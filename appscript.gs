@@ -946,8 +946,46 @@ function doGet(e) {
     // ADMINISTRAÇÃO - OBTER USUÁRIOS
     if (acao === "admin_get_usuarios") {
       const filtro = e.parameter.filtro || '';
-      const resultado = adminGetUsuarios(filtro);
+      const revelarSenha = e.parameter.revelarSenha === 'true';
+      const senhaAdmin = e.parameter.senhaAdmin || '';
+      const apelidoAdmin = e.parameter.apelidoAdmin || '';
+      const resultado = adminGetUsuarios(filtro, revelarSenha, senhaAdmin, apelidoAdmin);
       return enviarResposta(resultado);
+    }
+    
+    // VALIDAR SENHA DO ADMIN (para ações sensíveis)
+    if (acao === "validar_senha_admin") {
+      const apelido = e.parameter.apelido || '';
+      const senhaDigitada = e.parameter.senha || '';
+      
+      if (!apelido || !senhaDigitada) {
+        return enviarResposta({ sucesso: false, erro: 'Dados insuficientes' });
+      }
+      
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheetLogin = ss.getSheetByName("login");
+      const data = sheetLogin.getDataRange().getValues();
+      
+      let validado = false;
+      for (let i = 1; i < data.length; i++) {
+        const rowApelido = String(data[i][2] || '');
+        const rowFuncao = String(data[i][4] || '');
+        const rowHash = String(data[i][6] || '');
+        
+        // Verifica se é admin e a senha está correta
+        if (rowApelido === apelido && rowFuncao === 'ADMIN' && rowHash) {
+          const hashCalculado = gerarHashComSalt(senhaDigitada, apelido);
+          if (hashCalculado === rowHash) {
+            validado = true;
+            break;
+          }
+        }
+      }
+      
+      LogModule.registrarAcesso(apelido, validado ? 'VALIDACAO_SENHA_SUCESSO' : 'VALIDACAO_SENHA_FALHA', 
+        'Validação para ação sensível', 'validar_senha_admin');
+      
+      return enviarResposta({ sucesso: validado });
     }
     
     // ADMINISTRAÇÃO - LIMPAR INSPEÇÕES ANTIGAS (com backup)
@@ -1246,7 +1284,11 @@ function adminSaveConfig(dadosJson) {
 /**
  * Obtém usuários da planilha de login com filtro opcional por apelido/chapa ou nome
  */
-function adminGetUsuarios(filtro) {
+/**
+ * Endpoint para obter usuários com opção de revelar senha
+ * Uso: ?acao=admin_get_usuarios&filtro=xxx&revelarSenha=true&senhaAdmin=yyy
+ */
+function adminGetUsuarios(filtro, revelarSenha, senhaAdmin, apelidoAdmin) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheetLogin = ss.getSheetByName("login");
@@ -1256,6 +1298,24 @@ function adminGetUsuarios(filtro) {
     
     const data = sheetLogin.getDataRange().getValues();
     const usuarios = [];
+    
+    // Valida senha do admin se quiser revelar senhas
+    let podeVerSenhas = false;
+    if (revelarSenha === true && senhaAdmin && apelidoAdmin) {
+      for (let i = 1; i < data.length; i++) {
+        const rowApelido = String(data[i][2] || '');
+        const rowFuncao = String(data[i][4] || '');
+        const rowHash = String(data[i][6] || '');
+        
+        if (rowApelido === apelidoAdmin && rowFuncao === 'ADMIN' && rowHash) {
+          const hashCalculado = gerarHashComSalt(senhaAdmin, apelidoAdmin);
+          if (hashCalculado === rowHash) {
+            podeVerSenhas = true;
+            break;
+          }
+        }
+      }
+    }
     
     // Cabeçalho esperado: [matricula, nome, apelido, senha, funcao, ativo, hash]
     for (let i = 1; i < data.length; i++) {
@@ -1275,16 +1335,24 @@ function adminGetUsuarios(filtro) {
         }
       }
       
-      usuarios.push({
+      const usuarioObj = {
         matricula: matricula,
         nome: nome,
         apelido: apelido,
         funcao: funcao,
         ativo: ativo
-      });
+      };
+      
+      // Adiciona senha apenas se admin foi validado
+      if (podeVerSenhas) {
+        // A senha real não pode ser recuperada do hash, então indicamos que está protegida
+        usuarioObj.senhaProtegida = true;
+      }
+      
+      usuarios.push(usuarioObj);
     }
     
-    return { sucesso: true, usuarios: usuarios };
+    return { sucesso: true, usuarios: usuarios, senhasReveladas: podeVerSenhas };
   } catch (e) {
     Logger.log('Erro em adminGetUsuarios: ' + e.message);
     return { sucesso: false, erro: e.message, usuarios: [] };

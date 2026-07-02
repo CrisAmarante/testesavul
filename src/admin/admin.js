@@ -6,23 +6,29 @@
 // ====================================================================
 // API DE USUÁRIOS (Admin)
 // ====================================================================
-async function adminGetUsuariosAPI(filtro = '') {
+async function adminGetUsuariosAPI(filtro = '', revelarSenha = false, senhaAdmin = '', apelidoAdmin = '') {
   return new Promise((resolve, reject) => {
     const callbackName = 'adminGetUsuariosCallback_' + Date.now();
     
     window[callbackName] = function(resposta) {
       delete window[callbackName];
       if (resposta && resposta.sucesso) {
-        resolve(resposta.usuarios);
+        resolve({ usuarios: resposta.usuarios, senhasReveladas: resposta.senhasReveladas || false });
       } else {
         reject(new Error(resposta?.erro || 'Falha ao obter usuários'));
       }
     };
     
     const script = document.createElement('script');
-    const url = filtro 
-      ? `${URL_PLANILHA}?acao=admin_get_usuarios&filtro=${encodeURIComponent(filtro)}&callback=${callbackName}&_=${Date.now()}`
-      : `${URL_PLANILHA}?acao=admin_get_usuarios&callback=${callbackName}&_=${Date.now()}`;
+    let url = `${URL_PLANILHA}?acao=admin_get_usuarios&callback=${callbackName}&_=${Date.now()}`;
+    
+    if (filtro) {
+      url += `&filtro=${encodeURIComponent(filtro)}`;
+    }
+    if (revelarSenha) {
+      url += `&revelarSenha=true&senhaAdmin=${encodeURIComponent(senhaAdmin)}&apelidoAdmin=${encodeURIComponent(apelidoAdmin)}`;
+    }
+    
     script.src = url;
     script.onerror = () => {
       delete window[callbackName];
@@ -113,6 +119,133 @@ async function adminToggleUsuarioAPI(apelido, ativo) {
   });
 }
 
+/**
+ * Valida a senha do admin antes de executar ações sensíveis
+ */
+async function validarSenhaAdmin() {
+  return new Promise((resolve, reject) => {
+    const modalHtml = `
+      <div id="modal-validacao-senha" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+          <div class="modal-header">
+            <h2 class="modal-title">🔐 Validação de Segurança</h2>
+            <button class="modal-close" onclick="fecharModalValidacaoSenha()">×</button>
+          </div>
+          <div style="padding: 20px;">
+            <p style="margin-bottom: 15px; color: #666;">Para continuar, digite sua senha de administrador:</p>
+            <input type="password" id="admin-validacao-senha" placeholder="Sua senha" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn-secundario" onclick="fecharModalValidacaoSenha()">Cancelar</button>
+              <button class="btn-principal" onclick="confirmarValidacaoSenha()">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const existingModal = document.getElementById('modal-validacao-senha');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const input = document.getElementById('admin-validacao-senha');
+    input.focus();
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') confirmarValidacaoSenha();
+    });
+    
+    window.validacaoResolve = resolve;
+  });
+}
+
+function fecharModalValidacaoSenha() {
+  const modal = document.getElementById('modal-validacao-senha');
+  if (modal) modal.remove();
+  if (window.validacaoResolve) {
+    window.validacaoResolve({ valido: false });
+    window.validacaoResolve = null;
+  }
+}
+
+async function confirmarValidacaoSenha() {
+  const senha = document.getElementById('admin-validacao-senha').value;
+  const apelido = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
+  
+  if (!senha || !apelido) {
+    alert('⚠️ Dados insuficientes para validação.');
+    fecharModalValidacaoSenha();
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${URL_PLANILHA}?acao=validar_senha_admin&apelido=${encodeURIComponent(apelido)}&senha=${encodeURIComponent(senha)}`, {
+      method: 'GET'
+    });
+    const result = await response.json();
+    
+    if (result.sucesso) {
+      fecharModalValidacaoSenha();
+      if (window.validacaoResolve) {
+        window.validacaoResolve({ valido: true, senha: senha });
+        window.validacaoResolve = null;
+      }
+    } else {
+      alert('⚠️ Senha incorreta!');
+      document.getElementById('admin-validacao-senha').value = '';
+      document.getElementById('admin-validacao-senha').focus();
+    }
+  } catch (err) {
+    alert('⚠️ Erro ao validar senha: ' + err.message);
+    fecharModalValidacaoSenha();
+  }
+}
+
+/**
+ * Gera token/senha baseado na chapa e apelido
+ * Regras: contém ao menos 3 dos números da chapa e uma das letras do apelido/chapa
+ * A letra pode estar em qualquer posição
+ */
+function gerarTokenUsuario(matricula, apelido) {
+  // Extrai apenas números da matrícula
+  const numerosMatricula = matricula.replace(/[^0-9]/g, '');
+  // Extrai apenas letras do apelido (maiúsculas)
+  const letrasApelido = apelido.replace(/[^a-zA-Z]/g, '').toUpperCase();
+  
+  // Seleciona até 3 números da matrícula
+  let numerosSelecionados = '';
+  for (let i = 0; i < Math.min(3, numerosMatricula.length); i++) {
+    numerosSelecionados += numerosMatricula[i];
+  }
+  
+  // Se não tiver 3 números, completa com números sequenciais
+  while (numerosSelecionados.length < 3) {
+    numerosSelecionados += String.fromCharCode(48 + Math.floor(Math.random() * 10));
+  }
+  
+  // Seleciona uma letra do apelido
+  let letraSelecionada = '';
+  if (letrasApelido.length > 0) {
+    letraSelecionada = letrasApelido[Math.floor(Math.random() * letrasApelido.length)];
+  } else {
+    // Se não tiver letras no apelido, usa uma letra genérica
+    const letrasGenericas = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    letraSelecionada = letrasGenericas[Math.floor(Math.random() * letrasGenericas.length)];
+  }
+  
+  // Combina números e letra em ordem aleatória
+  const caracteres = numerosSelecionados.split('').concat([letraSelecionada]);
+  
+  // Embaralha os caracteres
+  for (let i = caracteres.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]];
+  }
+  
+  return caracteres.join('');
+}
+
 // ====================================================================
 // CONTROLLER DO MODAL DE ADMINISTRAÇÃO
 // ====================================================================
@@ -166,7 +299,11 @@ class AdminPanelController {
     `;
     
     this.attachTabListeners();
-    this.pesquisarUsuarios();
+    // Não carrega usuários automaticamente - aguarda digitação de 4 caracteres
+    const container = getEl('usuarios-lista-container');
+    if (container) {
+      container.innerHTML = '<p class="admin-info">Digite pelo menos 4 caracteres para buscar usuários.</p>';
+    }
   }
 
   renderTabUsuarios() {
@@ -174,7 +311,7 @@ class AdminPanelController {
       <h3>Gerenciar Usuários</h3>
       <div class="admin-section">
         <div class="usuarios-search-bar">
-          <input type="text" id="usuario-pesquisa-input" placeholder="Pesquisar por Matrícula, Apelido/Chapa ou Nome..." oninput="adminPanel.pesquisarUsuarios()">
+          <input type="text" id="usuario-pesquisa-input" placeholder="Digite pelo menos 4 caracteres para pesquisar..." oninput="adminPanel.pesquisarUsuarios()">
           <button class="btn-principal" onclick="adminPanel.pesquisarUsuarios()">🔍 Pesquisar</button>
         </div>
         <div id="usuarios-lista-container"></div>
@@ -188,18 +325,25 @@ class AdminPanelController {
   async pesquisarUsuarios() {
     const input = getEl('usuario-pesquisa-input');
     const filtro = input ? input.value.trim() : '';
-    if (filtro.length > 0 && filtro.length < 3) return;
+    // Só busca após digitar 4 caracteres (requisito do usuário)
+    if (filtro.length > 0 && filtro.length < 4) {
+      const container = getEl('usuarios-lista-container');
+      if (container) {
+        container.innerHTML = '<p class="admin-info">Digite pelo menos 4 caracteres para buscar usuários.</p>';
+      }
+      return;
+    }
     
     try {
-      const usuarios = await adminGetUsuariosAPI(filtro);
-      this.renderizarListaUsuarios(usuarios);
+      const resultado = await adminGetUsuariosAPI(filtro);
+      this.renderizarListaUsuarios(resultado.usuarios, resultado.senhasReveladas);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
-      if (filtro.length >= 2) alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
+      if (filtro.length >= 4) alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
     }
   }
 
-  renderizarListaUsuarios(usuarios) {
+  renderizarListaUsuarios(usuarios, senhasReveladas = false) {
     const container = getEl('usuarios-lista-container');
     if (!container) return;
     
@@ -208,7 +352,25 @@ class AdminPanelController {
       return;
     }
     
+    // Botão para revelar senhas se ainda não foram reveladas
+    let botaoRevelarSenha = '';
+    if (!senhasReveladas) {
+      botaoRevelarSenha = `
+        <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+          <p style="margin: 0 0 10px 0; color: #856404;">🔐 As senhas estão ocultas por segurança.</p>
+          <button class="btn-principal" onclick="adminPanel.revelarSenhas()" style="padding: 8px 15px; font-size: 0.9rem;">👁️ Revelar Senhas dos Usuários</button>
+        </div>
+      `;
+    } else {
+      botaoRevelarSenha = `
+        <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border-radius: 5px;">
+          <p style="margin: 0; color: #155724;">✅ Senhas reveladas com sucesso!</p>
+        </div>
+      `;
+    }
+    
     container.innerHTML = `
+      ${botaoRevelarSenha}
       <table class="admin-usuarios-tabela">
         <thead>
           <tr>
@@ -240,6 +402,25 @@ class AdminPanelController {
     `;
   }
 
+  async revelarSenhas() {
+    // Solicita a senha do admin com validação dupla
+    try {
+      const validacao = await validarSenhaAdmin();
+      if (!validacao.valido) {
+        alert('⚠️ Validação de senha necessária para revelar senhas.');
+        return;
+      }
+      
+      // Busca usuários com senhas reveladas
+      const apelidoAdmin = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
+      const resultado = await adminGetUsuariosAPI('', true, validacao.senha, apelidoAdmin);
+      this.renderizarListaUsuarios(resultado.usuarios, resultado.senhasReveladas);
+    } catch (err) {
+      console.error('Erro ao revelar senhas:', err);
+      alert('⚠️ Erro ao revelar senhas: ' + err.message);
+    }
+  }
+
   abrirModalNovoUsuario() {
     let modal = getEl('modal-admin-usuario');
     if (!modal) {
@@ -263,7 +444,8 @@ class AdminPanelController {
 
   async editarUsuario(apelido) {
     try {
-      const usuarios = await adminGetUsuariosAPI(apelido);
+      const resultado = await adminGetUsuariosAPI(apelido);
+      const usuarios = resultado.usuarios || resultado;
       if (!usuarios || usuarios.length === 0) {
         alert('⚠️ Usuário não encontrado.');
         return;
@@ -317,6 +499,20 @@ class AdminPanelController {
       return;
     }
     
+    // Validação dupla da senha do admin para criação e edição com senha
+    if (mode === 'create' || (mode === 'edit' && senha)) {
+      try {
+        const validacao = await validarSenhaAdmin();
+        if (!validacao.valido) {
+          alert('⚠️ Validação de senha necessária para continuar.');
+          return;
+        }
+      } catch (err) {
+        alert('⚠️ Erro na validação: ' + err.message);
+        return;
+      }
+    }
+    
     if (mode === 'create') {
       if (!matricula || !apelidoInput) {
         alert('⚠️ Matrícula e Apelido/Chapa são obrigatórios para criar usuário.');
@@ -333,7 +529,7 @@ class AdminPanelController {
       
       try {
         await adminCreateUsuarioAPI({ matricula, nome, apelido: apelidoInput, funcao, senha });
-        alert('✅ Usuário criado com sucesso!');
+        alert('✅ Usuário criado com sucesso!\n\nSenha definida: ' + senha);
         fecharModalAdminUsuario();
         this.pesquisarUsuarios();
       } catch (err) {
@@ -379,6 +575,18 @@ class AdminPanelController {
   }
 
   async confirmarExclusao(apelido) {
+    // Validação dupla da senha do admin para exclusão
+    try {
+      const validacao = await validarSenhaAdmin();
+      if (!validacao.valido) {
+        alert('⚠️ Validação de senha necessária para excluir usuário.');
+        return;
+      }
+    } catch (err) {
+      alert('⚠️ Erro na validação: ' + err.message);
+      return;
+    }
+    
     if (!confirm('⚠️ Tem certeza que deseja EXCLUIR este usuário? Esta ação não pode ser desfeita!')) return;
     
     try {
@@ -405,7 +613,7 @@ class AdminPanelController {
             </div>
             <div class="form-group" id="usuario-apelido-field">
               <label>Apelido/Chapa:</label>
-              <input type="text" id="usuario-apelido" placeholder="Digite o apelido/chapa" required>
+              <input type="text" id="usuario-apelido" placeholder="Digite o apelido/chapa" required onblur="gerarSenhaSugerida()">
             </div>
             <div class="form-group">
               <label>Nome Completo:</label>
@@ -417,11 +625,19 @@ class AdminPanelController {
             </div>
             <div class="form-group">
               <label>Nova Senha:</label>
-              <input type="password" id="usuario-senha" placeholder="Digite a senha (deixe em branco para manter na edição)">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="password" id="usuario-senha" placeholder="Digite a senha (deixe em branco para manter na edição)" style="flex: 1;">
+                <button type="button" id="btn-toggle-senha" class="btn-icon" onclick="toggleSenhaVisibility('usuario-senha')" title="Mostrar/Ocultar senha">👁️</button>
+                <button type="button" id="btn-gerar-senha" class="btn-icon" onclick="gerarSenhaSugerida()" title="Gerar senha sugerida">🎲</button>
+              </div>
+              <small id="senha-sugerida-info" style="color: #666; font-size: 0.8rem; margin-top: 5px; display: none;">Senha sugerida: <strong id="senha-sugerida-text"></strong></small>
             </div>
             <div class="form-group">
               <label>Confirmar Senha:</label>
-              <input type="password" id="usuario-senha-confirm" placeholder="Confirme a senha">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="password" id="usuario-senha-confirm" placeholder="Confirme a senha" style="flex: 1;">
+                <button type="button" class="btn-icon" onclick="toggleSenhaVisibility('usuario-senha-confirm')" title="Mostrar/Ocultar senha">👁️</button>
+              </div>
             </div>
             <div class="admin-actions">
               <button type="button" class="btn-secundario" onclick="fecharModalAdminUsuario()">Cancelar</button>
@@ -483,3 +699,44 @@ window.adminSaveUsuarioAPI = adminSaveUsuarioAPI;
 window.adminCreateUsuarioAPI = adminCreateUsuarioAPI;
 window.adminDeleteUsuarioAPI = adminDeleteUsuarioAPI;
 window.adminToggleUsuarioAPI = adminToggleUsuarioAPI;
+window.validarSenhaAdmin = validarSenhaAdmin;
+window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
+window.confirmarValidacaoSenha = confirmarValidacaoSenha;
+window.gerarTokenUsuario = gerarTokenUsuario;
+
+/**
+ * Alterna visibilidade da senha
+ */
+function toggleSenhaVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) {
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+}
+
+/**
+ * Gera e mostra senha sugerida baseada na matrícula e apelido
+ */
+function gerarSenhaSugerida() {
+  const matricula = document.getElementById('usuario-matricula')?.value || '';
+  const apelido = document.getElementById('usuario-apelido')?.value || '';
+  
+  if (!matricula || !apelido) return;
+  
+  const senhaGerada = gerarTokenUsuario(matricula, apelido);
+  
+  // Mostra a senha sugerida
+  const infoEl = document.getElementById('senha-sugerida-info');
+  const textoEl = document.getElementById('senha-sugerida-text');
+  const senhaInput = document.getElementById('usuario-senha');
+  const confirmInput = document.getElementById('usuario-senha-confirm');
+  
+  if (infoEl && textoEl) {
+    textoEl.textContent = senhaGerada;
+    infoEl.style.display = 'block';
+  }
+  
+  // Preenche os campos de senha automaticamente
+  if (senhaInput) senhaInput.value = senhaGerada;
+  if (confirmInput) confirmInput.value = senhaGerada;
+}
