@@ -829,6 +829,26 @@ body.dark .grid-anexos-preview {
   border-color: var(--accent);
 }
 
+/* Botões de ícone no formulário de usuário */
+#form-admin-usuario .btn-icon {
+  padding: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#form-admin-usuario .btn-icon:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
 @media (max-width: 480px) {
   .usuarios-search-bar {
     flex-direction: column;
