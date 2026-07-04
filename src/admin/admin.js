@@ -703,6 +703,9 @@ window.validarSenhaAdmin = validarSenhaAdmin;
 window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
 window.confirmarValidacaoSenha = confirmarValidacaoSenha;
 window.gerarTokenUsuario = gerarTokenUsuario;
+window.revelarSenhas = function() {
+  if (window.adminPanel) window.adminPanel.revelarSenhas();
+};
 
 /**
  * Alterna visibilidade da senha
