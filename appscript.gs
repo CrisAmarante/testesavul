@@ -836,6 +836,12 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // ADMINISTRAÇÃO - REDEFINIR SENHA
+    if (acao === "admin_redefinir_senha") {
+      const resultado = adminRedefinirSenha(e);
+      return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     LogModule.registrarAcesso('Anonimo', 'POST_DESCONHECIDO', `acao: ${acao||''}`, endpoint, imei, localizacaoGps);
     return ContentService.createTextOutput("Ação desconhecida").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
@@ -1509,6 +1515,72 @@ function adminToggleUsuario(apelido, ativo) {
     return { sucesso: false, erro: 'Usuário não encontrado' };
   } catch (e) {
     Logger.log('Erro em adminToggleUsuario: ' + e.message);
+    return { sucesso: false, erro: e.message };
+  }
+}
+
+/**
+ * Redefine a senha de um usuário
+ * Valida a senha do admin antes de permitir a redefinição
+ */
+function adminRedefinirSenha(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetLogin = ss.getSheetByName("login");
+    if (!sheetLogin) {
+      return { sucesso: false, erro: 'Planilha de login não encontrada' };
+    }
+    
+    const apelido = e.parameter.apelido;
+    const novaSenha = e.parameter.novaSenha;
+    const senhaAdmin = e.parameter.senhaAdmin;
+    const apelidoAdmin = e.parameter.apelidoAdmin;
+    
+    if (!apelido || !novaSenha || !senhaAdmin || !apelidoAdmin) {
+      return { sucesso: false, erro: 'Parâmetros obrigatórios faltando' };
+    }
+    
+    // Valida a senha do admin
+    const data = sheetLogin.getDataRange().getValues();
+    let adminValido = false;
+    
+    for (let i = 1; i < data.length; i++) {
+      const rowApelido = String(data[i][2] || '');
+      const rowFuncao = String(data[i][4] || '');
+      const rowHash = String(data[i][6] || '');
+      
+      if (rowApelido === apelidoAdmin && rowFuncao === 'ADMIN' && rowHash) {
+        const hashCalculado = gerarHashComSalt(senhaAdmin, apelidoAdmin);
+        if (hashCalculado === rowHash) {
+          adminValido = true;
+          break;
+        }
+      }
+    }
+    
+    if (!adminValido) {
+      return { sucesso: false, erro: 'Senha do administrador inválida' };
+    }
+    
+    // Encontra o usuário e atualiza a senha
+    let encontrou = false;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === apelido) {
+        const novoHash = gerarHashComSalt(novaSenha, apelido);
+        sheetLogin.getRange(i + 1, 7).setValue(novoHash);
+        encontrou = true;
+        LogModule.registrarAcesso('ADMIN', 'SENHA_REDEFINIDA', `apelido:${apelido}`, 'admin_redefinir_senha');
+        break;
+      }
+    }
+    
+    if (!encontrou) {
+      return { sucesso: false, erro: 'Usuário não encontrado' };
+    }
+    
+    return { sucesso: true, mensagem: 'Senha redefinida com sucesso!' };
+  } catch (e) {
+    Logger.log('Erro em adminRedefinirSenha: ' + e.message);
     return { sucesso: false, erro: e.message };
   }
 }

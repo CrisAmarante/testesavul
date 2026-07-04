@@ -121,7 +121,21 @@ async function adminToggleUsuarioAPI(apelido, ativo) {
 
 /**
  * Valida a senha do admin antes de executar ações sensíveis
+ * Retorna true se o apelido existir, tiver função ADMIN e a senha bater com o hash
  */
+async function validarAdmin(apelido, senha) {
+  try {
+    const response = await fetch(`${URL_PLANILHA}?acao=validar_senha_admin&apelido=${encodeURIComponent(apelido)}&senha=${encodeURIComponent(senha)}`, {
+      method: 'GET'
+    });
+    const result = await response.json();
+    return result.sucesso === true;
+  } catch (err) {
+    console.error('Erro ao validar admin:', err);
+    return false;
+  }
+}
+
 async function validarSenhaAdmin() {
   return new Promise((resolve, reject) => {
     const modalHtml = `
@@ -334,6 +348,12 @@ class AdminPanelController {
       return;
     }
     
+    // Mostra indicador de carregamento
+    const container = getEl('usuarios-lista-container');
+    if (container) {
+      container.innerHTML = '<p class="admin-info">⏳ Buscando usuários...</p>';
+    }
+    
     try {
       const resultado = await adminGetUsuariosAPI(filtro);
       this.renderizarListaUsuarios(resultado.usuarios, resultado.senhasReveladas);
@@ -352,25 +372,19 @@ class AdminPanelController {
       return;
     }
     
-    // Botão para revelar senhas se ainda não foram reveladas
-    let botaoRevelarSenha = '';
-    if (!senhasReveladas) {
-      botaoRevelarSenha = `
-        <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
-          <p style="margin: 0 0 10px 0; color: #856404;">🔐 As senhas estão ocultas por segurança.</p>
-          <button class="btn-principal" onclick="adminPanel.revelarSenhas()" style="padding: 8px 15px; font-size: 0.9rem;">👁️ Revelar Senhas dos Usuários</button>
-        </div>
-      `;
-    } else {
-      botaoRevelarSenha = `
-        <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border-radius: 5px;">
-          <p style="margin: 0; color: #155724;">✅ Senhas reveladas com sucesso!</p>
-        </div>
-      `;
-    }
+    // Ordenação da tabela
+    let ordenacaoHtml = `
+      <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+        <span style="font-weight: bold;">Ordenar por:</span>
+        <button class="btn-secundario" onclick="adminPanel.ordenarTabela('nome')" style="padding: 5px 10px; font-size: 0.85rem;">Nome</button>
+        <button class="btn-secundario" onclick="adminPanel.ordenarTabela('apelido')" style="padding: 5px 10px; font-size: 0.85rem;">Apelido</button>
+        <button class="btn-secundario" onclick="adminPanel.ordenarTabela('matricula')" style="padding: 5px 10px; font-size: 0.85rem;">Chapa</button>
+        <button class="btn-secundario" onclick="adminPanel.ordenarTabela('funcao')" style="padding: 5px 10px; font-size: 0.85rem;">Função</button>
+      </div>
+    `;
     
     container.innerHTML = `
-      ${botaoRevelarSenha}
+      ${ordenacaoHtml}
       <table class="admin-usuarios-tabela">
         <thead>
           <tr>
@@ -392,6 +406,7 @@ class AdminPanelController {
               <td><span class="status-badge ${u.ativo === 'SIM' ? 'ativo' : 'inativo'}">${u.ativo === 'SIM' ? 'Ativo' : 'Inativo'}</span></td>
               <td>
                 <button class="btn-admin-action" onclick="adminPanel.editarUsuario('${u.apelido}')" title="Editar">✏️</button>
+                <button class="btn-admin-action" onclick="adminPanel.redefinirSenha('${u.apelido}', '${u.nome}')" title="Redefinir Senha">🔑</button>
                 <button class="btn-admin-action" onclick="adminPanel.toggleUsuario('${u.apelido}', ${u.ativo === 'SIM'})" title="${u.ativo === 'SIM' ? 'Desabilitar' : 'Habilitar'}">${u.ativo === 'SIM' ? '🔒' : '🔓'}</button>
                 <button class="btn-admin-action btn-delete" onclick="adminPanel.confirmarExclusao('${u.apelido}')" title="Excluir">🗑️</button>
               </td>
@@ -402,22 +417,91 @@ class AdminPanelController {
     `;
   }
 
-  async revelarSenhas() {
-    // Solicita a senha do admin com validação dupla
+  /**
+   * Ordena a tabela de usuários por coluna
+   */
+  ordenarTabela(coluna) {
+    const container = getEl('usuarios-lista-container');
+    if (!container) return;
+    
+    const table = container.querySelector('table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch(coluna) {
+        case 'nome':
+          aValue = a.cells[1].textContent.trim();
+          bValue = b.cells[1].textContent.trim();
+          break;
+        case 'apelido':
+          aValue = a.cells[2].textContent.trim();
+          bValue = b.cells[2].textContent.trim();
+          break;
+        case 'matricula':
+          aValue = a.cells[0].textContent.trim();
+          bValue = b.cells[0].textContent.trim();
+          break;
+        case 'funcao':
+          aValue = a.cells[3].textContent.trim();
+          bValue = b.cells[3].textContent.trim();
+          break;
+        default:
+          return 0;
+      }
+      
+      return aValue.localeCompare(bValue, 'pt-BR');
+    });
+    
+    // Reordena as linhas na tabela
+    rows.forEach(row => tbody.appendChild(row));
+  }
+
+  /**
+   * Redefine a senha de um usuário
+   */
+  async redefinirSenha(apelido, nome) {
+    if (!confirm(`⚠️ Deseja gerar uma nova senha para o usuário "${nome}"?\n\nA nova senha será exibida uma única vez e o hash será atualizado automaticamente.`)) {
+      return;
+    }
+    
+    // Validação da senha do admin
     try {
       const validacao = await validarSenhaAdmin();
       if (!validacao.valido) {
-        alert('⚠️ Validação de senha necessária para revelar senhas.');
+        alert('⚠️ Validação de senha necessária para redefinir senha.');
         return;
       }
       
-      // Busca usuários com senhas reveladas
+      // Gera uma nova senha aleatória
+      const novaSenha = Math.random().toString(36).substring(2, 10).toUpperCase() + 
+                        Math.floor(Math.random() * 100).toString();
+      
       const apelidoAdmin = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
-      const resultado = await adminGetUsuariosAPI('', true, validacao.senha, apelidoAdmin);
-      this.renderizarListaUsuarios(resultado.usuarios, resultado.senhasReveladas);
+      
+      // Chama a API para redefinir a senha
+      const formData = new URLSearchParams();
+      formData.append('acao', 'admin_redefinir_senha');
+      formData.append('apelido', apelido);
+      formData.append('novaSenha', novaSenha);
+      formData.append('senhaAdmin', validacao.senha);
+      formData.append('apelidoAdmin', apelidoAdmin);
+      
+      const response = await fetch(URL_PLANILHA, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors'
+      });
+      
+      alert(`✅ Senha redefinida com sucesso!\n\nUsuário: ${nome}\nNova senha: ${novaSenha}\n\n⚠️ Esta senha não será exibida novamente. Oriente o usuário a alterá-la no próximo login.`);
+      
     } catch (err) {
-      console.error('Erro ao revelar senhas:', err);
-      alert('⚠️ Erro ao revelar senhas: ' + err.message);
+      console.error('Erro ao redefinir senha:', err);
+      alert('⚠️ Erro ao redefinir senha: ' + err.message);
     }
   }
 
@@ -700,12 +784,10 @@ window.adminCreateUsuarioAPI = adminCreateUsuarioAPI;
 window.adminDeleteUsuarioAPI = adminDeleteUsuarioAPI;
 window.adminToggleUsuarioAPI = adminToggleUsuarioAPI;
 window.validarSenhaAdmin = validarSenhaAdmin;
+window.validarAdmin = validarAdmin;
 window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
 window.confirmarValidacaoSenha = confirmarValidacaoSenha;
 window.gerarTokenUsuario = gerarTokenUsuario;
-window.revelarSenhas = function() {
-  if (window.adminPanel) window.adminPanel.revelarSenhas();
-};
 
 /**
  * Alterna visibilidade da senha
