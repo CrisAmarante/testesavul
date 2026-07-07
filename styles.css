@@ -700,6 +700,117 @@ body.dark .grid-anexos-preview {
   margin-top: 8px;
 }
 
+/* Estilos para a aba de Modais */
+.modais-container {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .modais-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.modal-config-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.35);
+}
+
+.modal-config-card h4 {
+  margin: 0 0 16px 0;
+  color: var(--text);
+  font-size: 1rem;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 8px;
+}
+
+.modal-buttons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 60px;
+}
+
+.modal-button-item {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.modal-button-item.desabilitado {
+  opacity: 0.6;
+  border-color: #cbd5e1;
+}
+
+.button-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.button-order {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.button-status {
+  font-size: 0.8rem;
+}
+
+.button-item-fields {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+  .button-item-fields {
+    flex-direction: column;
+  }
+}
+
+.button-item-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.btn-admin-action {
+  background: var(--card-bg);
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-admin-action:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn-admin-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-admin-action.btn-delete:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+
 .botao-item {
   display: flex;
   gap: 10px;
