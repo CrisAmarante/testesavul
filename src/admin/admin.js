@@ -306,9 +306,13 @@ class AdminPanelController {
     this.contentElement.innerHTML = `
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="usuarios">👥 Usuários</button>
+        <button class="admin-tab" data-tab="modais">🔗 Modais</button>
       </div>
       <div class="admin-tab-content" id="tab-usuarios">
         ${this.renderTabUsuarios()}
+      </div>
+      <div class="admin-tab-content" id="tab-modais" style="display: none;">
+        ${this.renderTabModais()}
       </div>
     `;
     
@@ -318,6 +322,8 @@ class AdminPanelController {
     if (container) {
       container.innerHTML = '<p class="admin-info">Digite pelo menos 4 caracteres para buscar usuários.</p>';
     }
+    // Inicializa tab de modais
+    this.carregarModais();
   }
 
   renderTabUsuarios() {
@@ -415,6 +421,274 @@ class AdminPanelController {
         </tbody>
       </table>
     `;
+  }
+
+  /**
+   * Renderiza a aba de Modais
+   */
+  renderTabModais() {
+    return `
+      <h3>Gerenciar Modais</h3>
+      <div class="admin-section">
+        <p class="admin-info" style="margin-bottom: 20px;">Configure os botões dos modais 5S, Levantamentos e Clandestinos. Cada modal pode ter até 5 botões.</p>
+        
+        <div class="modais-container">
+          <!-- Modal 5S -->
+          <div class="modal-config-card">
+            <h4>📋 Inspeções 5S</h4>
+            <div id="modais-5s-buttons" class="modal-buttons-list"></div>
+            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('5s')" style="margin-top: 10px;">+ Adicionar Botão</button>
+          </div>
+          
+          <!-- Modal Levantamentos -->
+          <div class="modal-config-card">
+            <h4>📝 Levantamentos</h4>
+            <div id="modais-levantamentos-buttons" class="modal-buttons-list"></div>
+            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('levantamentos')" style="margin-top: 10px;">+ Adicionar Botão</button>
+          </div>
+          
+          <!-- Modal Clandestinos -->
+          <div class="modal-config-card">
+            <h4>🚫 Clandestinos</h4>
+            <div id="modais-clandestinos-buttons" class="modal-buttons-list"></div>
+            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('clandestinos')" style="margin-top: 10px;">+ Adicionar Botão</button>
+          </div>
+        </div>
+        
+        <div class="admin-actions" style="margin-top: 20px;">
+          <button class="btn-principal" onclick="adminPanel.salvarConfiguracaoModais()">💾 Salvar Alterações</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Carrega configuração dos modais e renderiza nos containers
+   */
+  async carregarModais() {
+    try {
+      const response = await fetch(`${URL_PLANILHA}?acao=get_config_modais&_=${Date.now()}`);
+      const config = await response.json();
+      
+      this.configModais = config || {
+        '5s': [],
+        'levantamentos': [],
+        'clandestinos': []
+      };
+      
+      this.renderizarBotoesModais();
+      this.renderizarModaisNaTela();
+    } catch (err) {
+      console.error('Erro ao carregar modais:', err);
+      // Inicializa com configuração vazia
+      this.configModais = {
+        '5s': [],
+        'levantamentos': [],
+        'clandestinos': []
+      };
+      this.renderizarBotoesModais();
+      this.renderizarModaisNaTela();
+    }
+  }
+
+  /**
+   * Renderiza os botões dos modais na tela principal
+   */
+  renderizarModaisNaTela() {
+    // Mapeamento entre config e containers
+    const mapeamento = {
+      '5s': 'inspecoes-5s-buttons-container',
+      'levantamentos': 'levantamentos-buttons-container',
+      'clandestinos': 'clandestinos-buttons-container'
+    };
+    
+    Object.entries(mapeamento).forEach(([configKey, containerId]) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      const botoes = this.configModais[configKey] || [];
+      
+      if (botoes.length === 0) {
+        container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Nenhum botão configurado</p>';
+        return;
+      }
+      
+      container.innerHTML = botoes
+        .filter(b => b.ativo !== false && b.texto && b.url)
+        .map(botao => `<a class="modal-btn" href="${botao.url}" target="_blank">${botao.texto}</a>`)
+        .join('');
+      
+      if (container.innerHTML === '') {
+        container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Nenhum botão habilitado</p>';
+      }
+    });
+  }
+
+  /**
+   * Renderiza os botões de cada modal
+   */
+  renderizarBotoesModais() {
+    ['5s', 'levantamentos', 'clandestinos'].forEach(modalType => {
+      const container = document.getElementById(`modais-${modalType}-buttons`);
+      if (!container) continue;
+      
+      const botoes = this.configModais[modalType] || [];
+      
+      if (botoes.length === 0) {
+        container.innerHTML = '<p class="admin-info" style="font-size: 0.9rem; color: #666;">Nenhum botão configurado</p>';
+        return;
+      }
+      
+      container.innerHTML = botoes.map((botao, index) => `
+        <div class="modal-button-item ${botao.ativo === false ? 'desabilitado' : ''}" data-index="${index}">
+          <div class="button-item-header">
+            <span class="button-order">#${index + 1}</span>
+            <span class="button-status">${botao.ativo === false ? '🔴 Desabilitado' : '🟢 Habilitado'}</span>
+          </div>
+          <div class="button-item-fields">
+            <input type="text" value="${botao.texto || ''}" placeholder="Texto do botão" onchange="adminPanel.atualizarBotaoModal('${modalType}', ${index}, 'texto', this.value)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <input type="url" value="${botao.url || ''}" placeholder="URL do link" onchange="adminPanel.atualizarBotaoModal('${modalType}', ${index}, 'url', this.value)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+          <div class="button-item-actions">
+            <button class="btn-admin-action" onclick="adminPanel.toggleBotaoModal('${modalType}', ${index})" title="${botao.ativo === false ? 'Habilitar' : 'Desabilitar'}">
+              ${botao.ativo === false ? '🟢' : '🔴'}
+            </button>
+            <button class="btn-admin-action" onclick="adminPanel.moverBotaoModal('${modalType}', ${index}, -1)" title="Mover para cima" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+            <button class="btn-admin-action" onclick="adminPanel.moverBotaoModal('${modalType}', ${index}, 1)" title="Mover para baixo" ${index === botoes.length - 1 ? 'disabled' : ''}>⬇️</button>
+            <button class="btn-admin-action btn-delete" onclick="adminPanel.removerBotaoModal('${modalType}', ${index})" title="Remover">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    });
+  }
+
+  /**
+   * Adiciona novo botão ao modal
+   */
+  adicionarBotaoModal(modalType) {
+    if (!this.configModais[modalType]) {
+      this.configModais[modalType] = [];
+    }
+    
+    if (this.configModais[modalType].length >= 5) {
+      alert('⚠️ Cada modal pode ter no máximo 5 botões.');
+      return;
+    }
+    
+    this.configModais[modalType].push({
+      texto: '',
+      url: '',
+      ativo: true
+    });
+    
+    this.renderizarBotoesModais();
+  }
+
+  /**
+   * Atualiza propriedades de um botão
+   */
+  atualizarBotaoModal(modalType, index, campo, valor) {
+    if (this.configModais[modalType] && this.configModais[modalType][index]) {
+      this.configModais[modalType][index][campo] = valor;
+    }
+  }
+
+  /**
+   * Toggle habilitar/desabilitar botão
+   */
+  toggleBotaoModal(modalType, index) {
+    if (this.configModais[modalType] && this.configModais[modalType][index]) {
+      this.configModais[modalType][index].ativo = !this.configModais[modalType][index].ativo;
+      this.renderizarBotoesModais();
+    }
+  }
+
+  /**
+   * Move botão para cima ou para baixo
+   */
+  moverBotaoModal(modalType, index, direcao) {
+    if (!this.configModais[modalType]) return;
+    
+    const newIndex = index + direcao;
+    if (newIndex < 0 || newIndex >= this.configModais[modalType].length) return;
+    
+    // Swap
+    [this.configModais[modalType][index], this.configModais[modalType][newIndex]] = 
+    [this.configModais[modalType][newIndex], this.configModais[modalType][index]];
+    
+    this.renderizarBotoesModais();
+  }
+
+  /**
+   * Remove botão do modal
+   */
+  removerBotaoModal(modalType, index) {
+    if (!confirm('⚠️ Tem certeza que deseja remover este botão?')) return;
+    
+    if (this.configModais[modalType]) {
+      this.configModais[modalType].splice(index, 1);
+      this.renderizarBotoesModais();
+    }
+  }
+
+  /**
+   * Salva configuração dos modais com validação dupla
+   */
+  async salvarConfiguracaoModais() {
+    try {
+      // Validação dupla da senha do admin
+      const validacao = await validarSenhaAdmin();
+      if (!validacao.valido) {
+        alert('⚠️ Validação de senha necessária para salvar alterações.');
+        return;
+      }
+      
+      const apelidoAdmin = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
+      
+      // Prepara dados para salvamento
+      const formData = new URLSearchParams();
+      formData.append('acao', 'save_config_modais');
+      formData.append('config', JSON.stringify(this.configModais));
+      formData.append('apelidoAdmin', apelidoAdmin);
+      formData.append('senhaAdmin', validacao.senha);
+      
+      const response = await fetch(URL_PLANILHA, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors'
+      });
+      
+      // Registra log das alterações
+      await this.registrarLogModais(apelidoAdmin);
+      
+      alert('✅ Configuração dos modais salva com sucesso!');
+      this.carregarModais();
+      
+    } catch (err) {
+      console.error('Erro ao salvar modais:', err);
+      alert('⚠️ Erro ao salvar configuração: ' + err.message);
+    }
+  }
+
+  /**
+   * Registra log das alterações nos modais
+   */
+  async registrarLogModais(apelidoAdmin) {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('acao', 'registrar_log_modais');
+      formData.append('apelido', apelidoAdmin);
+      formData.append('acao_log', 'Alteração nos modais');
+      formData.append('detalhes', JSON.stringify(this.configModais));
+      
+      await fetch(URL_PLANILHA, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors'
+      });
+    } catch (err) {
+      console.error('Erro ao registrar log:', err);
+    }
   }
 
   /**
@@ -743,7 +1017,7 @@ class AdminPanelController {
         tab.classList.add('active');
         
         const tabName = tab.dataset.tab;
-        ['usuarios'].forEach(t => {
+        ['usuarios', 'modais'].forEach(t => {
           const el = getEl(`tab-${t}`);
           if (el) el.style.display = t === tabName ? 'block' : 'none';
         });
@@ -788,6 +1062,11 @@ window.validarAdmin = validarAdmin;
 window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
 window.confirmarValidacaoSenha = confirmarValidacaoSenha;
 window.gerarTokenUsuario = gerarTokenUsuario;
+window.renderizarModaisNaTela = function() {
+  if (window.adminPanel && window.adminPanel.renderizarModaisNaTela) {
+    window.adminPanel.renderizarModaisNaTela();
+  }
+};
 
 /**
  * Alterna visibilidade da senha

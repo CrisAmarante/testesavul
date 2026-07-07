@@ -46,19 +46,31 @@ function initEventListeners() {
     loginForm.addEventListener('submit', login); 
   }
   
-  getEl('btn-clandestinos-rto')?.addEventListener('click', (e) => { 
+  getEl('btn-inspecoes-5s')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.clandestinosRto.open(); 
+    window.modals.inspecoes5s.open();
+    // Carrega configuração dinâmica dos modais ao abrir
+    if (window.renderizarModaisNaTela) {
+      window.renderizarModaisNaTela();
+    }
   });
   
   getEl('btn-levantamentos')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.levantamentos.open(); 
+    window.modals.levantamentos.open();
+    // Carrega configuração dinâmica dos modais ao abrir
+    if (window.renderizarModaisNaTela) {
+      window.renderizarModaisNaTela();
+    }
   });
   
-  getEl('btn-inspecoes-5s')?.addEventListener('click', (e) => { 
+  getEl('btn-clandestinos-rto')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.inspecoes5s.open(); 
+    window.modals.clandestinosRto.open();
+    // Carrega configuração dinâmica dos modais ao abrir
+    if (window.renderizarModaisNaTela) {
+      window.renderizarModaisNaTela();
+    }
   });
   
   getEl('btn-fechar-banner')?.addEventListener('click', fecharBanner);
