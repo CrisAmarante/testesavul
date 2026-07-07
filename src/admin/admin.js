@@ -1062,6 +1062,8 @@ window.validarAdmin = validarAdmin;
 window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
 window.confirmarValidacaoSenha = confirmarValidacaoSenha;
 window.gerarTokenUsuario = gerarTokenUsuario;
+window.toggleSenhaVisibility = toggleSenhaVisibility;
+window.gerarSenhaSugerida = gerarSenhaSugerida;
 window.renderizarModaisNaTela = function() {
   if (window.adminPanel && window.adminPanel.renderizarModaisNaTela) {
     window.adminPanel.renderizarModaisNaTela();
