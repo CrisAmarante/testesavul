@@ -530,7 +530,7 @@ class AdminPanelController {
   renderizarBotoesModais() {
     ['5s', 'levantamentos', 'clandestinos'].forEach(modalType => {
       const container = document.getElementById(`modais-${modalType}-buttons`);
-      if (!container) continue;
+      if (!container) return;
       
       const botoes = this.configModais[modalType] || [];
       
@@ -1106,3 +1106,7 @@ function gerarSenhaSugerida() {
   if (senhaInput) senhaInput.value = senhaGerada;
   if (confirmInput) confirmInput.value = senhaGerada;
 }
+
+// Exportar funções para escopo global (depois de definidas)
+window.toggleSenhaVisibility = toggleSenhaVisibility;
+window.gerarSenhaSugerida = gerarSenhaSugerida;
