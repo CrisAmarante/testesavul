@@ -117,6 +117,72 @@ function formatarHora(hora) {
   return 'N/I';
 }
 
+// ====================================================================
+// LOADING OVERLAY
+// ====================================================================
+let loadingOverlay = null;
+let loadingTimeout = null;
+
+function criarLoadingOverlay() {
+  if (document.getElementById('loading-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'loading-overlay';
+  overlay.style.cssText = `
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+  `;
+  overlay.innerHTML = `
+    <div style="background: var(--modal-bg); padding: 30px 40px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); min-width: 200px;">
+      <div class="spinner" style="margin: 0 auto 15px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      <p id="loading-message" style="margin: 0; font-weight: 500; color: var(--text);">Processando...</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  // Adicionar keyframes para o spinner se não existirem
+  if (!document.getElementById('loading-spinner-style')) {
+    const style = document.createElement('style');
+    style.id = 'loading-spinner-style';
+    style.textContent = `
+      @keyframes spin { to { transform: rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+  }
+  loadingOverlay = overlay;
+}
+
+function mostrarLoading(mensagem = 'Processando...') {
+  if (!loadingOverlay) criarLoadingOverlay();
+  const msgEl = document.getElementById('loading-message');
+  if (msgEl) msgEl.textContent = mensagem;
+  if (loadingOverlay) {
+    loadingOverlay.style.display = 'flex';
+  }
+  // Forçar timeout de segurança (evita loading infinito)
+  if (loadingTimeout) clearTimeout(loadingTimeout);
+  loadingTimeout = setTimeout(() => {
+    ocultarLoading();
+  }, 30000); // 30 segundos
+}
+
+function ocultarLoading() {
+  if (loadingOverlay) {
+    loadingOverlay.style.display = 'none';
+  }
+  if (loadingTimeout) {
+    clearTimeout(loadingTimeout);
+    loadingTimeout = null;
+  }
+}
+
 // Exportar para escopo global
 window.getEl = getEl;
 window.formatarData = formatarData;
@@ -124,3 +190,5 @@ window.formatarHora = formatarHora;
 window.ModalController = ModalController;
 window.hashPassword = hashPassword;
 window.logDebug = logDebug;
+window.mostrarLoading = mostrarLoading;
+window.ocultarLoading = ocultarLoading;
