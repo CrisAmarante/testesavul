@@ -1,1 +1,18 @@
-Nothing should be ignored in this case, as only a markdown documentation file was added without any build artifacts, dependencies, or temporary files.
+```
+# Firebase
+.firebase/
+.firebaserc
+*.log
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Build outputs
+build/
+dist/
+```
