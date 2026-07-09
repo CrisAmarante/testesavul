@@ -1,4 +1,1 @@
-```
-# Firebase migration documentation
-FIREBASE_MIGRATION.md
-```
+Nothing should be ignored in this case, as only a markdown documentation file was added without any build artifacts, dependencies, or temporary files.
