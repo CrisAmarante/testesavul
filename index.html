@@ -15,6 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Scripts refatorados em módulos -->
     <script src="src/config/config.js"></script>
+    <script src="src/firebase/firebase.js"></script>
     <script src="src/core/utils.js"></script>
     <script src="src/api/api.js"></script>
     <script src="src/auth/auth.js"></script>
@@ -25,6 +26,22 @@
     <script src="src/modules/envio/envio-consulta.js"></script>
     <script src="src/admin/admin.js"></script>
     <script src="src/main.js"></script>
+    
+    <!-- Script de inicialização do Firebase -->
+    <script type="module">
+      // Inicializa Firebase ao carregar a página
+      import { initFirebase } from './src/firebase/firebase.js';
+      
+      window.addEventListener('load', async () => {
+        console.log('🔄 Iniciando Firebase...');
+        const sucesso = await initFirebase();
+        if (sucesso) {
+          console.log('✅ Firebase pronto para uso!');
+        } else {
+          console.warn('⚠️ Firebase não inicializado, usando backend legacy');
+        }
+      });
+    </script>
 </head>
 <!-- vConsole - Console móvel para depuração -->
 <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
