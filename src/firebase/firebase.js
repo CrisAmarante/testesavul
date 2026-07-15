@@ -11,6 +11,10 @@ let auth = null;
 let firestoreInitialized = false;
 let authInitialized = false;
 
+// Cache para consultas frequentes (opcional, melhora performance)
+const queryCache = new Map();
+const QUERY_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
 // ============================================================================
 // INICIALIZAR FIREBASE
 // ============================================================================
@@ -177,8 +181,21 @@ async function getDocument(collection, docId) {
 /**
  * Obter múltiplos documentos com filtro opcional
  */
-async function getCollection(collection, filters = []) {
+async function getCollection(collection, filters = [], useCache = true) {
   if (!firestoreInitialized) throw new Error('Firestore não inicializado');
+  
+  // Criar chave de cache baseada na coleção e filtros
+  const cacheKey = `${collection}:${JSON.stringify(filters)}`;
+  
+  // Verificar cache se habilitado
+  if (useCache && queryCache.has(cacheKey)) {
+    const cached = queryCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < QUERY_CACHE_TTL) {
+      return cached.data;
+    } else {
+      queryCache.delete(cacheKey);
+    }
+  }
   
   const { collection as firestoreCollection, getDocs, query, where } = await import(
     'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js'
@@ -199,7 +216,27 @@ async function getCollection(collection, filters = []) {
     results.push({ id: doc.id, ...doc.data() });
   });
   
+  // Armazenar no cache
+  if (useCache) {
+    queryCache.set(cacheKey, { data: results, timestamp: Date.now() });
+  }
+  
   return results;
+}
+
+/**
+ * Limpar cache de consultas
+ */
+function clearQueryCache(collection = null) {
+  if (collection) {
+    for (const key of queryCache.keys()) {
+      if (key.startsWith(`${collection}:`)) {
+        queryCache.delete(key);
+      }
+    }
+  } else {
+    queryCache.clear();
+  }
 }
 
 /**
@@ -467,6 +504,7 @@ window.firebaseLogout = firebaseLogout;
 window.checkFirebaseAuthStatus = checkFirebaseAuthStatus;
 window.getDocument = getDocument;
 window.getCollection = getCollection;
+window.clearQueryCache = clearQueryCache;
 window.addDocument = addDocument;
 window.updateDocument = updateDocument;
 window.deleteDocument = deleteDocument;
