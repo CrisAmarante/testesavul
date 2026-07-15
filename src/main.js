@@ -196,31 +196,41 @@ async function inicializar() {
   initTheme(); 
   registerServiceWorker();
   
-  await refreshInspetores();
-  checkLoginStatus();
+  // Parallelize independent operations for faster startup
+  await Promise.all([
+    refreshInspetores(),
+    carregarTerminais()
+  ]);
   
+  checkLoginStatus();
   mostrarBannerAviso(); 
   aplicarBloqueioDeDatas();
-  
-  carregarTerminais().then(() => preencherSelectTerminais());
+  preencherSelectTerminais();
   
   window.addEventListener('pageshow', async (e) => { 
     if (e.persisted) { 
-      await refreshInspetores();
+      await Promise.all([
+        refreshInspetores(),
+        carregarTerminais(true)
+      ]);
       checkLoginStatus(); 
-      await carregarTerminais(true); 
       preencherSelectTerminais(); 
     } 
   });
   
-  document.addEventListener('visibilitychange', async () => { 
+  // Throttle visibility change handler to avoid excessive calls
+  const handleVisibilityChange = throttle(async () => { 
     if (document.visibilityState === 'visible') { 
-      await refreshInspetores();
+      await Promise.all([
+        refreshInspetores(),
+        carregarTerminais(true)
+      ]);
       checkLoginStatus(); 
-      await carregarTerminais(true); 
       preencherSelectTerminais(); 
     } 
-  });
+  }, 1000);
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 }
 
 window.addEventListener('load', inicializar);

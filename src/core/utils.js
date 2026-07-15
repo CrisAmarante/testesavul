@@ -5,12 +5,55 @@
 // ====================================================================
 // UTILITÁRIOS DE DOM
 // ====================================================================
+
+// Cache de elementos DOM para evitar chamadas repetidas a getElementById
+const domCache = new Map();
+
 function getEl(id) { 
-  return document.getElementById(id); 
+  if (domCache.has(id)) {
+    return domCache.get(id);
+  }
+  const element = document.getElementById(id);
+  if (element) {
+    domCache.set(id, element);
+  }
+  return element; 
+}
+
+// Limpar cache quando necessário (ex: após SPA navigation)
+function clearDomCache() {
+  domCache.clear();
 }
 
 function logDebug(...args) { 
   console.log('[PENSO]', ...args); 
+}
+
+// ====================================================================
+// DEBOUNCE E THROTTLE
+// ====================================================================
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function throttle(func, limit) {
+  let inThrottle;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
 }
 
 // ====================================================================
@@ -185,6 +228,7 @@ function ocultarLoading() {
 
 // Exportar para escopo global
 window.getEl = getEl;
+window.clearDomCache = clearDomCache;
 window.formatarData = formatarData;
 window.formatarHora = formatarHora;
 window.ModalController = ModalController;
@@ -192,3 +236,5 @@ window.hashPassword = hashPassword;
 window.logDebug = logDebug;
 window.mostrarLoading = mostrarLoading;
 window.ocultarLoading = ocultarLoading;
+window.debounce = debounce;
+window.throttle = throttle;
