@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penso-cache-v3.1.0.0.1.4';
+const CACHE_NAME = 'pensoTestes-cache-v3.1.0.0.0.0';
 //correção do modal de inspeções
 // Lista de arquivos para cache imediato (estáticos)
 const ASSETS_TO_CACHE = [
