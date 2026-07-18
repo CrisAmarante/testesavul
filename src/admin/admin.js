@@ -166,7 +166,7 @@ async function validarAdmin(apelido, senha) {
 async function validarSenhaAdmin() {
   return new Promise((resolve, reject) => {
     const modalHtml = `
-      <div id="modal-validacao-senha" class="modal">
+      <div id="modal-validacao-senha" class="modal" style="display: flex; z-index: 9999;">
         <div class="modal-content" style="max-width: 400px;">
           <div class="modal-header">
             <h2 class="modal-title">🔐 Validação de Segurança</h2>
