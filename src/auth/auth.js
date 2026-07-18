@@ -36,7 +36,6 @@ async function checkLoginStatus() {
   const nome = localStorage.getItem('inspectorName');
   const apelido = localStorage.getItem('inspectorApelido');
   const roleSalva = localStorage.getItem('inspectorRole');
-  const token = localStorage.getItem('inspectorToken');
   const main = getEl('main-screen');
   const insp = getEl('inspector-screen');
   const btnInspecao = getEl('btn-inspecao-veicular');
@@ -105,7 +104,6 @@ async function checkLoginStatus() {
     localStorage.removeItem('inspectorName');
     localStorage.removeItem('inspectorApelido');
     localStorage.removeItem('inspectorRole');
-    localStorage.removeItem('inspectorToken');
     main.style.display = 'flex';
     insp.style.display = 'none';
   }
@@ -137,13 +135,6 @@ async function login(e) {
       localStorage.setItem('inspectorName', resposta.nome);
       localStorage.setItem('inspectorApelido', resposta.apelido);
       localStorage.setItem('inspectorRole', resposta.funcao);
-      
-      // Guarda token de sessão se ADMIN
-      if (resposta.funcao === 'ADMIN' && resposta.token) {
-        localStorage.setItem('inspectorToken', resposta.token);
-      } else {
-        localStorage.removeItem('inspectorToken');
-      }
       
       // Limpa o campo de senha após login bem-sucedido
       getEl('password').value = '';
@@ -192,7 +183,6 @@ function logoutInspector() {
   localStorage.removeItem('inspectorName');
   localStorage.removeItem('inspectorApelido');
   localStorage.removeItem('inspectorRole');
-  localStorage.removeItem('inspectorToken');
   checkLoginStatus();
 }
 
