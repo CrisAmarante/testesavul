@@ -46,31 +46,19 @@ function initEventListeners() {
     loginForm.addEventListener('submit', login); 
   }
   
-  getEl('btn-inspecoes-5s')?.addEventListener('click', (e) => { 
+  getEl('btn-clandestinos-rto')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.inspecoes5s.open();
-    // Carrega configuração dinâmica dos modais ao abrir
-    if (window.renderizarModaisNaTela) {
-      window.renderizarModaisNaTela();
-    }
+    window.modals.clandestinosRto.open(); 
   });
   
   getEl('btn-levantamentos')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.levantamentos.open();
-    // Carrega configuração dinâmica dos modais ao abrir
-    if (window.renderizarModaisNaTela) {
-      window.renderizarModaisNaTela();
-    }
+    window.modals.levantamentos.open(); 
   });
   
-  getEl('btn-clandestinos-rto')?.addEventListener('click', (e) => { 
+  getEl('btn-inspecoes-5s')?.addEventListener('click', (e) => { 
     e.preventDefault(); 
-    window.modals.clandestinosRto.open();
-    // Carrega configuração dinâmica dos modais ao abrir
-    if (window.renderizarModaisNaTela) {
-      window.renderizarModaisNaTela();
-    }
+    window.modals.inspecoes5s.open(); 
   });
   
   getEl('btn-fechar-banner')?.addEventListener('click', fecharBanner);
@@ -196,41 +184,31 @@ async function inicializar() {
   initTheme(); 
   registerServiceWorker();
   
-  // Parallelize independent operations for faster startup
-  await Promise.all([
-    refreshInspetores(),
-    carregarTerminais()
-  ]);
-  
+  await refreshInspetores();
   checkLoginStatus();
+  
   mostrarBannerAviso(); 
   aplicarBloqueioDeDatas();
-  preencherSelectTerminais();
+  
+  carregarTerminais().then(() => preencherSelectTerminais());
   
   window.addEventListener('pageshow', async (e) => { 
     if (e.persisted) { 
-      await Promise.all([
-        refreshInspetores(),
-        carregarTerminais(true)
-      ]);
+      await refreshInspetores();
       checkLoginStatus(); 
+      await carregarTerminais(true); 
       preencherSelectTerminais(); 
     } 
   });
   
-  // Throttle visibility change handler to avoid excessive calls
-  const handleVisibilityChange = throttle(async () => { 
+  document.addEventListener('visibilitychange', async () => { 
     if (document.visibilityState === 'visible') { 
-      await Promise.all([
-        refreshInspetores(),
-        carregarTerminais(true)
-      ]);
+      await refreshInspetores();
       checkLoginStatus(); 
+      await carregarTerminais(true); 
       preencherSelectTerminais(); 
     } 
-  }, 1000);
-  
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  });
 }
 
 window.addEventListener('load', inicializar);
