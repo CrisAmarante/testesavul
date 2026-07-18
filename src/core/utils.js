@@ -5,55 +5,12 @@
 // ====================================================================
 // UTILITÁRIOS DE DOM
 // ====================================================================
-
-// Cache de elementos DOM para evitar chamadas repetidas a getElementById
-const domCache = new Map();
-
 function getEl(id) { 
-  if (domCache.has(id)) {
-    return domCache.get(id);
-  }
-  const element = document.getElementById(id);
-  if (element) {
-    domCache.set(id, element);
-  }
-  return element; 
-}
-
-// Limpar cache quando necessário (ex: após SPA navigation)
-function clearDomCache() {
-  domCache.clear();
+  return document.getElementById(id); 
 }
 
 function logDebug(...args) { 
   console.log('[PENSO]', ...args); 
-}
-
-// ====================================================================
-// DEBOUNCE E THROTTLE
-// ====================================================================
-
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-function throttle(func, limit) {
-  let inThrottle;
-  return function(...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
 }
 
 // ====================================================================
@@ -115,28 +72,35 @@ class ModalController {
 // ====================================================================
 // FORMATAÇÃO DE DATA E HORA
 // ====================================================================
+/**
+ * Formata uma data para DD/MM/YYYY, corrigindo problemas de fuso horário.
+ * - Se for string ISO (YYYY-MM-DD), extrai diretamente.
+ * - Se for objeto Date, usa getDate, getMonth, getFullYear (fuso local).
+ * - Caso contrário, tenta extrair uma data no formato dd/mm/aaaa.
+ */
 function formatarData(data) {
   if (!data) return 'N/I';
-  
+
+  // Caso seja string ISO (YYYY-MM-DD)
+  if (typeof data === 'string' && /^\d{4}-\d{2}-\d{2}/.test(data)) {
+    const partes = data.split('-');
+    // Pode vir com hora "YYYY-MM-DD HH:mm:ss"
+    const dia = partes[2].substring(0, 2);
+    return `${dia}/${partes[1]}/${partes[0]}`;
+  }
+
+  // Caso seja objeto Date
   if (data instanceof Date) {
     const dia = data.getDate().toString().padStart(2, '0');
     const mes = (data.getMonth() + 1).toString().padStart(2, '0');
     const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
   }
-  
-  if (typeof data === 'string') {
-    let dataStr = data.split('T')[0].split(' ')[0];
-    if (dataStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-      const [ano, mes, dia] = dataStr.split('-');
-      return `${dia}/${mes}/${ano}`;
-    }
-    if (dataStr.match(/^\d{2}\/\d{2}\/\d{4}/)) return dataStr;
-  }
-  
+
+  // Tentar extrair via regex
   const match = String(data).match(/(\d{2})\/(\d{2})\/(\d{4})/);
   if (match) return match[0];
-  
+
   return 'N/I';
 }
 
@@ -160,81 +124,10 @@ function formatarHora(hora) {
   return 'N/I';
 }
 
-// ====================================================================
-// LOADING OVERLAY
-// ====================================================================
-let loadingOverlay = null;
-let loadingTimeout = null;
-
-function criarLoadingOverlay() {
-  if (document.getElementById('loading-overlay')) return;
-  const overlay = document.createElement('div');
-  overlay.id = 'loading-overlay';
-  overlay.style.cssText = `
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(4px);
-  `;
-  overlay.innerHTML = `
-    <div style="background: var(--modal-bg); padding: 30px 40px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); min-width: 200px;">
-      <div class="spinner" style="margin: 0 auto 15px; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <p id="loading-message" style="margin: 0; font-weight: 500; color: var(--text);">Processando...</p>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  // Adicionar keyframes para o spinner se não existirem
-  if (!document.getElementById('loading-spinner-style')) {
-    const style = document.createElement('style');
-    style.id = 'loading-spinner-style';
-    style.textContent = `
-      @keyframes spin { to { transform: rotate(360deg); } }
-    `;
-    document.head.appendChild(style);
-  }
-  loadingOverlay = overlay;
-}
-
-function mostrarLoading(mensagem = 'Processando...') {
-  if (!loadingOverlay) criarLoadingOverlay();
-  const msgEl = document.getElementById('loading-message');
-  if (msgEl) msgEl.textContent = mensagem;
-  if (loadingOverlay) {
-    loadingOverlay.style.display = 'flex';
-  }
-  // Forçar timeout de segurança (evita loading infinito)
-  if (loadingTimeout) clearTimeout(loadingTimeout);
-  loadingTimeout = setTimeout(() => {
-    ocultarLoading();
-  }, 30000); // 30 segundos
-}
-
-function ocultarLoading() {
-  if (loadingOverlay) {
-    loadingOverlay.style.display = 'none';
-  }
-  if (loadingTimeout) {
-    clearTimeout(loadingTimeout);
-    loadingTimeout = null;
-  }
-}
-
 // Exportar para escopo global
 window.getEl = getEl;
-window.clearDomCache = clearDomCache;
 window.formatarData = formatarData;
 window.formatarHora = formatarHora;
 window.ModalController = ModalController;
 window.hashPassword = hashPassword;
 window.logDebug = logDebug;
-window.mostrarLoading = mostrarLoading;
-window.ocultarLoading = ocultarLoading;
-window.debounce = debounce;
-window.throttle = throttle;
