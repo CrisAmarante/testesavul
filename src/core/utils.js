@@ -14,6 +14,51 @@ function logDebug(...args) {
 }
 
 // ====================================================================
+// LOADING INDICATOR
+// ====================================================================
+let loadingTimeout = null;
+
+function mostrarLoading(mensagem = 'Carregando...') {
+  // Remove loading existente se houver
+  ocultarLoading();
+  
+  const loadingHtml = `
+    <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+      <div style="background: white; padding: 20px 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+        <p style="margin: 0; color: #333; font-size: 14px;">${mensagem}</p>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', loadingHtml);
+  
+  // Adiciona animação de spin se não existir
+  if (!document.getElementById('spin-style')) {
+    const style = document.createElement('style');
+    style.id = 'spin-style';
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+function ocultarLoading() {
+  const loading = document.getElementById('loading-overlay');
+  if (loading) {
+    loading.remove();
+  }
+  if (loadingTimeout) {
+    clearTimeout(loadingTimeout);
+    loadingTimeout = null;
+  }
+}
+
+// ====================================================================
 // HASH - Criptografia de senha
 // ====================================================================
 async function hashPassword(password, salt) {
@@ -131,3 +176,5 @@ window.formatarHora = formatarHora;
 window.ModalController = ModalController;
 window.hashPassword = hashPassword;
 window.logDebug = logDebug;
+window.mostrarLoading = mostrarLoading;
+window.ocultarLoading = ocultarLoading;
