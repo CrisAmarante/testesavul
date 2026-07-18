@@ -26,7 +26,7 @@ const CONFIG = {
   TIMEOUT_INATIVIDADE: 20 * 60 * 1000, // 20 minutos em milissegundos
   MAX_LINHAS_HISTORICO: 16,
   MAX_CARACTERES_HISTORICO: 1400,
-  ID_PASTA_ANEXOS: "1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP"
+  ID_PASTA_ANEXOS: "1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD"
 };
 
 /**
@@ -1121,7 +1121,7 @@ function migrarSenhasParaHashComSalt() {
 
 // ======================= FUNÇÕES DE TESTE DO DRIVE =======================
 function testDrive() {
-  const pasta = DriveApp.getFolderById("1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP");
+  const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
   Logger.log(pasta.getName());
 }
 
@@ -1131,7 +1131,7 @@ function forcarPermissaoDrive() {
 
 function testarDrive() {
   try {
-    const pasta = DriveApp.getFolderById("1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP");
+    const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
     console.log("✅ Sucesso! Pasta encontrada: " + pasta.getName());
     console.log("🔗 URL da Pasta: " + pasta.getUrl());
     return "Pasta acessada com sucesso!";
