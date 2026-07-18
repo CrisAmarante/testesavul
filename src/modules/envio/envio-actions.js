@@ -15,6 +15,10 @@ function salvarRascunho() {
   const motivo = document.querySelector('input[name="motivo"]:checked')?.value;
   let motivoFinal = motivo === 'OUTROS' ? getEl('envio-outros-motivo').value.trim() : motivo;
   
+  const agora = new Date();
+  const dataPreenchimento = agora.toLocaleDateString('pt-BR');
+  const horaPreenchimento = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  
   const dados = {
     id: rascunhoAtualId || Date.now().toString(),
     areaDestino: areaDestinoFinal,
@@ -28,7 +32,10 @@ function salvarRascunho() {
     historico: getEl('envio-historico').value,
     local: getEl('envio-local').value,
     data: getEl('envio-data').value,
-    anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome }))
+    anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome })),
+    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName'),
+    dataPreenchimento: dataPreenchimento,
+    horaPreenchimento: horaPreenchimento
   };
   
   localStorage.setItem(`rascunho_${dados.id}`, JSON.stringify(dados));
@@ -129,6 +136,10 @@ function enviarRelatorio() {
   btnEnviar.innerHTML = '⏳ Enviando...';
   btnEnviar.disabled = true;
 
+  const agora = new Date();
+  const dataPreenchimento = agora.toLocaleDateString('pt-BR');
+  const horaPreenchimento = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
   const dadosEnvio = {
     areaDestino: areaDestinoFinal,
     motivo: motivoFinal,
@@ -142,7 +153,9 @@ function enviarRelatorio() {
     local: getEl('envio-local').value,
     data: getEl('envio-data').value,
     anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome })),
-    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName')
+    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName'),
+    dataPreenchimento: dataPreenchimento,
+    horaPreenchimento: horaPreenchimento
   };
 
   console.log('📤 Enviando dados:', dadosEnvio);
