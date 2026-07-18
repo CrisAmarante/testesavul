@@ -14,34 +14,17 @@
     <meta http-equiv="Expires" content="0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Scripts refatorados em módulos -->
-    <script src="src/config/config.js"></script>
-    <script src="src/firebase/firebase.js"></script>
-    <script src="src/core/utils.js"></script>
-    <script src="src/api/api.js"></script>
-    <script src="src/auth/auth.js"></script>
-    <script src="src/modules/inspecao/inspecao.js"></script>
-    <script src="src/modules/envio/envio-base.js"></script>
-    <script src="src/modules/envio/envio-form.js"></script>
-    <script src="src/modules/envio/envio-actions.js"></script>
-    <script src="src/modules/envio/envio-consulta.js"></script>
-    <script src="src/admin/admin.js"></script>
-    <script src="src/main.js"></script>
-    
-    <!-- Script de inicialização do Firebase -->
-    <script type="module">
-      // Inicializa Firebase ao carregar a página
-      import { initFirebase } from './src/firebase/firebase.js';
-      
-      window.addEventListener('load', async () => {
-        console.log('🔄 Iniciando Firebase...');
-        const sucesso = await initFirebase();
-        if (sucesso) {
-          console.log('✅ Firebase pronto para uso!');
-        } else {
-          console.warn('⚠️ Firebase não inicializado, usando backend legacy');
-        }
-      });
-    </script>
+    <script src="scr/config/config.js"></script>
+    <script src="scr/core/utils.js"></script>
+    <script src="scr/api/api.js"></script>
+    <script src="scr/auth/auth.js"></script>
+    <script src="scr/modules/inspecao/inspecao.js"></script>
+    <script src="scr/modules/envio/envio-base.js"></script>
+    <script src="scr/modules/envio/envio-form.js"></script>
+    <script src="scr/modules/envio/envio-actions.js"></script>
+    <script src="scr/modules/envio/envio-consulta.js"></script>
+    <script src="scr/admin/admin.js"></script>
+    <script src="scr/main.js"></script>
 </head>
 <!-- vConsole - Console móvel para depuração -->
 <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
@@ -120,10 +103,10 @@
 <!-- TOAST - Posicionado abaixo dos botões -->
 <div id="welcome-toast" class="welcome-toast-below"><div>Bem-vindo, <span id="toast-name" class="toast-name"></span>!</div><button class="toast-close" onclick="hideWelcomeToast()">×</button></div>
 
-<!-- MODAIS EXISTENTES (agora dinâmicos via ADMIN) -->
-<div id="modal-clandestinos-rto" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Clandestinos</h2><button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button></div><div id="clandestinos-buttons-container"></div></div></div>
-<div id="modal-levantamentos" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Levantamentos</h2><button class="modal-close" onclick="window.modals.levantamentos.close()">×</button></div><div id="levantamentos-buttons-container"></div></div></div>
-<div id="modal-inspecoes-5s" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Inspeções 5S</h2><button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button></div><div id="inspecoes-5s-buttons-container"></div></div></div>
+<!-- MODAIS EXISTENTES -->
+<div id="modal-clandestinos-rto" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Clandestinos</h2><button class="modal-close" onclick="window.modals.clandestinosRto.close()">×</button></div><a class="modal-btn" href="https://forms.office.com/r/v4BMhNHbSR">Rua Melvin Jones</a><a class="modal-btn" href="https://forms.office.com/r/JF8tPFysX6">Cajamar</a></div></div>
+<div id="modal-levantamentos" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Levantamentos</h2><button class="modal-close" onclick="window.modals.levantamentos.close()">×</button></div><a class="modal-btn" href="https://forms.cloud.microsoft/r/YRRT5SSfGa">Levantamento UBER - André Rovay</a><a class="modal-btn" href="https://forms.office.com/r/qxrGRxcmSL">AV. JABUTICABEIRA - CAJAMAR</a></div></div>
+<div id="modal-inspecoes-5s" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Inspeções 5S</h2><button class="modal-close" onclick="window.modals.inspecoes5s.close()">×</button></div><a class="modal-btn" id="btn-osasco" href="https://forms.office.com/r/bkeF1EwmNC">Frota Osasco</a><!--a class="modal-btn" id="btn-santana" href="https://forms.office.com/r/dhibquxks5">Frota Santana</a--></div></div>
 <div id="modal-login" class="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">🔐 Área logada</h2><button class="modal-close" onclick="window.modals.login.close()">×</button></div><form id="login-form" autocomplete="off"><input type="password" id="password" placeholder="Digite seu pin exclusivo" required autocomplete="off" readonly onfocus="this.removeAttribute('readonly');"><div id="login-error" style="color:#ff4d4d; text-align:center; margin:10px 0; display:none;">Senha incorreta!</div><button type="submit" class="button">Entrar</button></form></div></div>
 
 <!-- MODAL INSPEÇÃO VEICULAR -->
