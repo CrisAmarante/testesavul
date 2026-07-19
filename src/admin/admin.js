@@ -4,146 +4,119 @@
  */
 
 // ====================================================================
-// API DE USUÁRIOS (Admin) - AGORA COM FETCH CORS
+// API DE USUÁRIOS (Admin)
 // ====================================================================
-
-// Obtém token de sessão do ADMIN
-function getAdminToken() {
-  return localStorage.getItem('inspectorToken') || '';
-}
-
-function getAdminApelido() {
-  return localStorage.getItem('inspectorApelido') || '';
-}
-
-async function adminGetUsuariosAPI(filtro = '') {
-  mostrarLoading('Buscando usuários...');
-  try {
-    const apelidoAdmin = getAdminApelido();
-    const tokenAdmin = getAdminToken();
-    const url = `${URL_PLANILHA}?acao=admin_get_usuarios&filtro=${encodeURIComponent(filtro)}&apelidoAdmin=${encodeURIComponent(apelidoAdmin)}&tokenAdmin=${encodeURIComponent(tokenAdmin)}&_=${Date.now()}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.sucesso) {
-      return { usuarios: data.usuarios, senhasReveladas: false };
-    } else {
-      throw new Error(data.erro || 'Falha ao obter usuários');
+async function adminGetUsuariosAPI(filtro = '', revelarSenha = false, senhaAdmin = '', apelidoAdmin = '') {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'adminGetUsuariosCallback_' + Date.now();
+    
+    window[callbackName] = function(resposta) {
+      delete window[callbackName];
+      if (resposta && resposta.sucesso) {
+        resolve({ usuarios: resposta.usuarios, senhasReveladas: resposta.senhasReveladas || false });
+      } else {
+        reject(new Error(resposta?.erro || 'Falha ao obter usuários'));
+      }
+    };
+    
+    const script = document.createElement('script');
+    let url = `${URL_PLANILHA}?acao=admin_get_usuarios&callback=${callbackName}&_=${Date.now()}`;
+    
+    if (filtro) {
+      url += `&filtro=${encodeURIComponent(filtro)}`;
     }
-  } catch (err) {
-    console.error('Erro adminGetUsuariosAPI:', err);
-    throw err;
-  } finally {
-    ocultarLoading();
-  }
+    if (revelarSenha) {
+      url += `&revelarSenha=true&senhaAdmin=${encodeURIComponent(senhaAdmin)}&apelidoAdmin=${encodeURIComponent(apelidoAdmin)}`;
+    }
+    
+    script.src = url;
+    script.onerror = () => {
+      delete window[callbackName];
+      reject(new Error('Erro de rede ao buscar usuários'));
+    };
+    document.body.appendChild(script);
+  });
 }
 
 async function adminSaveUsuarioAPI(usuario) {
-  mostrarLoading('Salvando usuário...');
-  try {
-    const apelidoAdmin = getAdminApelido();
-    const tokenAdmin = getAdminToken();
-    const dados = { ...usuario, apelidoAdmin, tokenAdmin };
-    const response = await fetch(URL_PLANILHA, {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_save_usuario');
+    formData.append('dados', JSON.stringify(usuario));
+    
+    fetch(URL_PLANILHA, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ acao: 'admin_save_usuario', dados: JSON.stringify(dados) })
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário salvo com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao salvar usuário: ' + err.message));
     });
-    const data = await response.json();
-    if (data.sucesso) {
-      return data;
-    } else {
-      throw new Error(data.erro || 'Erro ao salvar usuário');
-    }
-  } catch (err) {
-    console.error('Erro adminSaveUsuarioAPI:', err);
-    throw err;
-  } finally {
-    ocultarLoading();
-  }
+  });
 }
 
 async function adminCreateUsuarioAPI(usuario) {
-  mostrarLoading('Criando usuário...');
-  try {
-    const apelidoAdmin = getAdminApelido();
-    const tokenAdmin = getAdminToken();
-    const dados = { ...usuario, apelidoAdmin, tokenAdmin };
-    const response = await fetch(URL_PLANILHA, {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_create_usuario');
+    formData.append('dados', JSON.stringify(usuario));
+    
+    fetch(URL_PLANILHA, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ acao: 'admin_create_usuario', dados: JSON.stringify(dados) })
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário criado com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao criar usuário: ' + err.message));
     });
-    const data = await response.json();
-    if (data.sucesso) {
-      return data;
-    } else {
-      throw new Error(data.erro || 'Erro ao criar usuário');
-    }
-  } catch (err) {
-    console.error('Erro adminCreateUsuarioAPI:', err);
-    throw err;
-  } finally {
-    ocultarLoading();
-  }
+  });
 }
 
 async function adminDeleteUsuarioAPI(apelido) {
-  mostrarLoading('Excluindo usuário...');
-  try {
-    const apelidoAdmin = getAdminApelido();
-    const tokenAdmin = getAdminToken();
-    const response = await fetch(URL_PLANILHA, {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_delete_usuario');
+    formData.append('apelido', apelido);
+    
+    fetch(URL_PLANILHA, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        acao: 'admin_delete_usuario',
-        apelido: apelido,
-        apelidoAdmin: apelidoAdmin,
-        tokenAdmin: tokenAdmin
-      })
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: 'Usuário excluído com sucesso!' });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao excluir usuário: ' + err.message));
     });
-    const data = await response.json();
-    if (data.sucesso) {
-      return data;
-    } else {
-      throw new Error(data.erro || 'Erro ao excluir usuário');
-    }
-  } catch (err) {
-    console.error('Erro adminDeleteUsuarioAPI:', err);
-    throw err;
-  } finally {
-    ocultarLoading();
-  }
+  });
 }
 
 async function adminToggleUsuarioAPI(apelido, ativo) {
-  mostrarLoading('Alterando status...');
-  try {
-    const apelidoAdmin = getAdminApelido();
-    const tokenAdmin = getAdminToken();
-    const response = await fetch(URL_PLANILHA, {
+  return new Promise((resolve, reject) => {
+    const formData = new URLSearchParams();
+    formData.append('acao', 'admin_toggle_usuario');
+    formData.append('apelido', apelido);
+    formData.append('ativo', ativo ? 'SIM' : 'NAO');
+    
+    fetch(URL_PLANILHA, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        acao: 'admin_toggle_usuario',
-        apelido: apelido,
-        ativo: ativo ? 'SIM' : 'NAO',
-        apelidoAdmin: apelidoAdmin,
-        tokenAdmin: tokenAdmin
-      })
+      body: formData,
+      mode: 'no-cors'
+    })
+    .then(() => {
+      resolve({ sucesso: true, mensagem: `Usuário ${ativo ? 'habilitado' : 'desabilitado'} com sucesso!` });
+    })
+    .catch(err => {
+      reject(new Error('Erro ao alterar status do usuário: ' + err.message));
     });
-    const data = await response.json();
-    if (data.sucesso) {
-      return data;
-    } else {
-      throw new Error(data.erro || 'Erro ao alterar status');
-    }
-  } catch (err) {
-    console.error('Erro adminToggleUsuarioAPI:', err);
-    throw err;
-  } finally {
-    ocultarLoading();
-  }
+  });
 }
 
 /**
@@ -166,7 +139,7 @@ async function validarAdmin(apelido, senha) {
 async function validarSenhaAdmin() {
   return new Promise((resolve, reject) => {
     const modalHtml = `
-      <div id="modal-validacao-senha" class="modal" style="display: flex; z-index: 9999;">
+      <div id="modal-validacao-senha" class="modal">
         <div class="modal-content" style="max-width: 400px;">
           <div class="modal-header">
             <h2 class="modal-title">🔐 Validação de Segurança</h2>
@@ -294,7 +267,6 @@ class AdminPanelController {
   constructor() {
     this.modalElement = null;
     this.contentElement = null;
-    this.funcoesDisponiveis = [];
   }
 
   init() {
@@ -318,9 +290,6 @@ class AdminPanelController {
       return;
     }
     
-    // Carrega lista de funções disponíveis
-    this.carregarFuncoes();
-    
     this.render();
     this.modalElement.style.display = 'flex';
   }
@@ -331,37 +300,15 @@ class AdminPanelController {
     }
   }
 
-  async carregarFuncoes() {
-    try {
-      const resultado = await adminGetUsuariosAPI('');
-      const usuarios = resultado.usuarios || [];
-      const funcoesSet = new Set();
-      usuarios.forEach(u => {
-        if (u.funcao) funcoesSet.add(u.funcao.trim().toUpperCase());
-      });
-      // Adiciona funções padrão caso não haja
-      const padrao = ['ADMIN','FISCAL','INSPETOR','SAF','ENCARREGADO','GERENTE','MONITOR','PLANTAO','PLANTONISTA','TEC. EMBARCADA','SUPERV. PLANEJAMENTO','PLANEJAMENTO'];
-      padrao.forEach(f => funcoesSet.add(f));
-      this.funcoesDisponiveis = Array.from(funcoesSet).sort();
-    } catch (err) {
-      console.warn('Erro ao carregar funções, usando lista padrão:', err);
-      this.funcoesDisponiveis = ['ADMIN','FISCAL','INSPETOR','SAF','ENCARREGADO','GERENTE','MONITOR','PLANTAO','PLANTONISTA','TEC. EMBARCADA','SUPERV. PLANEJAMENTO','PLANEJAMENTO'];
-    }
-  }
-
   render() {
     if (!this.contentElement) return;
     
     this.contentElement.innerHTML = `
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="usuarios">👥 Usuários</button>
-        <button class="admin-tab" data-tab="modais">🔗 Modais</button>
       </div>
       <div class="admin-tab-content" id="tab-usuarios">
         ${this.renderTabUsuarios()}
-      </div>
-      <div class="admin-tab-content" id="tab-modais" style="display: none;">
-        ${this.renderTabModais()}
       </div>
     `;
     
@@ -371,8 +318,6 @@ class AdminPanelController {
     if (container) {
       container.innerHTML = '<p class="admin-info">Digite pelo menos 4 caracteres para buscar usuários.</p>';
     }
-    // Inicializa tab de modais
-    this.carregarModais();
   }
 
   renderTabUsuarios() {
@@ -414,9 +359,7 @@ class AdminPanelController {
       this.renderizarListaUsuarios(resultado.usuarios, resultado.senhasReveladas);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
-      if (filtro.length >= 4) {
-        alert('⚠️ Erro ao buscar usuários: ' + err.message);
-      }
+      if (filtro.length >= 4) alert('⚠️ Erro ao buscar usuários. Verifique sua conexão.');
     }
   }
 
@@ -472,329 +415,6 @@ class AdminPanelController {
         </tbody>
       </table>
     `;
-  }
-
-  /**
-   * Renderiza a aba de Modais com o novo layout (título, link, ativo, perfis)
-   */
-  renderTabModais() {
-    const funcoesOptions = this.funcoesDisponiveis.map(f => `<option value="${f}">${f}</option>`).join('');
-    return `
-      <h3>Gerenciar Modais</h3>
-      <div class="admin-section">
-        <p class="admin-info" style="margin-bottom: 20px;">Configure os botões dos modais 5S, Levantamentos e Clandestinos. Cada modal pode ter até 5 botões.</p>
-        
-        <div class="modais-container">
-          <!-- Modal 5S -->
-          <div class="modal-config-card">
-            <h4>📋 Inspeções 5S</h4>
-            <div id="modais-5s-buttons" class="modal-buttons-list"></div>
-            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('5s')" style="margin-top: 10px;">+ Adicionar Botão</button>
-          </div>
-          
-          <!-- Modal Levantamentos -->
-          <div class="modal-config-card">
-            <h4>📝 Levantamentos</h4>
-            <div id="modais-levantamentos-buttons" class="modal-buttons-list"></div>
-            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('levantamentos')" style="margin-top: 10px;">+ Adicionar Botão</button>
-          </div>
-          
-          <!-- Modal Clandestinos -->
-          <div class="modal-config-card">
-            <h4>🚫 Clandestinos</h4>
-            <div id="modais-clandestinos-buttons" class="modal-buttons-list"></div>
-            <button class="btn-principal" onclick="adminPanel.adicionarBotaoModal('clandestinos')" style="margin-top: 10px;">+ Adicionar Botão</button>
-          </div>
-        </div>
-        
-        <div class="admin-actions" style="margin-top: 20px;">
-          <button class="btn-principal" onclick="adminPanel.salvarConfiguracaoModais()">💾 Salvar Alterações</button>
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Carrega configuração dos modais e renderiza nos containers
-   */
-  async carregarModais() {
-    try {
-      const response = await fetch(`${URL_PLANILHA}?acao=get_config_modais&_=${Date.now()}`);
-      const config = await response.json();
-      
-      this.configModais = config || {
-        '5s': [],
-        'levantamentos': [],
-        'clandestinos': []
-      };
-      
-      // Garantir que os botões antigos tenham campo perfis
-      for (const key of ['5s','levantamentos','clandestinos']) {
-        if (this.configModais[key]) {
-          this.configModais[key] = this.configModais[key].map(b => {
-            if (!b.perfis) b.perfis = [];
-            return b;
-          });
-        }
-      }
-      
-      this.renderizarBotoesModais();
-      this.renderizarModaisNaTela();
-    } catch (err) {
-      console.error('Erro ao carregar modais:', err);
-      // Inicializa com configuração vazia
-      this.configModais = {
-        '5s': [],
-        'levantamentos': [],
-        'clandestinos': []
-      };
-      this.renderizarBotoesModais();
-      this.renderizarModaisNaTela();
-    }
-  }
-
-  /**
-   * Renderiza os botões dos modais na tela principal (considerando perfil)
-   */
-  renderizarModaisNaTela() {
-    const userRole = window.currentUserRole || localStorage.getItem('inspectorRole') || '';
-    // Mapeamento entre config e containers
-    const mapeamento = {
-      '5s': 'inspecoes-5s-buttons-container',
-      'levantamentos': 'levantamentos-buttons-container',
-      'clandestinos': 'clandestinos-buttons-container'
-    };
-    
-    Object.entries(mapeamento).forEach(([configKey, containerId]) => {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      
-      const botoes = this.configModais[configKey] || [];
-      
-      // Filtra por ativo e perfil
-      const botoesFiltrados = botoes.filter(b => {
-        if (b.ativo === false) return false;
-        // Se não tem perfis definidos ou array vazio, visível para todos
-        if (!b.perfis || b.perfis.length === 0) return true;
-        return b.perfis.includes(userRole);
-      });
-      
-      if (botoesFiltrados.length === 0) {
-        container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Nenhum botão disponível para seu perfil.</p>';
-        return;
-      }
-      
-      container.innerHTML = botoesFiltrados
-        .map(botao => `<a class="modal-btn" href="${botao.url}" target="_blank">${botao.texto}</a>`)
-        .join('');
-    });
-  }
-
-  /**
-   * Renderiza os botões de cada modal (admin) com campos Título, Link, Ativo, Perfis
-   */
-  renderizarBotoesModais() {
-    const funcoesOptions = this.funcoesDisponiveis.map(f => `<option value="${f}">${f}</option>`).join('');
-    ['5s', 'levantamentos', 'clandestinos'].forEach(modalType => {
-      const container = document.getElementById(`modais-${modalType}-buttons`);
-      if (!container) return;
-      
-      const botoes = this.configModais[modalType] || [];
-      
-      if (botoes.length === 0) {
-        container.innerHTML = '<p class="admin-info" style="font-size: 0.9rem; color: #666;">Nenhum botão configurado</p>';
-        return;
-      }
-      
-      container.innerHTML = botoes.map((botao, index) => {
-        // Cria string de opções selecionadas
-        const selectedPerfis = botao.perfis || [];
-        const optionsHtml = this.funcoesDisponiveis.map(f => 
-          `<option value="${f}" ${selectedPerfis.includes(f) ? 'selected' : ''}>${f}</option>`
-        ).join('');
-        
-        return `
-          <div class="modal-button-item ${botao.ativo === false ? 'desabilitado' : ''}" data-index="${index}">
-            <div class="button-item-header">
-              <span class="button-order">#${index + 1}</span>
-              <span class="button-status">${botao.ativo === false ? '🔴 Desabilitado' : '🟢 Habilitado'}</span>
-            </div>
-            <div class="button-item-fields">
-              <div class="field-group">
-                <label>Título</label>
-                <input type="text" value="${botao.texto || ''}" placeholder="Título do botão" onchange="adminPanel.atualizarBotaoModal('${modalType}', ${index}, 'texto', this.value)" style="width:100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-              </div>
-              <div class="field-group">
-                <label>Link</label>
-                <input type="url" value="${botao.url || ''}" placeholder="URL do link" onchange="adminPanel.atualizarBotaoModal('${modalType}', ${index}, 'url', this.value)" style="width:100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-              </div>
-              <div class="field-group" style="flex: 0 0 100px;">
-                <label>Ativo</label>
-                <input type="checkbox" ${botao.ativo !== false ? 'checked' : ''} onchange="adminPanel.toggleBotaoModal('${modalType}', ${index})" style="display: block; margin-top: 6px;">
-              </div>
-              <div class="field-group" style="flex: 1.5;">
-                <label>Perfis Visíveis</label>
-                <select multiple onchange="adminPanel.atualizarBotaoModal('${modalType}', ${index}, 'perfis', Array.from(this.selectedOptions, opt => opt.value))" style="width:100%; height: 60px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
-                  ${optionsHtml}
-                </select>
-                <small style="font-size: 0.7rem; color: #666;">Segure Ctrl para múltiplos. Vazio = todos.</small>
-              </div>
-            </div>
-            <div class="button-item-actions">
-              <button class="btn-admin-action" onclick="adminPanel.moverBotaoModal('${modalType}', ${index}, -1)" title="Mover para cima" ${index === 0 ? 'disabled' : ''}>⬆️</button>
-              <button class="btn-admin-action" onclick="adminPanel.moverBotaoModal('${modalType}', ${index}, 1)" title="Mover para baixo" ${index === botoes.length - 1 ? 'disabled' : ''}>⬇️</button>
-              <button class="btn-admin-action btn-delete" onclick="adminPanel.removerBotaoModal('${modalType}', ${index})" title="Remover">🗑️</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    });
-  }
-
-  /**
-   * Adiciona novo botão ao modal
-   */
-  adicionarBotaoModal(modalType) {
-    if (!this.configModais[modalType]) {
-      this.configModais[modalType] = [];
-    }
-    
-    if (this.configModais[modalType].length >= 5) {
-      alert('⚠️ Cada modal pode ter no máximo 5 botões.');
-      return;
-    }
-    
-    this.configModais[modalType].push({
-      texto: '',
-      url: '',
-      ativo: true,
-      perfis: [] // vazio = todos os perfis
-    });
-    
-    this.renderizarBotoesModais();
-  }
-
-  /**
-   * Atualiza propriedades de um botão
-   */
-  atualizarBotaoModal(modalType, index, campo, valor) {
-    if (this.configModais[modalType] && this.configModais[modalType][index]) {
-      this.configModais[modalType][index][campo] = valor;
-    }
-  }
-
-  /**
-   * Toggle habilitar/desabilitar botão
-   */
-  toggleBotaoModal(modalType, index) {
-    if (this.configModais[modalType] && this.configModais[modalType][index]) {
-      this.configModais[modalType][index].ativo = !this.configModais[modalType][index].ativo;
-      this.renderizarBotoesModais();
-    }
-  }
-
-  /**
-   * Move botão para cima ou para baixo
-   */
-  moverBotaoModal(modalType, index, direcao) {
-    if (!this.configModais[modalType]) return;
-    
-    const newIndex = index + direcao;
-    if (newIndex < 0 || newIndex >= this.configModais[modalType].length) return;
-    
-    // Swap
-    [this.configModais[modalType][index], this.configModais[modalType][newIndex]] = 
-    [this.configModais[modalType][newIndex], this.configModais[modalType][index]];
-    
-    this.renderizarBotoesModais();
-  }
-
-  /**
-   * Remove botão do modal
-   */
-  removerBotaoModal(modalType, index) {
-    if (!confirm('⚠️ Tem certeza que deseja remover este botão?')) return;
-    
-    if (this.configModais[modalType]) {
-      this.configModais[modalType].splice(index, 1);
-      this.renderizarBotoesModais();
-    }
-  }
-
-  /**
-   * Salva configuração dos modais com validação dupla (senha + token)
-   */
-  async salvarConfiguracaoModais() {
-    try {
-      // Validação da senha do admin
-      const validacao = await validarSenhaAdmin();
-      if (!validacao.valido) {
-        alert('⚠️ Validação de senha necessária para salvar alterações.');
-        return;
-      }
-      
-      const apelidoAdmin = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
-      const tokenAdmin = localStorage.getItem('inspectorToken') || '';
-      
-      // Prepara dados para salvamento
-      mostrarLoading('Salvando configuração dos modais...');
-      const response = await fetch(URL_PLANILHA, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          acao: 'save_config_modais',
-          config: JSON.stringify(this.configModais),
-          apelidoAdmin: apelidoAdmin,
-          senhaAdmin: validacao.senha,
-          tokenAdmin: tokenAdmin
-        })
-      });
-      const result = await response.json();
-      ocultarLoading();
-      
-      if (!result.sucesso) {
-        if (result.erro && result.erro.includes('Sessão')) {
-          alert('⚠️ Sessão expirada. Faça login novamente.');
-          logoutInspector();
-          return;
-        }
-        throw new Error(result.erro || 'Erro ao salvar configuração');
-      }
-      
-      // Registra log das alterações
-      await this.registrarLogModais(apelidoAdmin);
-      
-      alert('✅ Configuração dos modais salva com sucesso!');
-      this.carregarModais();
-      
-    } catch (err) {
-      ocultarLoading();
-      console.error('Erro ao salvar modais:', err);
-      alert('⚠️ Erro ao salvar configuração: ' + err.message);
-    }
-  }
-
-  /**
-   * Registra log das alterações nos modais
-   */
-  async registrarLogModais(apelidoAdmin) {
-    try {
-      const tokenAdmin = localStorage.getItem('inspectorToken') || '';
-      const formData = new URLSearchParams();
-      formData.append('acao', 'registrar_log_modais');
-      formData.append('apelido', apelidoAdmin);
-      formData.append('acao_log', 'Alteração nos modais');
-      formData.append('detalhes', JSON.stringify(this.configModais));
-      formData.append('tokenAdmin', tokenAdmin);
-      
-      await fetch(URL_PLANILHA, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData
-      });
-    } catch (err) {
-      console.error('Erro ao registrar log:', err);
-    }
   }
 
   /**
@@ -862,37 +482,24 @@ class AdminPanelController {
                         Math.floor(Math.random() * 100).toString();
       
       const apelidoAdmin = localStorage.getItem('inspectorApelido') || sessionStorage.getItem('inspectorApelido');
-      const tokenAdmin = localStorage.getItem('inspectorToken') || '';
       
-      mostrarLoading('Redefinindo senha...');
+      // Chama a API para redefinir a senha
+      const formData = new URLSearchParams();
+      formData.append('acao', 'admin_redefinir_senha');
+      formData.append('apelido', apelido);
+      formData.append('novaSenha', novaSenha);
+      formData.append('senhaAdmin', validacao.senha);
+      formData.append('apelidoAdmin', apelidoAdmin);
+      
       const response = await fetch(URL_PLANILHA, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          acao: 'admin_redefinir_senha',
-          apelido: apelido,
-          novaSenha: novaSenha,
-          senhaAdmin: validacao.senha,
-          apelidoAdmin: apelidoAdmin,
-          tokenAdmin: tokenAdmin
-        })
+        body: formData,
+        mode: 'no-cors'
       });
-      const result = await response.json();
-      ocultarLoading();
-      
-      if (!result.sucesso) {
-        if (result.erro && result.erro.includes('Sessão')) {
-          alert('⚠️ Sessão expirada. Faça login novamente.');
-          logoutInspector();
-          return;
-        }
-        throw new Error(result.erro || 'Erro ao redefinir senha');
-      }
       
       alert(`✅ Senha redefinida com sucesso!\n\nUsuário: ${nome}\nNova senha: ${novaSenha}\n\n⚠️ Esta senha não será exibida novamente. Oriente o usuário a alterá-la no próximo login.`);
       
     } catch (err) {
-      ocultarLoading();
       console.error('Erro ao redefinir senha:', err);
       alert('⚠️ Erro ao redefinir senha: ' + err.message);
     }
@@ -954,7 +561,7 @@ class AdminPanelController {
       modal.style.display = 'flex';
     } catch (err) {
       console.error('Erro ao carregar usuário:', err);
-      alert('⚠️ Erro ao carregar dados do usuário: ' + err.message);
+      alert('⚠️ Erro ao carregar dados do usuário.');
     }
   }
 
@@ -976,8 +583,8 @@ class AdminPanelController {
       return;
     }
     
-    // Validação dupla da senha do admin para criação e edição com senha
-    if (mode === 'create' || (mode === 'edit' && senha)) {
+    // Validação dupla da senha do admin para criação e edição com senha (DESATIVADO TEMPORARIAMENTE)
+    /*if (mode === 'create' || (mode === 'edit' && senha)) {
       try {
         const validacao = await validarSenhaAdmin();
         if (!validacao.valido) {
@@ -989,54 +596,52 @@ class AdminPanelController {
         return;
       }
     }
-    
-    try {
-      if (mode === 'create') {
-        if (!matricula || !apelidoInput) {
-          alert('⚠️ Matrícula e Apelido/Chapa são obrigatórios para criar usuário.');
-          return;
-        }
-        if (!senha || !senhaConfirm) {
-          alert('⚠️ Senha e confirmação são obrigatórias para criar usuário.');
+   */ 
+    if (mode === 'create') {
+      if (!matricula || !apelidoInput) {
+        alert('⚠️ Matrícula e Apelido/Chapa são obrigatórios para criar usuário.');
+        return;
+      }
+      if (!senha || !senhaConfirm) {
+        alert('⚠️ Senha e confirmação são obrigatórias para criar usuário.');
+        return;
+      }
+      if (senha !== senhaConfirm) {
+        alert('⚠️ As senhas não coincidem.');
+        return;
+      }
+      
+      try {
+        await adminCreateUsuarioAPI({ matricula, nome, apelido: apelidoInput, funcao, senha });
+        alert('✅ Usuário criado com sucesso!\n\nSenha definida: ' + senha);
+        fecharModalAdminUsuario();
+        this.pesquisarUsuarios();
+      } catch (err) {
+        alert('⚠️ Erro ao criar usuário: ' + err.message);
+      }
+    } else {
+      const dadosAtualizar = { apelido, funcao };
+      
+      if (senha) {
+        if (!senhaConfirm) {
+          alert('⚠️ Confirme a nova senha.');
           return;
         }
         if (senha !== senhaConfirm) {
           alert('⚠️ As senhas não coincidem.');
           return;
         }
-        
-        const result = await adminCreateUsuarioAPI({ 
-          matricula, 
-          nome, 
-          apelido: apelidoInput, 
-          funcao, 
-          senha 
-        });
-        alert('✅ ' + result.mensagem + '\n\nSenha definida: ' + senha);
-        fecharModalAdminUsuario();
-        this.pesquisarUsuarios();
-      } else {
-        const dadosAtualizar = { apelido, funcao };
-        
-        if (senha) {
-          if (!senhaConfirm) {
-            alert('⚠️ Confirme a nova senha.');
-            return;
-          }
-          if (senha !== senhaConfirm) {
-            alert('⚠️ As senhas não coincidem.');
-            return;
-          }
-          dadosAtualizar.senha = senha;
-        }
-        
-        const result = await adminSaveUsuarioAPI(dadosAtualizar);
-        alert('✅ ' + result.mensagem);
-        fecharModalAdminUsuario();
-        this.pesquisarUsuarios();
+        dadosAtualizar.senha = senha;
       }
-    } catch (err) {
-      alert('⚠️ ' + err.message);
+      
+      try {
+        await adminSaveUsuarioAPI(dadosAtualizar);
+        alert('✅ Usuário atualizado com sucesso!');
+        fecharModalAdminUsuario();
+        this.pesquisarUsuarios();
+      } catch (err) {
+        alert('⚠️ Erro ao atualizar usuário: ' + err.message);
+      }
     }
   }
 
@@ -1045,11 +650,11 @@ class AdminPanelController {
     if (!confirm(`Tem certeza que deseja ${novoStatus ? 'habilitar' : 'desabilitar'} este usuário?`)) return;
     
     try {
-      const result = await adminToggleUsuarioAPI(apelido, novoStatus);
-      alert('✅ ' + result.mensagem);
+      await adminToggleUsuarioAPI(apelido, novoStatus);
+      alert(`✅ Usuário ${novoStatus ? 'habilitado' : 'desabilitado'} com sucesso!`);
       this.pesquisarUsuarios();
     } catch (err) {
-      alert('⚠️ ' + err.message);
+      alert('⚠️ Erro ao alterar status do usuário.');
     }
   }
 
@@ -1069,11 +674,11 @@ class AdminPanelController {
     if (!confirm('⚠️ Tem certeza que deseja EXCLUIR este usuário? Esta ação não pode ser desfeita!')) return;
     
     try {
-      const result = await adminDeleteUsuarioAPI(apelido);
-      alert('✅ ' + result.mensagem);
+      await adminDeleteUsuarioAPI(apelido);
+      alert('✅ Usuário excluído com sucesso!');
       this.pesquisarUsuarios();
     } catch (err) {
-      alert('⚠️ ' + err.message);
+      alert('⚠️ Erro ao excluir usuário.');
     }
   }
 
@@ -1138,7 +743,7 @@ class AdminPanelController {
         tab.classList.add('active');
         
         const tabName = tab.dataset.tab;
-        ['usuarios', 'modais'].forEach(t => {
+        ['usuarios'].forEach(t => {
           const el = getEl(`tab-${t}`);
           if (el) el.style.display = t === tabName ? 'block' : 'none';
         });
@@ -1183,13 +788,6 @@ window.validarAdmin = validarAdmin;
 window.fecharModalValidacaoSenha = fecharModalValidacaoSenha;
 window.confirmarValidacaoSenha = confirmarValidacaoSenha;
 window.gerarTokenUsuario = gerarTokenUsuario;
-window.toggleSenhaVisibility = toggleSenhaVisibility;
-window.gerarSenhaSugerida = gerarSenhaSugerida;
-window.renderizarModaisNaTela = function() {
-  if (window.adminPanel && window.adminPanel.renderizarModaisNaTela) {
-    window.adminPanel.renderizarModaisNaTela();
-  }
-};
 
 /**
  * Alterna visibilidade da senha
@@ -1227,7 +825,3 @@ function gerarSenhaSugerida() {
   if (senhaInput) senhaInput.value = senhaGerada;
   if (confirmInput) confirmInput.value = senhaGerada;
 }
-
-// Exportar funções para escopo global (depois de definidas)
-window.toggleSenhaVisibility = toggleSenhaVisibility;
-window.gerarSenhaSugerida = gerarSenhaSugerida;
