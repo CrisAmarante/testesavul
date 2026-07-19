@@ -659,18 +659,6 @@ class AdminPanelController {
   }
 
   async confirmarExclusao(apelido) {
-    // Validação dupla da senha do admin para exclusão
-    try {
-      const validacao = await validarSenhaAdmin();
-      if (!validacao.valido) {
-        alert('⚠️ Validação de senha necessária para excluir usuário.');
-        return;
-      }
-    } catch (err) {
-      alert('⚠️ Erro na validação: ' + err.message);
-      return;
-    }
-    
     if (!confirm('⚠️ Tem certeza que deseja EXCLUIR este usuário? Esta ação não pode ser desfeita!')) return;
     
     try {
