@@ -86,11 +86,15 @@ async function adminDeleteUsuarioAPI(apelido) {
     
     fetch(URL_PLANILHA, {
       method: 'POST',
-      body: formData,
-      mode: 'no-cors'
+      body: formData
     })
-    .then(() => {
-      resolve({ sucesso: true, mensagem: 'Usuário excluído com sucesso!' });
+    .then(response => response.json())
+    .then(data => {
+      if (data.sucesso) {
+        resolve({ sucesso: true, mensagem: 'Usuário excluído com sucesso!' });
+      } else {
+        reject(new Error(data.erro || 'Falha ao excluir usuário'));
+      }
     })
     .catch(err => {
       reject(new Error('Erro ao excluir usuário: ' + err.message));
