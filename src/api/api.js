@@ -1,191 +1,153 @@
 /**
- * API - Comunicação com backend (Google Apps Script)
- * Gerencia inspetores, terminais e logs
+ * API - Comunicação com o backend via fetch + JWT
+ * Gerencia requisições autenticadas e token
  */
-
-let INSPETORES = {};
-let refreshPromise = null;
-let terminaisCache = [];
-let terminaisTimestamp = 0;
-const TERMINAIS_CACHE_DURACAO = 30 * 60 * 1000; // 30 minutos
-let terminaisPromise = null;
-let todosTerminaisCache = [];
-let todosTerminaisPromise = null;
+import { API_BASE_URL, REQUEST_TIMEOUT } from './config.js';
 
 // ====================================================================
-// LOG DE ATIVIDADES
+// GERENCIAMENTO DE TOKEN
 // ====================================================================
-async function registrarLog(nomeApelido) {
+function getToken() {
+  return sessionStorage.getItem('penso_token');
+}
+
+function setToken(token) {
+  sessionStorage.setItem('penso_token', token);
+}
+
+function removeToken() {
+  sessionStorage.removeItem('penso_token');
+}
+
+function getUserData() {
   try {
-    const formData = new URLSearchParams();
-    formData.append("nome", nomeApelido);
-    formData.append("acao", "Login bem-sucedido");
-    await fetch(URL_PLANILHA, { method: "POST", body: formData, mode: "no-cors" });
-  } catch (err) { 
-    console.warn("Falha ao registrar log:", err); 
+    const data = sessionStorage.getItem('penso_user');
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setUserData(user) {
+  sessionStorage.setItem('penso_user', JSON.stringify(user));
+}
+
+function removeUserData() {
+  sessionStorage.removeItem('penso_user');
+}
+
+// ====================================================================
+// REQUISIÇÃO BASE
+// ====================================================================
+async function apiRequest(endpoint, options = {}) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = getToken();
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const config = {
+    ...options,
+    headers,
+  };
+
+  // Timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  config.signal = controller.signal;
+
+  try {
+    const response = await fetch(url, config);
+    clearTimeout(timeoutId);
+
+    // Se for 401 (não autorizado), remove token e redireciona para login
+    if (response.status === 401) {
+      removeToken();
+      removeUserData();
+      // Dispara evento de logout
+      window.dispatchEvent(new CustomEvent('penso:logout'));
+      throw new Error('Sessão expirada. Faça login novamente.');
+    }
+
+    // Tenta parsear JSON, mesmo se for erro
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const erro = data.erro || data.message || `Erro ${response.status}`;
+      throw new Error(erro);
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Tempo limite excedido. Verifique sua conexão.');
+    }
+    throw error;
   }
 }
 
 // ====================================================================
-// CARREGAR INSPETORES
+// MÉTODOS AUXILIARES
 // ====================================================================
-function processarDadosPlanilha(dados) {
-  if (Array.isArray(dados)) {
-    const novoObjeto = {};
-    dados.forEach(row => {
-      if (row.apelido && row.hash && row.ativo === "SIM") {
-        novoObjeto[row.apelido] = { 
-          hash: row.hash, 
-          nome: row.nome, 
-          funcao: row.funcao 
-        };
-      }
-    });
-    INSPETORES = novoObjeto;
-  } else { 
-    INSPETORES = dados || {}; 
-  }
-}
-
-async function refreshInspetores() {
-  if (refreshPromise) return refreshPromise;
-  
-  refreshPromise = new Promise((resolve, reject) => {
-    const callbackName = 'processarDadosPlanilha_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    
-    window[callbackName] = function(dados) {
-      processarDadosPlanilha(dados);
-      delete window[callbackName];
-      refreshPromise = null;
-      resolve();
-    };
-    
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?callback=${callbackName}&_=${Date.now()}`;
-    script.onerror = () => { 
-      delete window[callbackName]; 
-      refreshPromise = null; 
-      reject(); 
-    };
-    document.body.appendChild(script);
+function get(endpoint, params = {}) {
+  const url = new URL(`${API_BASE_URL}${endpoint}`);
+  Object.keys(params).forEach(key => {
+    if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+      url.searchParams.append(key, params[key]);
+    }
   });
-  
-  return refreshPromise;
+  return apiRequest(url.pathname + url.search, { method: 'GET' });
 }
 
-// ====================================================================
-// TERMINAIS (apenas SIM) com cache
-// ====================================================================
-function carregarTerminais(forceRefresh = false) {
-  const agora = Date.now();
-  
-  if (!forceRefresh && terminaisCache.length && (agora - terminaisTimestamp < TERMINAIS_CACHE_DURACAO)) {
-    return Promise.resolve(terminaisCache);
-  }
-  
-  if (terminaisPromise) return terminaisPromise;
-  
-  terminaisPromise = new Promise((resolve) => {
-    const callbackName = 'carregarTerminaisCallback_' + Date.now();
-    
-    window[callbackName] = function(terminais) {
-      terminaisCache = terminais;
-      terminaisTimestamp = Date.now();
-      delete window[callbackName];
-      terminaisPromise = null;
-      resolve(terminais);
-    };
-    
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=terminais&callback=${callbackName}&_=${Date.now()}`;
-    
-    script.onerror = () => {
-      delete window[callbackName];
-      terminaisPromise = null;
-      terminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
-      terminaisTimestamp = Date.now();
-      resolve(terminaisCache);
-    };
-    document.body.appendChild(script);
+function post(endpoint, data) {
+  return apiRequest(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
-  
-  return terminaisPromise;
 }
 
-function preencherSelectTerminais() {
-  const select = getEl('terminal');
-  if (!select) return;
-  
-  carregarTerminais().then(terminais => {
-    const valorAtual = select.value;
-    select.innerHTML = '<option value="">Selecione...</option>';
-    terminais.forEach(t => { 
-      const opt = document.createElement('option'); 
-      opt.value = t; 
-      opt.textContent = t; 
-      select.appendChild(opt); 
-    });
-    if (valorAtual && terminais.includes(valorAtual)) select.value = valorAtual;
+function put(endpoint, data) {
+  return apiRequest(endpoint, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+function del(endpoint) {
+  return apiRequest(endpoint, { method: 'DELETE' });
+}
+
+function patch(endpoint, data) {
+  return apiRequest(endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
   });
 }
 
 // ====================================================================
-// TODOS OS TERMINAIS (para local no envio)
+// EXPORTAÇÕES
 // ====================================================================
-function carregarTodosTerminais(forceRefresh = false) {
-  if (!forceRefresh && todosTerminaisCache.length) {
-    return Promise.resolve(todosTerminaisCache);
-  }
-  
-  if (todosTerminaisPromise) return todosTerminaisPromise;
-  
-  todosTerminaisPromise = new Promise((resolve) => {
-    const callbackName = 'carregarTodosTerminaisCallback_' + Date.now();
-    
-    window[callbackName] = function(terminais) {
-      todosTerminaisCache = terminais;
-      delete window[callbackName];
-      todosTerminaisPromise = null;
-      resolve(terminais);
-    };
-    
-    const script = document.createElement('script');
-    script.src = `${URL_PLANILHA}?acao=terminais_todos&callback=${callbackName}&_=${Date.now()}`;
-    
-    script.onerror = () => {
-      delete window[callbackName];
-      todosTerminaisPromise = null;
-      todosTerminaisCache = ['Terminal A', 'Terminal B', 'Terminal C', 'Terminal D'];
-      resolve(todosTerminaisCache);
-    };
-    document.body.appendChild(script);
-  });
-  
-  return todosTerminaisPromise;
-}
+export default {
+  get,
+  post,
+  put,
+  patch,
+  delete: del,
+  apiRequest,
+  getToken,
+  setToken,
+  removeToken,
+  getUserData,
+  setUserData,
+  removeUserData,
+};
 
-function preencherSelectLocal() {
-  const select = getEl('envio-local');
-  if (!select) return;
-  
-  carregarTodosTerminais().then(terminais => {
-    const valorAtual = select.value;
-    select.innerHTML = '<option value="">Selecione...</option>';
-    terminais.forEach(t => { 
-      const opt = document.createElement('option'); 
-      opt.value = t; 
-      opt.textContent = t; 
-      select.appendChild(opt); 
-    });
-    if (valorAtual && terminais.includes(valorAtual)) select.value = valorAtual;
-  });
-}
-
-// Exportar para escopo global
-window.INSPETORES = INSPETORES;
-window.refreshInspetores = refreshInspetores;
-window.carregarTerminais = carregarTerminais;
-window.preencherSelectTerminais = preencherSelectTerminais;
-window.carregarTodosTerminais = carregarTodosTerminais;
-window.preencherSelectLocal = preencherSelectLocal;
-window.registrarLog = registrarLog;
+// Exporta individualmente para compatibilidade com o código antigo
+export { get, post, put, del as delete, patch, getToken, setToken, removeToken, getUserData, setUserData, removeUserData };

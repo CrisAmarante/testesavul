@@ -2,6 +2,8 @@
  * Autenticação e Controle de Acesso
  * Gerencia login, logout, permissões e ajustes de UI por perfil
  */
+import api, { getToken, setToken, setUserData, removeToken, removeUserData } from './api.js';
+import { ENDPOINTS } from './config.js';
 
 // ====================================================================
 // VARIÁVEIS DE AUTENTICAÇÃO E PERMISSÕES
@@ -10,17 +12,16 @@ const ROLES_ALLOWED_INSPECTION = ['INSPETOR', 'ENCARREGADO', 'ADMIN', 'GERENTE',
 let currentUserRole = '';
 let canCreateInspection = false;
 let inactivityTimer = null;
-let INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos padrão (pode ser atualizado pelo admin)
+let INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos padrão
 
 // ====================================================================
 // CARREGAR TIMEOUT DO BACKEND
 // ====================================================================
-async function carregarTimeoutInatividade() {
+export async function carregarTimeoutInatividade() {
   try {
-    const response = await fetch(`${URL_PLANILHA}?acao=admin_get_config&_=${Date.now()}`);
-    const data = await response.json();
-    if (data && data.sucesso && data.dados && data.dados.timeout) {
-      INACTIVITY_TIMEOUT = data.dados.timeout;
+    const config = await api.get(ENDPOINTS.CONFIG);
+    if (config && config.TIMEOUT_INATIVIDADE) {
+      INACTIVITY_TIMEOUT = parseInt(config.TIMEOUT_INATIVIDADE, 10);
       console.log(`✅ Timeout de inatividade carregado: ${INACTIVITY_TIMEOUT / 60000} minutos`);
     }
   } catch (err) {
@@ -31,62 +32,47 @@ async function carregarTimeoutInatividade() {
 // ====================================================================
 // VERIFICAR STATUS DE LOGIN
 // ====================================================================
-async function checkLoginStatus() {
-  const logado = localStorage.getItem('inspectorLoggedIn');
-  const nome = localStorage.getItem('inspectorName');
-  const apelido = localStorage.getItem('inspectorApelido');
-  const roleSalva = localStorage.getItem('inspectorRole');
-  const main = getEl('main-screen');
-  const insp = getEl('inspector-screen');
-  const btnInspecao = getEl('btn-inspecao-veicular');
-  const btnEnvio = getEl('btn-envio-informacoes');
+export async function checkLoginStatus() {
+  const token = getToken();
+  const userData = api.getUserData();
   
-  if (logado === 'true' && nome && apelido) {
-    let role = roleSalva;
-    
-    // Atualiza papel se necessário
-    if (INSPETORES[apelido]) {
-      const roleFromServer = INSPETORES[apelido].funcao;
-      if (roleFromServer !== role) {
-        role = roleFromServer;
-        localStorage.setItem('inspectorRole', role);
-      }
-    }
-    
-    if (!role) {
-      logoutInspector();
-      return;
-    }
-    
-    currentUserRole = role;
-    canCreateInspection = (role === 'FISCAL' || role === 'INSPETOR');
+  const main = document.getElementById('main-screen');
+  const insp = document.getElementById('inspector-screen');
+  const btnInspecao = document.getElementById('btn-inspecao-veicular');
+  const btnEnvio = document.getElementById('btn-envio-informacoes');
+  const btnAdmin = document.getElementById('btn-painel-admin');
+  const logoutBtn = insp?.querySelector('.logout-btn');
+  
+  if (token && userData) {
+    currentUserRole = userData.funcao || '';
+    canCreateInspection = (currentUserRole === 'FISCAL' || currentUserRole === 'INSPETOR');
     
     // Mostra/oculta cards especiais
-    if (btnInspecao && role !== 'MONITOR') btnInspecao.style.display = 'flex';
+    if (btnInspecao && currentUserRole !== 'MONITOR') btnInspecao.style.display = 'flex';
     else if (btnInspecao) btnInspecao.style.display = 'none';
     
-    if (btnEnvio && role !== 'MONITOR') btnEnvio.style.display = 'flex';
+    if (btnEnvio && currentUserRole !== 'MONITOR') btnEnvio.style.display = 'flex';
     else if (btnEnvio) btnEnvio.style.display = 'none';
     
     // Mostra botão do Painel Admin apenas para ADMIN
-    const btnAdmin = getEl('btn-painel-admin');
     if (btnAdmin) {
-      if (role === 'ADMIN') {
+      if (currentUserRole === 'ADMIN') {
         btnAdmin.style.display = 'flex';
         btnAdmin.onclick = function(e) {
           e.preventDefault();
-          abrirModalAdmin();
+          if (typeof abrirModalAdmin === 'function') abrirModalAdmin();
         };
       } else {
         btnAdmin.style.display = 'none';
       }
     }
     
-    ajustarCardsPorPerfil(role);
+    ajustarCardsPorPerfil(currentUserRole);
     
-    main.style.display = 'none';
-    insp.style.display = 'flex';
-    showWelcomeToast(apelido);
+    if (main) main.style.display = 'none';
+    if (insp) insp.style.display = 'flex';
+    
+    showWelcomeToast(userData.apelido);
     
     // Inicia timer de inatividade
     resetInactivityTimer();
@@ -96,77 +82,53 @@ async function checkLoginStatus() {
       verificarNotificacoesAoIniciar();
     }
     
-    const logoutBtn = insp.querySelector('.logout-btn');
-    if (logoutBtn) logoutBtn.innerHTML = `Sair<small>${apelido}</small>`;
+    if (logoutBtn) logoutBtn.innerHTML = `Sair<small>${userData.apelido}</small>`;
     
+    return true;
   } else {
-    localStorage.removeItem('inspectorLoggedIn');
-    localStorage.removeItem('inspectorName');
-    localStorage.removeItem('inspectorApelido');
-    localStorage.removeItem('inspectorRole');
-    main.style.display = 'flex';
-    insp.style.display = 'none';
+    // Não logado
+    removeToken();
+    removeUserData();
+    if (main) main.style.display = 'flex';
+    if (insp) insp.style.display = 'none';
+    return false;
   }
 }
 
 // ====================================================================
 // LOGIN
 // ====================================================================
-async function login(e) {
-  e.preventDefault();
-  const senha = getEl('password').value.trim();
-  const errorMsg = getEl('login-error');
-  const btnSubmit = e.target.querySelector('button[type="submit"]');
-  
-  const textoOriginal = btnSubmit.innerHTML;
-  btnSubmit.innerHTML = 'Verificando...';
-  btnSubmit.disabled = true;
-  errorMsg.style.display = 'none';
-
-  const callbackName = 'loginCallback_' + Date.now();
-  
-  window[callbackName] = async function(resposta) {
-    delete window[callbackName];
-    btnSubmit.innerHTML = textoOriginal;
-    btnSubmit.disabled = false;
-
-    if (resposta && resposta.sucesso) {
-      localStorage.setItem('inspectorLoggedIn', 'true');
-      localStorage.setItem('inspectorName', resposta.nome);
-      localStorage.setItem('inspectorApelido', resposta.apelido);
-      localStorage.setItem('inspectorRole', resposta.funcao);
+export async function login(apelido, senha) {
+  try {
+    const response = await api.post(ENDPOINTS.LOGIN, { apelido, senha });
+    
+    if (response.sucesso) {
+      setToken(response.token);
+      setUserData({
+        nome: response.nome,
+        apelido: response.apelido,
+        funcao: response.funcao,
+      });
       
-      // Limpa o campo de senha após login bem-sucedido
-      getEl('password').value = '';
+      // Fecha modal de login
+      const modalLogin = document.getElementById('modal-login');
+      if (modalLogin) modalLogin.classList.remove('is-open');
       
-      await refreshInspetores();
-      registrarLog(resposta.apelido);
-      
-      window.modals.login.close();
-      checkLoginStatus();
+      await checkLoginStatus();
+      return { sucesso: true };
     } else {
-      errorMsg.style.display = 'block';
-      getEl('password').value = '';
-      getEl('password').focus();
+      return { sucesso: false, erro: response.erro || 'Credenciais inválidas' };
     }
-  };
-
-  const script = document.createElement('script');
-  script.src = `${URL_PLANILHA}?acao=login&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
-  
-  script.onerror = () => {
-    delete window[callbackName];
-    btnSubmit.innerHTML = textoOriginal;
-    btnSubmit.disabled = false;
-    alert('Erro de conexão. Verifique sua internet.');
-  };
-  document.body.appendChild(script);
+  } catch (error) {
+    console.error('Erro no login:', error);
+    return { sucesso: false, erro: error.message || 'Erro de conexão' };
+  }
 }
 
 // ====================================================================
 // LOGOUT
 // ====================================================================
-function logoutInspector() {
+export function logoutInspector() {
   // Limpa timer de inatividade
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
@@ -178,11 +140,10 @@ function logoutInspector() {
   document.removeEventListener('keydown', resetInactivityTimer);
   document.removeEventListener('mousemove', resetInactivityTimer);
   document.removeEventListener('scroll', resetInactivityTimer);
+  document.removeEventListener('touchstart', resetInactivityTimer);
   
-  localStorage.removeItem('inspectorLoggedIn');
-  localStorage.removeItem('inspectorName');
-  localStorage.removeItem('inspectorApelido');
-  localStorage.removeItem('inspectorRole');
+  removeToken();
+  removeUserData();
   checkLoginStatus();
 }
 
@@ -195,9 +156,9 @@ function resetInactivityTimer() {
   }
   
   inactivityTimer = setTimeout(() => {
-    const apelido = localStorage.getItem('inspectorApelido');
-    if (apelido) {
-      alert(`⚠️ Sessão expirada por inatividade.\n\nUsuário: ${apelido}\n\nVocê será deslogado agora.`);
+    const userData = api.getUserData();
+    if (userData) {
+      alert(`⚠️ Sessão expirada por inatividade.\n\nUsuário: ${userData.apelido}\n\nVocê será deslogado agora.`);
       logoutInspector();
     }
   }, INACTIVITY_TIMEOUT);
@@ -215,12 +176,14 @@ function setupInactivityListeners() {
 // TOAST DE BOAS-VINDAS
 // ====================================================================
 function showWelcomeToast(apelido) {
-  const toast = getEl('welcome-toast');
+  const toast = document.getElementById('welcome-toast');
   if (!toast) return;
   
-  getEl('toast-name').textContent = apelido;
+  const nameEl = document.getElementById('toast-name');
+  if (nameEl) nameEl.textContent = apelido;
+  
   toast.classList.add('show');
-  setTimeout(() => hideWelcomeToast(), 5000); // 5 segundos
+  setTimeout(() => hideWelcomeToast(), 5000);
   
   const clickHandler = () => { 
     hideWelcomeToast(); 
@@ -230,38 +193,8 @@ function showWelcomeToast(apelido) {
 }
 
 function hideWelcomeToast() { 
-  const t = getEl('welcome-toast'); 
+  const t = document.getElementById('welcome-toast'); 
   if (t) t.classList.remove('show'); 
-}
-
-// ====================================================================
-// BANNER DE AVISOS
-// ====================================================================
-function fecharBanner() { 
-  const b = getEl('aviso-temporario'); 
-  if (b) b.style.display = 'none'; 
-}
-
-function mostrarBannerAviso() {
-  const agora = new Date();
-  const banner = getEl('aviso-temporario');
-  if (banner) {
-    banner.style.display = (agora >= DATA_INICIO_BANNER && agora < DATA_FIM_BANNER) ? 'flex' : 'none';
-  }
-}
-
-function aplicarBloqueioDeDatas() {
-  const now = new Date();
-  for (const [id, date] of Object.entries(disableDates)) {
-    const btn = getEl(id);
-    if (btn && now < date) {
-      btn.classList.add('disabled');
-      btn.setAttribute('href', '#');
-      btn.title = `Disponível a partir de ${date.toLocaleDateString('pt-BR')}`;
-      btn.style.pointerEvents = 'none';
-      btn.style.opacity = '0.45';
-    }
-  }
 }
 
 // ====================================================================
@@ -300,15 +233,17 @@ function ajustarCardsPorPerfil(role) {
   }
 }
 
-// Exportar para escopo global
-window.currentUserRole = currentUserRole;
-window.canCreateInspection = canCreateInspection;
-window.checkLoginStatus = checkLoginStatus;
-window.login = login;
-window.logoutInspector = logoutInspector;
-window.ajustarCardsPorPerfil = ajustarCardsPorPerfil;
-window.mostrarBannerAviso = mostrarBannerAviso;
-window.aplicarBloqueioDeDatas = aplicarBloqueioDeDatas;
-window.resetInactivityTimer = resetInactivityTimer;
-window.setupInactivityListeners = setupInactivityListeners;
-window.carregarTimeoutInatividade = carregarTimeoutInatividade;
+// ====================================================================
+// EXPORTAÇÕES
+// ====================================================================
+export {
+  currentUserRole,
+  canCreateInspection,
+  checkLoginStatus,
+  login,
+  logoutInspector,
+  carregarTimeoutInatividade,
+  resetInactivityTimer,
+  setupInactivityListeners,
+  ajustarCardsPorPerfil,
+};

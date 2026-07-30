@@ -1,2 +1,20 @@
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzAgdn_o_yfeUg2jvVhTMk65BbL3fUr8bCUlEZI7P-PV1ClCwXccieGAWrHy7BR7ML5qw/exec";
+/**
+ * CONFIGURAÇÕES GERAIS
+ * URL da API do backend (Render)
+ */
+export const API_BASE_URL = 'https://penso-backend.onrender.com/api';
 
+// Endpoints específicos (usados nos módulos)
+export const ENDPOINTS = {
+  LOGIN: '/auth/login',
+  TERMINAIS: '/terminals',
+  TERMINAIS_TODOS: '/terminals/all',
+  INSPECOES: '/inspections',
+  RELATORIOS: '/reports',
+  CONFIG: '/config',
+  ADMIN_USUARIOS: '/admin/users',
+  ADMIN_CONFIG: '/config',
+};
+
+// Timeout padrão para requisições (ms)
+export const REQUEST_TIMEOUT = 30000; // 30 segundos
