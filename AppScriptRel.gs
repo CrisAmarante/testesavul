@@ -26,7 +26,7 @@ const CONFIG = {
   TIMEOUT_INATIVIDADE: 20 * 60 * 1000, // 20 minutos em milissegundos
   MAX_LINHAS_HISTORICO: 16,
   MAX_CARACTERES_HISTORICO: 1400,
-  ID_PASTA_ANEXOS: "1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD"
+  ID_PASTA_ANEXOS: "1nQQXwG6k4eBpRIoNh6aNgH_Kk__q4RIf"
 };
 
 /**
@@ -160,6 +160,107 @@ function salvarInspecao(dadosJson) {
     ventilador.status || "", ventilador.obs || "", ventilador.posicao || ""
   ]);
   return true;
+}
+
+// ======================= SALVAR CADASTRO DE TACÓGRAFO =======================
+function salvarTacografoCadastro(dadosJson) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Tacografo_Cadastros");
+  if (!sheet) {
+    sheet = ss.insertSheet("Tacografo_Cadastros");
+    sheet.appendRow([
+      "DataHora", "Terminal", "Linha", "Carro", "Motorista", "Fiscal"
+    ]);
+  }
+  const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+  const { terminal, linha, carro, motorista, fiscal, data, hora } = dadosJson;
+  sheet.appendRow([
+    agora, terminal, linha, carro, motorista, fiscal
+  ]);
+  return true;
+}
+
+// ======================= CONSULTAR CADASTROS DE TACÓGRAFO (com filtros) =======================
+function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Tacografo_Cadastros");
+    if (!sheet) return [];
+    const dados = sheet.getDataRange().getValues();
+    if (dados.length < 2) return [];
+    
+    let dataInicioObj = null;
+    if (dataInicio) {
+      const parts = dataInicio.split('-');
+      dataInicioObj = new Date(parts[0], parts[1]-1, parts[2], 0, 0, 0);
+    }
+    let dataFimObj = null;
+    if (dataFim) {
+      const parts = dataFim.split('-');
+      dataFimObj = new Date(parts[0], parts[1]-1, parts[2], 23, 59, 59);
+    }
+
+    const cabecalhos = dados[0].map(h => String(h).trim());
+    const indices = {
+      dataHora: cabecalhos.indexOf("DataHora"),
+      fiscal: cabecalhos.indexOf("Fiscal"),
+      carro: cabecalhos.indexOf("Carro"),
+      terminal: cabecalhos.indexOf("Terminal"),
+      linha: cabecalhos.indexOf("Linha"),
+      motorista: cabecalhos.indexOf("Motorista")
+    };
+    
+    const resultados = [];
+    
+    for (let i = 1; i < dados.length; i++) {
+      const linha = dados[i];
+      let dataHora = linha[indices.dataHora];
+      const fiscalLinha = linha[indices.fiscal];
+      if (!dataHora || !fiscalLinha) continue;
+      
+      let dataHoraStr = "";
+      let dataRegistro = null;
+      if (dataHora instanceof Date) {
+        dataHoraStr = Utilities.formatDate(dataHora, "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+        dataRegistro = new Date(dataHora.getFullYear(), dataHora.getMonth(), dataHora.getDate());
+      } else {
+        dataHoraStr = String(dataHora).trim();
+        const partes = dataHoraStr.split(" ")[0].split("/");
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const ano = parseInt(partes[2], 10);
+          dataRegistro = new Date(ano, mes, dia);
+        } else {
+          continue;
+        }
+      }
+      
+      if (dataInicioObj && dataRegistro < dataInicioObj) continue;
+      if (dataFimObj && dataRegistro > dataFimObj) continue;
+      
+      if (carro && linha[indices.carro] && !String(linha[indices.carro]).toLowerCase().includes(carro.toLowerCase())) continue;
+      if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
+      if (fiscalNome && fiscalLinha !== fiscalNome) continue; 
+      
+      // Extrai apenas a data (dd/MM/yyyy) da dataHora para exibição como "data de preenchimento"
+      const dataPreenchimento = dataHoraStr.split(" ")[0];
+      
+      resultados.push({
+        dataHora: dataHoraStr,
+        dataPreenchimento: dataPreenchimento,
+        carro: linha[indices.carro] || "",
+        terminal: linha[indices.terminal] || "",
+        linha: linha[indices.linha] || "",
+        motorista: linha[indices.motorista] || "",
+        fiscal: fiscalLinha
+      });
+    }
+    return resultados;
+  } catch (err) {
+    Logger.log("ERRO em consultarTacografos: " + err.message);
+    return [];
+  }
 }
 
 // ======================= CONSULTAR INSPEÇÕES (com filtros) =======================
@@ -859,6 +960,13 @@ function doPost(e) {
       LogModule.registrarAcesso(fiscal, 'INSPECAO_SALVA', `Carro: ${dadosObj.carro||''}`, endpoint, imei, localizacaoGps);
       return ContentService.createTextOutput("Inspeção registrada com sucesso").setMimeType(ContentService.MimeType.TEXT);
     }
+    if (acao === "tacografo_cadastro" && dados) {
+      const dadosObj = JSON.parse(dados);
+      salvarTacografoCadastro(dadosObj);
+      const fiscal = dadosObj.fiscal || 'Desconhecido';
+      LogModule.registrarAcesso(fiscal, 'TACOGRAFO_CADASTRO', `Carro: ${dadosObj.carro||''}, Linha: ${dadosObj.linha||''}`, endpoint, imei, localizacaoGps);
+      return ContentService.createTextOutput("Cadastramento de tacógrafo registrado com sucesso").setMimeType(ContentService.MimeType.TEXT);
+    }
     if (acao === "envio_informacoes" && dados) {
       const dadosObj = JSON.parse(dados);
       salvarEnvioInformacoes(dadosObj);
@@ -982,7 +1090,20 @@ function doGet(e) {
       LogModule.registrarAcesso(usuario, 'CONSULTA_INSPICOES', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint, imei, localizacaoGps);
       return enviarResposta(resultado);
     }
-    // CONSULTAR ENVIOS  
+    
+    // CONSULTA CADASTROS DE TACÓGRAFO
+    if (acao === "consultar_tacografos") {
+      const fiscal = e.parameter.fiscal || null;
+      const dataInicio = e.parameter.dataInicio || null;
+      const dataFim = e.parameter.dataFim || null;
+      const carro = e.parameter.carro || null;
+      const fiscalFiltro = e.parameter.fiscalFiltro || null;
+      const resultado = consultarTacografos(fiscal, dataInicio, dataFim, carro, fiscalFiltro);
+      LogModule.registrarAcesso(usuario, 'CONSULTA_TACOGRAFOS', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint, imei, localizacaoGps);
+      return enviarResposta(resultado);
+    }
+    
+    // CONSULTAR ENVIOS
   if (acao === "consultar_envios") {
   const fiscal = e.parameter.fiscal || null;
   const dataInicio = e.parameter.dataInicio || null;
@@ -1121,7 +1242,7 @@ function migrarSenhasParaHashComSalt() {
 
 // ======================= FUNÇÕES DE TESTE DO DRIVE =======================
 function testDrive() {
-  const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
+  const pasta = DriveApp.getFolderById("1BrN9zxFViGbQu0ZDp0MzVDIZ0lKAYqxP");
   Logger.log(pasta.getName());
 }
 
@@ -1131,7 +1252,7 @@ function forcarPermissaoDrive() {
 
 function testarDrive() {
   try {
-    const pasta = DriveApp.getFolderById("1epP3b3_XsaKjV9KYm1IdXMi_5KdAz8CD");
+    const pasta = DriveApp.getFolderById("1nQQXwG6k4eBpRIoNh6aNgH_Kk__q4RIf");
     console.log("✅ Sucesso! Pasta encontrada: " + pasta.getName());
     console.log("🔗 URL da Pasta: " + pasta.getUrl());
     return "Pasta acessada com sucesso!";
@@ -1518,5 +1639,120 @@ function adminToggleUsuario(apelido, ativo) {
   } catch (e) {
     Logger.log('Erro em adminToggleUsuario: ' + e.message);
     return { sucesso: false, erro: e.message };
+  }
+}
+// ======================= CADASTRO DE MOTORISTAS NO TACÓGRAFO =======================
+
+function salvarCadastroTacografo(dadosJson) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("CadastroTacografo");
+  if (!sheet) {
+    sheet = ss.insertSheet("CadastroTacografo");
+    sheet.appendRow(["DataHora", "Fiscal", "Terminal", "Linha", "Carro", "Motorista"]);
+  }
+  const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+  const { fiscal, terminal, linha, carro, motorista } = dadosJson;
+  sheet.appendRow([agora, fiscal, terminal, linha, carro, motorista]);
+  return true;
+}
+
+function consultarCadastrosTacografo(fiscal, dataInicio, dataFim, terminal, linha, carro, motorista, papel, apelido) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("CadastroTacografo");
+    if (!sheet) return [];
+    const dados = sheet.getDataRange().getValues();
+    if (dados.length < 2) return [];
+
+    // Filtros de data
+    let dataInicioObj = null;
+    if (dataInicio) {
+      const parts = dataInicio.split('-');
+      dataInicioObj = new Date(parts[0], parts[1]-1, parts[2]);
+    }
+    let dataFimObj = null;
+    if (dataFim) {
+      const parts = dataFim.split('-');
+      dataFimObj = new Date(parts[0], parts[1]-1, parts[2], 23, 59, 59);
+    }
+
+    const cabecalhos = dados[0].map(h => String(h).trim());
+    const idxDataHora = cabecalhos.indexOf("DataHora");
+    const idxFiscal = cabecalhos.indexOf("Fiscal");
+    const idxTerminal = cabecalhos.indexOf("Terminal");
+    const idxLinha = cabecalhos.indexOf("Linha");
+    const idxCarro = cabecalhos.indexOf("Carro");
+    const idxMotorista = cabecalhos.indexOf("Motorista");
+
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const resultados = [];
+
+    for (let i = 1; i < dados.length; i++) {
+      const linhaDados = dados[i];
+      let dataHora = linhaDados[idxDataHora];
+      const fiscalLinha = linhaDados[idxFiscal];
+      if (!dataHora || !fiscalLinha) continue;
+
+      let dataHoraStr = "";
+      let dataRegistro = null;
+      if (dataHora instanceof Date) {
+        dataHoraStr = Utilities.formatDate(dataHora, "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
+        dataRegistro = new Date(dataHora.getFullYear(), dataHora.getMonth(), dataHora.getDate());
+      } else {
+        dataHoraStr = String(dataHora).trim();
+        const partes = dataHoraStr.split(" ")[0].split("/");
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const ano = parseInt(partes[2], 10);
+          dataRegistro = new Date(ano, mes, dia);
+        } else {
+          continue;
+        }
+      }
+
+      // Filtros
+      if (dataInicioObj && dataRegistro < dataInicioObj) continue;
+      if (dataFimObj && dataRegistro > dataFimObj) continue;
+
+      // Se fiscal não for admin/encarregado, filtra pelo seu próprio nome
+      if (papel !== 'ADMIN' && papel !== 'ENCARREGADO' && papel !== 'GERENTE') {
+        if (fiscalLinha !== apelido) continue;
+      } else {
+        // Para admin/encarregado, pode filtrar por fiscal específico se passado
+        if (fiscal && fiscalLinha !== fiscal) continue;
+      }
+
+      if (terminal && linhaDados[idxTerminal] !== terminal) continue;
+      if (linha && linhaDados[idxLinha] !== linha) continue;
+      if (carro && linhaDados[idxCarro] !== carro) continue;
+      if (motorista && !String(linhaDados[idxMotorista]).toLowerCase().includes(motorista.toLowerCase())) continue;
+
+      resultados.push({
+        dataHora: dataHoraStr,
+        dataPreenchimento: dataHoraStr.split(" ")[0],
+        fiscal: fiscalLinha,
+        terminal: linhaDados[idxTerminal] || "",
+        linha: linhaDados[idxLinha] || "",
+        carro: linhaDados[idxCarro] || "",
+        motorista: linhaDados[idxMotorista] || ""
+      });
+    }
+
+    // Ordenar por data decrescente
+    resultados.sort((a,b) => {
+      const [diaA, mesA, anoA] = a.dataPreenchimento.split('/').map(Number);
+      const [diaB, mesB, anoB] = b.dataPreenchimento.split('/').map(Number);
+      const dateA = new Date(anoA, mesA-1, diaA);
+      const dateB = new Date(anoB, mesB-1, diaB);
+      return dateB - dateA;
+    });
+
+    return resultados;
+  } catch (err) {
+    Logger.log("ERRO em consultarCadastrosTacografo: " + err.message);
+    return [];
   }
 }
