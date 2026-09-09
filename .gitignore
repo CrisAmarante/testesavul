@@ -10,25 +10,22 @@ __pycache__/
 *.so
 *.a
 *.out
-dist/
-build/
-target/
 
 # Dependencies
-.venv/
+node_modules/
 venv/
+.venv/
 .env
 .env.local
 *.env.*
-node_modules/
-.mypy_cache/
-.pytest_cache/
-.coverage
-coverage/
-htmlcov/
-.gradle/
-julia-*/
-zig*/
+
+# Build directories
+dist/
+build/
+target/
+*.jar
+*.war
+*.class
 
 # Logs and temp files
 *.log
@@ -39,10 +36,38 @@ zig*/
 # Editors
 .vscode/
 .idea/
+*.iml
+*.ipr
+*.iws
 
 # System files
 .DS_Store
 Thumbs.db
+*.DS_Store
+ehthumbs.db
+Icon?
+.CFUserTextEncoding
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+*.coverage
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
+
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+.tox/
+.hypothesis/
 
 # Compressed files
 *.zip
@@ -67,4 +92,12 @@ Thumbs.db
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Gradle
+.gradle/
+
+# Temporary files
+*.tmp
+*~
+\#*\#
 ```

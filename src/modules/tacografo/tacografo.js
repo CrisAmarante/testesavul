@@ -74,6 +74,12 @@ class TacografoModule {
     if (getEl('tacografo-linha')) getEl('tacografo-linha').value = '';
     if (getEl('tacografo-carro')) getEl('tacografo-carro').value = '';
     if (getEl('tacografo-motorista')) getEl('tacografo-motorista').value = '';
+    
+    // Reseta os radio buttons de vínculo
+    const vinculoRadios = document.querySelectorAll('input[name="tacografoVinculo"]');
+    vinculoRadios.forEach(radio => {
+      radio.checked = false;
+    });
   }
 
   coletarDados() {
@@ -85,12 +91,24 @@ class TacografoModule {
     const data = getEl('tacografo-data')?.value;
     const hora = getEl('tacografo-hora')?.value;
     
+    // Coleta o vínculo selecionado
+    const vinculoRadios = document.querySelectorAll('input[name="tacografoVinculo"]');
+    let vinculo = null;
+    vinculoRadios.forEach(radio => {
+      if (radio.checked) vinculo = radio.value;
+    });
+    
     if (!terminal || !linha || !carro || !motorista) {
       alert('Preencha todos os campos: TERMINAL, LINHA, CARRO e MOTORISTA.');
       return null;
     }
     
-    return { terminal, linha, carro, motorista, fiscal, data, hora };
+    if (!vinculo) {
+      alert('Selecione o vínculo do motorista: "Motorista cadastrado/vinculado no ponto" ou "Motorista com vínculo OK".');
+      return null;
+    }
+    
+    return { terminal, linha, carro, motorista, fiscal, data, hora, vinculo };
   }
 
   async enviarCadastro() {
@@ -109,10 +127,11 @@ class TacografoModule {
       motorista: dados.motorista,
       fiscal: dados.fiscal,
       data: dados.data,
-      hora: dados.hora
+      hora: dados.hora,
+      vinculo: dados.vinculo
     };
-
-    let resumo = `CONFIRMAR ENVIO?\n\nTerminal: ${dadosEnvio.terminal}\nLinha: ${dadosEnvio.linha}\nCarro: ${dadosEnvio.carro}\nMotorista: ${dadosEnvio.motorista}\nFiscal: ${dadosEnvio.fiscal}\nData/Hora: ${dados.data} ${dados.hora}\n\nDeseja enviar os dados?`;
+    
+    let resumo = `CONFIRMAR ENVIO?\n\nTerminal: ${dadosEnvio.terminal}\nLinha: ${dadosEnvio.linha}\nCarro: ${dadosEnvio.carro}\nMotorista: ${dadosEnvio.motorista}\nFiscal: ${dadosEnvio.fiscal}\nData/Hora: ${dados.data} ${dados.hora}\nVínculo: ${dados.vinculo === 'CADASTRADO' ? 'Motorista cadastrado/vinculado no ponto' : 'Motorista com vínculo OK'}\n\nDeseja enviar os dados?`;
     if (!confirm(resumo)) return;
 
     try {
