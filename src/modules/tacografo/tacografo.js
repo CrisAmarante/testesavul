@@ -373,6 +373,10 @@ function mostrarModalConferirTacografos(cadastramentos, role, params) {
         if (!isFiscal && podeVerTodos) {
           html += `<small>Fiscal: ${cad.fiscal}</small><br>`;
         }
+        // Exibe o vínculo se estiver disponível
+        if (cad.vinculo) {
+          html += `<small>Vínculo: ${cad.vinculo}</small><br>`;
+        }
         html += `</div>`;
       }
     }
@@ -451,6 +455,9 @@ function gerarTextoExportacaoTacografo(cadastramentos, role, isFiscal) {
       if (!isFiscal && podeVerTodos) {
         texto += `Fiscal: ${cad.fiscal}\n`;
       }
+      if (cad.vinculo) {
+        texto += `Vínculo: ${cad.vinculo}\n`;
+      }
       texto += `\n`;
     }
     texto += `\n`;
@@ -492,7 +499,7 @@ function gerarCSVExportacaoTacografo(cadastramentos) {
   });
 
   // Cabeçalho CSV
-  let csv = "Data;Hora;Terminal;Linha;Carro;Motorista;Fiscal\n";
+  let csv = "Data;Hora;Terminal;Linha;Carro;Motorista;Fiscal;Vinculo\n";
   
   for (const cad of ordenados) {
     const dataHoraParts = cad.dataHora ? cad.dataHora.split(' ') : ['', ''];
@@ -505,7 +512,8 @@ function gerarCSVExportacaoTacografo(cadastramentos) {
       cad.linha || '',
       cad.carro || '',
       cad.motorista || '',
-      cad.fiscal || ''
+      cad.fiscal || '',
+      cad.vinculo || ''
     ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(';');
     csv += linha + '\n';
   }
