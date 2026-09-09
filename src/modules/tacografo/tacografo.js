@@ -228,6 +228,24 @@ function mostrarModalConferirTacografos(cadastramentos, role, params) {
         <div><label>Data Início</label><input type="date" id="filtro-tacografo-data-inicio" value="${hoje}" max="${hoje}"></div>
         <div><label>Data Fim</label><input type="date" id="filtro-tacografo-data-fim" value="${hoje}" max="${hoje}"></div>
         <div><label>Carro</label><input type="text" id="filtro-tacografo-carro" placeholder="Prefixo"></div>
+        <div><label>Motorista</label><input type="text" id="filtro-tacografo-motorista" placeholder="Nome do motorista"></div>
+        <div>
+          <label>Vínculo Ponto</label>
+          <div style="display: flex; gap: 10px; align-items: center; height: 40px;">
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="radio" name="filtro-tacografo-vinculo-ponto" value="CADASTRADO" style="cursor: pointer;">
+              <span>Cadastrado</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="radio" name="filtro-tacografo-vinculo-ponto" value="OK" style="cursor: pointer;">
+              <span>Vínculo OK</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="radio" name="filtro-tacografo-vinculo-ponto" value="TODOS" checked style="cursor: pointer;">
+              <span>Todos</span>
+            </label>
+          </div>
+        </div>
     `;
 
     if (!isFiscal && podeVerTodos) {
@@ -250,13 +268,24 @@ function mostrarModalConferirTacografos(cadastramentos, role, params) {
         const dataInicio = document.getElementById('filtro-tacografo-data-inicio').value;
         const dataFim = document.getElementById('filtro-tacografo-data-fim').value;
         const carro = document.getElementById('filtro-tacografo-carro').value;
+        const motorista = document.getElementById('filtro-tacografo-motorista').value;
         const fiscalFiltro =
           !isFiscal && podeVerTodos ? document.getElementById('filtro-tacografo-fiscal').value : null;
+        
+        // Obtém o valor selecionado nos radio buttons de vínculo
+        const vinculoPontoRadios = document.querySelectorAll('input[name="filtro-tacografo-vinculo-ponto"]');
+        let vinculoPonto = 'TODOS';
+        vinculoPontoRadios.forEach(radio => {
+          if (radio.checked) vinculoPonto = radio.value;
+        });
+        
         window.modals.tacografo.conferirCadastramentosComFiltro(
           dataInicio,
           dataFim,
           carro,
-          fiscalFiltro
+          fiscalFiltro,
+          motorista,
+          vinculoPonto
         );
       });
 
@@ -267,8 +296,16 @@ function mostrarModalConferirTacografos(cadastramentos, role, params) {
         document.getElementById('filtro-tacografo-data-inicio').value = hoje;
         document.getElementById('filtro-tacografo-data-fim').value = hoje;
         document.getElementById('filtro-tacografo-carro').value = '';
+        document.getElementById('filtro-tacografo-motorista').value = '';
         if (!isFiscal && podeVerTodos)
           document.getElementById('filtro-tacografo-fiscal').value = '';
+        
+        // Reseta os radio buttons para "Todos"
+        const vinculoPontoRadios = document.querySelectorAll('input[name="filtro-tacografo-vinculo-ponto"]');
+        vinculoPontoRadios.forEach(radio => {
+          radio.checked = (radio.value === 'TODOS');
+        });
+        
         window.modals.tacografo.conferirCadastramentos();
       });
   }
