@@ -1,23 +1,19 @@
 /**
  * Módulo de Envio de Informações - Parte 3
- * Rascunho, envio e consulta de relatórios usando nova API
+ * Rascunho, envio e consulta de relatórios
  */
-import api from '../../api.js';
-import { ENDPOINTS } from '../../config.js';
-import { anexosArray, rascunhoAtualId, atualizarListaAnexos, limparFormularioEnvio, preencherResponsavel, validarFormulario } from './envio-base.js';
-import { consultarEnvios } from './envio-consulta.js';
 
 // ====================================================================
 // RASCUNHO
 // ====================================================================
-export function salvarRascunho() {
+function salvarRascunho() {
   if (!validarFormulario()) return;
   
   const areaDestino = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? document.getElementById('envio-outras-area').value.trim() : areaDestino;
+  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? getEl('envio-outras-area').value.trim() : areaDestino;
   
   const motivo = document.querySelector('input[name="motivo"]:checked')?.value;
-  let motivoFinal = motivo === 'OUTROS' ? document.getElementById('envio-outros-motivo').value.trim() : motivo;
+  let motivoFinal = motivo === 'OUTROS' ? getEl('envio-outros-motivo').value.trim() : motivo;
   
   const agora = new Date();
   const dataPreenchimento = agora.toLocaleDateString('pt-BR');
@@ -27,61 +23,60 @@ export function salvarRascunho() {
     id: rascunhoAtualId || Date.now().toString(),
     areaDestino: areaDestinoFinal,
     motivo: motivoFinal,
-    carro: document.getElementById('envio-carro').value,
-    linha: document.getElementById('envio-linha').value,
-    motorista: document.getElementById('envio-motorista').value,
-    cobrador: document.getElementById('envio-cobrador').value,
-    hora: document.getElementById('envio-hora').value,
-    sentido: document.getElementById('envio-sentido').value,
-    historico: document.getElementById('envio-historico').value,
-    local: document.getElementById('envio-local').value,
-    data: document.getElementById('envio-data').value,
+    carro: getEl('envio-carro').value,
+    linha: getEl('envio-linha').value,
+    motorista: getEl('envio-motorista').value,
+    cobrador: getEl('envio-cobrador').value,
+    hora: getEl('envio-hora').value,
+    sentido: getEl('envio-sentido').value,
+    historico: getEl('envio-historico').value,
+    local: getEl('envio-local').value,
+    data: getEl('envio-data').value,
     anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome })),
-    fiscal: api.getUserData()?.apelido || '',
+    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName'),
     dataPreenchimento: dataPreenchimento,
     horaPreenchimento: horaPreenchimento
   };
   
   localStorage.setItem(`rascunho_${dados.id}`, JSON.stringify(dados));
-  window.rascunhoAtualId = dados.id;
+  rascunhoAtualId = dados.id;
   alert('Rascunho salvo!');
 }
 
-export function carregarRascunho() {
-  if (!window.rascunhoAtualId) {
+function carregarRascunho() {
+  if (!rascunhoAtualId) {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('rascunho_'));
-    if (keys.length) window.rascunhoAtualId = keys[0].replace('rascunho_', '');
+    if (keys.length) rascunhoAtualId = keys[0].replace('rascunho_', '');
     else { limparFormularioEnvio(); preencherResponsavel(); return; }
   }
   
-  const dados = JSON.parse(localStorage.getItem(`rascunho_${window.rascunhoAtualId}`));
+  const dados = JSON.parse(localStorage.getItem(`rascunho_${rascunhoAtualId}`));
   if (dados) {
-    // Preenche os campos (mesma lógica anterior)
     if (['FISCALIZAÇÃO','SAF','PLANTÃO'].includes(dados.areaDestino)) {
       document.querySelector(`input[name="areaDestino"][value="${dados.areaDestino}"]`).checked = true;
     } else {
       document.querySelector(`input[name="areaDestino"][value="OUTRAS ÁREAS"]`).checked = true;
-      document.getElementById('envio-outras-area').value = dados.areaDestino;
-      document.getElementById('campo-outras-area').style.display = 'block';
+      getEl('envio-outras-area').value = dados.areaDestino;
+      getEl('campo-outras-area').style.display = 'block';
     }
     
     if (['AVARIAS','PEDIDO DE FOLGAS','SOLICITAÇÃO DE MATERIAIS'].includes(dados.motivo)) {
       document.querySelector(`input[name="motivo"][value="${dados.motivo}"]`).checked = true;
     } else {
       document.querySelector(`input[name="motivo"][value="OUTROS"]`).checked = true;
-      document.getElementById('envio-outros-motivo').value = dados.motivo;
-      document.getElementById('campo-outros-motivo').style.display = 'block';
+      getEl('envio-outros-motivo').value = dados.motivo;
+      getEl('campo-outros-motivo').style.display = 'block';
     }
     
-    document.getElementById('envio-carro').value = dados.carro || '';
-    document.getElementById('envio-linha').value = dados.linha || '';
-    document.getElementById('envio-motorista').value = dados.motorista || '';
-    document.getElementById('envio-cobrador').value = dados.cobrador || '';
-    document.getElementById('envio-hora').value = dados.hora || '';
-    document.getElementById('envio-sentido').value = dados.sentido || '';
-    document.getElementById('envio-historico').value = dados.historico || '';
-    document.getElementById('envio-local').value = dados.local || '';
-    document.getElementById('envio-data').value = dados.data || '';
+    getEl('envio-carro').value = dados.carro || '';
+    getEl('envio-linha').value = dados.linha || '';
+    getEl('envio-motorista').value = dados.motorista || '';
+    getEl('envio-cobrador').value = dados.cobrador || '';
+    getEl('envio-hora').value = dados.hora || '';
+    getEl('envio-sentido').value = dados.sentido || '';
+    getEl('envio-historico').value = dados.historico || '';
+    getEl('envio-local').value = dados.local || '';
+    getEl('envio-data').value = dados.data || '';
     
     if (dados.anexos && Array.isArray(dados.anexos)) {
       anexosArray = dados.anexos;
@@ -89,28 +84,54 @@ export function carregarRascunho() {
     }
     
     preencherResponsavel();
-    if (typeof habilitarCamposSecundarios === 'function') habilitarCamposSecundarios(true);
-    if (typeof aplicarRegrasPorArea === 'function') aplicarRegrasPorArea();
-    if (typeof aplicarRegrasPorMotivo === 'function') aplicarRegrasPorMotivo();
+    habilitarCamposSecundarios(true);
+    aplicarRegrasPorArea();
+    aplicarRegrasPorMotivo();
   } else {
     limparFormularioEnvio();
     preencherResponsavel();
   }
 }
 
+function limparFormularioEnvio() {
+  document.querySelectorAll('input[name="areaDestino"], input[name="motivo"]').forEach(r => r.checked = false);
+  getEl('envio-outras-area').value = '';
+  getEl('campo-outras-area').style.display = 'none';
+  getEl('envio-outros-motivo').value = '';
+  getEl('campo-outros-motivo').style.display = 'none';
+  getEl('envio-carro').value = '';
+  getEl('envio-linha').value = '';
+  getEl('envio-motorista').value = '';
+  getEl('envio-cobrador').value = '';
+  getEl('envio-hora').value = '';
+  getEl('envio-sentido').value = '';
+  getEl('envio-historico').value = '';
+  getEl('envio-local').value = '';
+  anexosArray = [];
+  atualizarListaAnexos();
+  
+  const inputArq = getEl('input-arquivos-multiplos');
+  if (inputArq) inputArq.value = '';
+  
+  preencherDataAtual();
+  rascunhoAtualId = null;
+  habilitarCamposSecundarios(false);
+  habilitarCamposAvarias(true);
+}
+
 // ====================================================================
-// ENVIO PARA O SERVIDOR (via API)
+// ENVIO PARA O SERVIDOR
 // ====================================================================
-export async function enviarRelatorio() {
+function enviarRelatorio() {
   if (!validarFormulario()) return;
   
   const areaDestino = document.querySelector('input[name="areaDestino"]:checked')?.value;
-  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? document.getElementById('envio-outras-area').value.trim() : areaDestino;
+  let areaDestinoFinal = areaDestino === 'OUTRAS ÁREAS' ? getEl('envio-outras-area').value.trim() : areaDestino;
   
   const motivo = document.querySelector('input[name="motivo"]:checked')?.value;
-  let motivoFinal = motivo === 'OUTROS' ? document.getElementById('envio-outros-motivo').value.trim() : motivo;
+  let motivoFinal = motivo === 'OUTROS' ? getEl('envio-outros-motivo').value.trim() : motivo;
 
-  const btnEnviar = document.getElementById('btn-enviar-relatorio');
+  const btnEnviar = getEl('btn-enviar-relatorio');
   const textoBotaoOriginal = btnEnviar.innerHTML;
   btnEnviar.innerHTML = '⏳ Enviando...';
   btnEnviar.disabled = true;
@@ -122,40 +143,50 @@ export async function enviarRelatorio() {
   const dadosEnvio = {
     areaDestino: areaDestinoFinal,
     motivo: motivoFinal,
-    carro: document.getElementById('envio-carro').value,
-    linha: document.getElementById('envio-linha').value,
-    motorista: document.getElementById('envio-motorista').value,
-    cobrador: document.getElementById('envio-cobrador').value,
-    hora: document.getElementById('envio-hora').value,
-    sentido: document.getElementById('envio-sentido').value,
-    historico: document.getElementById('envio-historico').value,
-    local: document.getElementById('envio-local').value,
-    data: document.getElementById('envio-data').value,
+    carro: getEl('envio-carro').value,
+    linha: getEl('envio-linha').value,
+    motorista: getEl('envio-motorista').value,
+    cobrador: getEl('envio-cobrador').value,
+    hora: getEl('envio-hora').value,
+    sentido: getEl('envio-sentido').value,
+    historico: getEl('envio-historico').value,
+    local: getEl('envio-local').value,
+    data: getEl('envio-data').value,
     anexos: anexosArray.map(a => ({ base64: a.base64, mimeType: a.mimeType, nome: a.nome })),
-    fiscal: api.getUserData()?.apelido || '',
+    fiscal: localStorage.getItem('inspectorApelido') || localStorage.getItem('inspectorName'),
     dataPreenchimento: dataPreenchimento,
     horaPreenchimento: horaPreenchimento
   };
 
   console.log('📤 Enviando dados:', dadosEnvio);
 
-  try {
-    await api.post(ENDPOINTS.RELATORIOS, dadosEnvio);
-    alert('✅ Relatório e anexos enviados com sucesso!');
-    if (window.rascunhoAtualId) localStorage.removeItem(`rascunho_${window.rascunhoAtualId}`);
-    limparFormularioEnvio();
-    fecharModalEnvio();
-  } catch (error) {
-    console.error('❌ Erro no envio:', error);
-    alert('Erro ao enviar: ' + error.message);
-  } finally {
-    btnEnviar.innerHTML = textoBotaoOriginal;
-    btnEnviar.disabled = false;
-  }
+  const formData = new FormData();
+  formData.append('acao', 'envio_informacoes');
+  formData.append('dados', JSON.stringify(dadosEnvio));
+
+  fetch(URL_PLANILHA, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: formData
+  })
+    .then(() => {
+      alert('✅ Relatório e anexos enviados com sucesso!');
+      if (rascunhoAtualId) localStorage.removeItem(`rascunho_${rascunhoAtualId}`);
+      limparFormularioEnvio();
+      fecharModalEnvio();
+    })
+    .catch((error) => {
+      console.error('❌ Erro no fetch:', error);
+      alert('Erro ao enviar. Verifique o console.');
+    })
+    .finally(() => {
+      btnEnviar.innerHTML = textoBotaoOriginal;
+      btnEnviar.disabled = false;
+    });
 }
 
-// Função para fechar modal (definida em envio-base.js)
-function fecharModalEnvio() {
-  const m = document.getElementById('modal-envio-informacoes');
-  if (m) m.classList.remove('is-open');
-}
+// Exportar para escopo global
+window.salvarRascunho = salvarRascunho;
+window.carregarRascunho = carregarRascunho;
+window.limparFormularioEnvio = limparFormularioEnvio;
+window.enviarRelatorio = enviarRelatorio;
