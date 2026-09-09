@@ -18,13 +18,17 @@ let INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos padrão (pode ser atualiz
 async function carregarTimeoutInatividade() {
   try {
     const response = await fetch(`${URL_PLANILHA}?acao=admin_get_config&_=${Date.now()}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     const data = await response.json();
     if (data && data.sucesso && data.dados && data.dados.timeout) {
       INACTIVITY_TIMEOUT = data.dados.timeout;
       console.log(`✅ Timeout de inatividade carregado: ${INACTIVITY_TIMEOUT / 60000} minutos`);
     }
   } catch (err) {
-    console.warn('⚠️ Falha ao carregar timeout do servidor, usando padrão:', err);
+    // Erro esperado em ambientes sem backend configurado - usa valor padrão silenciosamente
+    // console.warn('⚠️ Falha ao carregar timeout do servidor, usando padrão:', err);
   }
 }
 
