@@ -154,6 +154,13 @@
         <div class="field"><label>DATA</label><input type="text" id="tacografo-data" readonly></div>
         <div class="field"><label>HORA</label><input type="text" id="tacografo-hora" readonly></div>
       </div>
+      <div class="form-section" style="margin-top: 15px;">
+        <label>VÍNCULO DO MOTORISTA: <span class="required">*</span></label>
+        <div class="radio-group" id="tacografo-vinculo-group">
+          <label><input type="radio" name="tacografoVinculo" value="CADASTRADO"> Motorista cadastrado/vinculado no ponto</label>
+          <label><input type="radio" name="tacografoVinculo" value="OK"> Motorista com vínculo OK</label>
+        </div>
+      </div>
       <div class="action-buttons">
         <button id="btn-conferir-tacografos" class="btn-secundario" style="display: none;">CONFERIR CADASTRAMENTOS</button>
         <button id="btn-enviar-tacografo" class="btn-principal">ENVIAR</button>
