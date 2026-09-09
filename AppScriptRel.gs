@@ -169,19 +169,20 @@ function salvarTacografoCadastro(dadosJson) {
   if (!sheet) {
     sheet = ss.insertSheet("Tacografo_Cadastros");
     sheet.appendRow([
-      "DataHora", "Terminal", "Linha", "Carro", "Motorista", "Fiscal"
+      "DataHora", "Terminal", "Linha", "Carro", "Motorista", "Fiscal", "Vinculo"
     ]);
   }
   const agora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm:ss");
-  const { terminal, linha, carro, motorista, fiscal, data, hora } = dadosJson;
+  const { terminal, linha, carro, motorista, fiscal, data, hora, vinculo } = dadosJson;
+  const vinculoTexto = vinculo === 'CADASTRADO' ? 'Motorista cadastrado/vinculado no ponto' : 'Motorista com vínculo OK';
   sheet.appendRow([
-    agora, terminal, linha, carro, motorista, fiscal
+    agora, terminal, linha, carro, motorista, fiscal, vinculoTexto
   ]);
   return true;
 }
 
 // ======================= CONSULTAR CADASTROS DE TACÓGRAFO (com filtros) =======================
-function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro) {
+function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro, vinculoPonto) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName("Tacografo_Cadastros");
@@ -207,7 +208,8 @@ function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltr
       carro: cabecalhos.indexOf("Carro"),
       terminal: cabecalhos.indexOf("Terminal"),
       linha: cabecalhos.indexOf("Linha"),
-      motorista: cabecalhos.indexOf("Motorista")
+      motorista: cabecalhos.indexOf("Motorista"),
+      vinculo: cabecalhos.indexOf("Vinculo")
     };
     
     const resultados = [];
@@ -241,7 +243,14 @@ function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltr
       
       if (carro && linha[indices.carro] && !String(linha[indices.carro]).toLowerCase().includes(carro.toLowerCase())) continue;
       if (fiscalFiltro && fiscalLinha !== fiscalFiltro) continue;
-      if (fiscalNome && fiscalLinha !== fiscalNome) continue; 
+      if (fiscalNome && fiscalLinha !== fiscalNome) continue;
+      
+      // Filtra por vínculo se especificado
+      const vinculoLinha = indices.vinculo >= 0 ? String(linha[indices.vinculo]).trim() : '';
+      if (vinculoPonto && vinculoPonto !== 'TODOS') {
+        if (vinculoPonto === 'CADASTRADO' && !vinculoLinha.includes('cadastrado')) continue;
+        if (vinculoPonto === 'OK' && !vinculoLinha.includes('OK')) continue;
+      }
       
       // Extrai apenas a data (dd/MM/yyyy) da dataHora para exibição como "data de preenchimento"
       const dataPreenchimento = dataHoraStr.split(" ")[0];
@@ -253,7 +262,8 @@ function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltr
         terminal: linha[indices.terminal] || "",
         linha: linha[indices.linha] || "",
         motorista: linha[indices.motorista] || "",
-        fiscal: fiscalLinha
+        fiscal: fiscalLinha,
+        vinculo: vinculoLinha
       });
     }
     return resultados;
@@ -1098,7 +1108,8 @@ function doGet(e) {
       const dataFim = e.parameter.dataFim || null;
       const carro = e.parameter.carro || null;
       const fiscalFiltro = e.parameter.fiscalFiltro || null;
-      const resultado = consultarTacografos(fiscal, dataInicio, dataFim, carro, fiscalFiltro);
+      const vinculoPonto = e.parameter.vinculoPonto || 'TODOS';
+      const resultado = consultarTacografos(fiscal, dataInicio, dataFim, carro, fiscalFiltro, vinculoPonto);
       LogModule.registrarAcesso(usuario, 'CONSULTA_TACOGRAFOS', `fiscal:${fiscal||''},dataInicio:${dataInicio||''},dataFim:${dataFim||''}`, endpoint, imei, localizacaoGps);
       return enviarResposta(resultado);
     }
