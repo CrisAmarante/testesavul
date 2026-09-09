@@ -9,3 +9,6 @@ Correção
                     Cada Modal deve ter, no máximo 5 botões, deixar este espaço reservado, os espaços vazios dentro de cada modal não ficam visíveis, o ADMIN organiza, habilita, desabilita e edita os notões dentro do modal.
                     Dupla validação para salvamento das alterações (digita a senha de acesso novamente)
                     Registrar todas as alterações no LOG
+
+Chave api AVUL
+b4f1a3e2-8c2d-4b8e-8d7e-1a1b2c3d4e5f
