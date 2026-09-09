@@ -139,7 +139,7 @@ class TacografoModule {
     this.conferirCadastramentosComFiltro(hoje, hoje, null, null);
   }
 
-  conferirCadastramentosComFiltro(dataInicio, dataFim, carro, fiscalFiltro) {
+  conferirCadastramentosComFiltro(dataInicio, dataFim, carro, fiscalFiltro, motorista, vinculoPonto) {
     // --- Validações de data ---
     const hojeStr = new Date().toISOString().split('T')[0];
 
@@ -161,6 +161,8 @@ class TacografoModule {
     if (dataInicio) params.append('dataInicio', dataInicio);
     if (dataFim) params.append('dataFim', dataFim);
     if (carro) params.append('carro', carro);
+    if (motorista) params.append('motorista', motorista);
+    if (vinculoPonto && vinculoPonto !== 'TODOS') params.append('vinculoPonto', vinculoPonto);
     if (fiscalFiltro) params.append('fiscalFiltro', fiscalFiltro);
     // Fiscais veem apenas seus próprios registros
     if (currentUserRole === 'FISCAL') {
