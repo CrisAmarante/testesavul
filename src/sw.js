@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pensoTestes-cache-v3.1.0.0.0.0';
-//correção do modal de inspeções
+const CACHE_NAME = 'penso-cache-v3.1.0.0.3.0';
+//Inclusão do modal de Tacógrafos
 // Lista de arquivos para cache imediato (estáticos)
 const ASSETS_TO_CACHE = [
   './',
@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
   './src/modules/envio/envio-base.js',
   './src/modules/envio/envio-form.js',
   './src/modules/envio/envio-actions.js',
+   './src/modules/tacografo/tacografo.js',
   './src/main.js',
   './manifest.json',
   './icon.png',
