@@ -1,1 +1,21 @@
-(sw.js and src/main.js are source files, no build artifacts, dependencies, or temp files in the changes)
+```
+# Google Apps Script related
+*.gs.bak
+*.gs~
+*.bak
+
+# General backup and temp files
+*.tmp
+*.temp
+*~
+.bak
+.swp
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*
+```

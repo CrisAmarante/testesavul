@@ -266,6 +266,16 @@ function consultarTacografos(fiscalNome, dataInicio, dataFim, carro, fiscalFiltr
         vinculo: vinculoLinha
       });
     }
+    
+    // Ordenar por data decrescente (mais recente primeiro)
+    resultados.sort((a, b) => {
+      const [diaA, mesA, anoA] = a.dataPreenchimento.split('/').map(Number);
+      const [diaB, mesB, anoB] = b.dataPreenchimento.split('/').map(Number);
+      const dateA = new Date(anoA, mesA - 1, diaA);
+      const dateB = new Date(anoB, mesB - 1, diaB);
+      return dateB - dateA;
+    });
+    
     return resultados;
   } catch (err) {
     Logger.log("ERRO em consultarTacografos: " + err.message);
