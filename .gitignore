@@ -1,21 +1,39 @@
 ```
-# Google Apps Script related
-*.gs.bak
-*.gs~
-*.bak
+# Dependencies
+node_modules/
 
-# General backup and temp files
+# Build artifacts
+dist/
+build/
+target/
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
 *.tmp
-*.temp
-*~
-.bak
-.swp
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Logs
 *.log
 
-# Environment variables
-.env
-.env.local
-.env.*
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# System files
+.DS_Store
+Thumbs.db
 ```
