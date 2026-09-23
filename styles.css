@@ -868,3 +868,15 @@ body.dark .grid-anexos-preview {
     font-size: 0.8rem;
   }
 }
+
+/* ====================================================================
+   TOASTS NÃO-BLOQUEANTES (substitutos de alert)
+   ==================================================================== */
+.app-toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 12000; pointer-events: none; width: min(92vw, 420px); }
+.app-toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--modal-bg); color: var(--text); border-left: 4px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 0.95rem; line-height: 1.35; box-shadow: 0 8px 25px rgba(0,0,0,0.3); opacity: 0; transform: translateY(10px); transition: opacity 0.25s ease, transform 0.25s ease; word-break: break-word; }
+.app-toast--show { opacity: 1; transform: translateY(0); }
+.app-toast--hide { opacity: 0; transform: translateY(10px); }
+.app-toast--erro { border-left-color: #d11a2d; }
+.app-toast--sucesso { border-left-color: #1f9d55; }
+.app-toast--aviso { border-left-color: #e0a100; }
+.app-toast__close { margin-left: auto; background: none; border: none; font-size: 1.2rem; line-height: 1; color: var(--accent); cursor: pointer; padding: 0 2px; }

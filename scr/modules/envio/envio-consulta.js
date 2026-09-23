@@ -385,10 +385,35 @@ function limitarHistorico(texto, limiteCaracteres = 1400, limiteLinhas = 16) {
 async function exportarParaPDF(envio) {
   try {
     if (typeof window.jspdf === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      document.head.appendChild(script);
-      await new Promise(resolve => { script.onload = resolve; });
+      // cdnjs.cloudflare.com é bloqueado por "Tracking Prevention" (Edge/Chrome)
+      // e pode travar a exportação. Usamos um espelho (jsdelivr) com fallbacks
+      // em cascata e tratamos onerror — nunca ficamos esperando para sempre.
+      const fontesJsPDF = [
+        'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+        'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+      ];
+
+      const carregarScript = (src) => new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => { s.remove(); resolve(false); }; // sem throw: só tenta o próximo
+        document.head.appendChild(s);
+      });
+
+      let carregado = false;
+      for (const src of fontesJsPDF) {
+        carregado = await carregarScript(src);
+        if (carregado && typeof window.jspdf !== 'undefined') break;
+        carregado = false;
+      }
+
+      if (!carregado || typeof window.jspdf === 'undefined') {
+        mostrarToast('Não foi possível carregar o gerador de PDF. Verifique sua conexão e tente novamente.', 'erro');
+        return;
+      }
       await new Promise(resolve => setTimeout(resolve, 150));
     }
 

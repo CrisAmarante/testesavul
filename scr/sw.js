@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penso-cache-v3.1.0.0.3.0';
+const CACHE_NAME = 'penso-cache-v3.2.0.0.0.1';
 //Inclusão do modal de Tacógrafos
 // Lista de arquivos para cache imediato (estáticos)
 const ASSETS_TO_CACHE = [
@@ -17,7 +17,17 @@ const ASSETS_TO_CACHE = [
   './scr/main.js',
   './manifest.json',
   './icon.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
+  // Font Awesome 100% local (CSS + webfonts): elimina a dependência do
+  // cdnjs.cloudflare.com, que era bloqueado por "Tracking Prevention" em
+  // Edge/Chrome e quebrava os ícones. Bump da versão força o SW antigo
+  // (que ainda referenciava o CDN) a se atualizar e limpar caches velhos.
+  './fontawesome-all.min.css?v=6.5.0-local',
+  './webfonts/fa-solid-900.woff2',
+  './webfonts/fa-solid-900.ttf',
+  './webfonts/fa-regular-400.woff2',
+  './webfonts/fa-regular-400.ttf',
+  './webfonts/fa-brands-400.woff2',
+  './webfonts/fa-brands-400.ttf'
 ];
 
 // Instalação: Cria o cache e armazena os arquivos base
@@ -25,7 +35,15 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Cache aberto e instalando assets');
-      return cache.addAll(ASSETS_TO_CACHE);
+      // addAll() aborta tudo se UM recurso falhar (ex.: CDN bloqueado por
+      // Tracking Prevention). Cacheamos individualmente e ignoramos falhas.
+      return Promise.all(
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Asset não cacheado:', url, err && err.message);
+          })
+        )
+      );
     })
   );
   self.skipWaiting();
@@ -79,7 +97,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Demais assets: Stale-While-Revalidate
+  // Demais assets: Stale-While-Revalidate (com fallback offline seguro)
   event.respondWith(
     caches.open(CACHE_NAME).then(cache => {
       return cache.match(event.request).then(response => {
@@ -88,9 +106,23 @@ self.addEventListener('fetch', (event) => {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
-        }).catch(() => {});
-        return response || fetchPromise;
+        }).catch(() => null);
+
+        if (response) {
+          // Serve o cache imediatamente e revalida em segundo plano
+          fetchPromise.catch(() => {});
+          return response;
+        }
+        return fetchPromise.then(r => r || respostaOffline(event.request));
       });
     })
   );
 });
+
+// Última barreira offline: nunca deixa a requisição morrer sem resposta
+function respostaOffline(request) {
+  if (request.mode === 'navigate') {
+    return caches.match('./index.html').then(r => r || new Response('Você está offline.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+  }
+  return new Response('', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+}
