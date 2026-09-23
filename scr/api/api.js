@@ -47,6 +47,22 @@ function processarDadosPlanilha(dados) {
   }
 }
 
+// Snapshot dos inspetores no localStorage: permite renderizar a tela
+// imediatamente na próxima visita, revalidando com o servidor em seguida.
+const INSPETORES_CACHE_KEY = 'inspetoresCache';
+
+function salvarSnapshotInspetores() {
+  try {
+    // Não persiste hashes de senha em texto claro no dispositivo
+    const snapshot = {};
+    for (const chave in INSPETORES) {
+      const u = INSPETORES[chave];
+      snapshot[chave] = { nome: u.nome, funcao: u.funcao };
+    }
+    localStorage.setItem(INSPETORES_CACHE_KEY, JSON.stringify(snapshot));
+  } catch (e) { /* armazenamento indisponível - ignora */ }
+}
+
 async function refreshInspetores() {
   if (refreshPromise) return refreshPromise;
   
@@ -55,6 +71,7 @@ async function refreshInspetores() {
     
     window[callbackName] = function(dados) {
       processarDadosPlanilha(dados);
+      salvarSnapshotInspetores();
       delete window[callbackName];
       refreshPromise = null;
       resolve();

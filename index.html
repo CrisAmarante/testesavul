@@ -7,43 +7,72 @@
     <link rel="icon" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
+    <!-- Otimização de performance: conexões antecipadas aos domínios externos -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css?v=20260331">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Scripts refatorados em módulos -->
-    <script src="scr/config/config.js"></script>
-    <script src="scr/core/utils.js"></script>
-    <script src="scr/api/api.js"></script>
-    <script src="scr/auth/auth.js"></script>
-    <script src="scr/modules/inspecao/inspecao.js"></script>
-    <script src="scr/modules/tacografo/tacografo.js"></script>
-    <script src="scr/modules/envio/envio-base.js"></script>
-    <script src="scr/modules/envio/envio-form.js"></script>
-    <script src="scr/modules/envio/envio-actions.js"></script>
-    <script src="scr/modules/envio/envio-consulta.js"></script>
-    <script src="scr/admin/admin.js"></script>
-    <script src="scr/main.js"></script>
+    <!-- jsPDF não é mais carregado na inicialização: envio-consulta.js já o carrega
+         sob demanda (lazy-load) apenas quando um PDF é exportado (-~350KB no load) -->
+    <!-- Scripts refatorados em módulos (defer: não bloqueiam a renderização; ordem preservada) -->
+    <script src="scr/config/config.js" defer></script>
+    <script src="scr/core/utils.js" defer></script>
+    <script src="scr/api/api.js" defer></script>
+    <script src="scr/auth/auth.js" defer></script>
+    <script src="scr/modules/inspecao/inspecao.js" defer></script>
+    <script src="scr/modules/tacografo/tacografo.js" defer></script>
+    <script src="scr/modules/envio/envio-base.js" defer></script>
+    <script src="scr/modules/envio/envio-form.js" defer></script>
+    <script src="scr/modules/envio/envio-actions.js" defer></script>
+    <script src="scr/modules/envio/envio-consulta.js" defer></script>
+    <script src="scr/admin/admin.js" defer></script>
+    <script src="scr/main.js" defer></script>
 </head>
-<!-- vConsole - Console móvel para depuração -->
-<script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
+<!-- vConsole - Console móvel para depuração (carregado apenas quando o modo debug está ativo) -->
 <script>
-  // Inicializa apenas se estiver em modo de teste (pode ativar por URL)
-  if (window.location.search.includes('debug=true') || localStorage.getItem('debugMode') === 'true') {
-    var vConsole = new VConsole();
-    console.log('🐛 Modo debug ativado!');
-  }
-  
-  // Para ativar sem recarregar, pode usar este atalho:
-  window.ativarDebug = function() {
-    if (typeof VConsole !== 'undefined' && !window.vConsoleInstance) {
-      window.vConsoleInstance = new VConsole();
-      localStorage.setItem('debugMode', 'true');
-      console.log('🐛 Console ativado!');
+  (function () {
+    var debugAtivo = window.location.search.includes('debug=true') || localStorage.getItem('debugMode') === 'true';
+
+    function criarVConsole() {
+      if (typeof VConsole !== 'undefined' && !window.vConsoleInstance) {
+        window.vConsoleInstance = new VConsole();
+        return true;
+      }
+      return false;
     }
-  };
+
+    // Inicializa apenas se estiver em modo de teste (pode ativar por URL)
+    if (debugAtivo) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js';
+      s.onload = function () {
+        if (criarVConsole()) console.log('🐛 Modo debug ativado!');
+      };
+      document.head.appendChild(s);
+    }
+
+    // Para ativar sem recarregar, pode usar este atalho:
+    window.ativarDebug = function () {
+      if (criarVConsole()) {
+        localStorage.setItem('debugMode', 'true');
+        console.log('🐛 Console ativado!');
+        return;
+      }
+      var sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js';
+      sc.onload = function () {
+        criarVConsole();
+        localStorage.setItem('debugMode', 'true');
+        console.log('🐛 Console ativado!');
+      };
+      document.head.appendChild(sc);
+    };
+  })();
 </script>
 <body>
 
