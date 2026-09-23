@@ -14,6 +14,50 @@ function logDebug(...args) {
 }
 
 // ====================================================================
+// TOASTS NÃO-BLOQUEANTES (substitutos de alert())
+// ====================================================================
+// alert() bloqueia a thread principal. Quando chamado dentro de um handler
+// de erro de requisição, o navegador registra "[Violation] 'error' handler
+// took XXXXms". Os toasts abaixo exibem a mesma mensagem sem bloquear nada.
+function mostrarToast(mensagem, tipo = 'info', duracao = 4500) {
+  try {
+    let area = document.getElementById('app-toasts');
+    if (!area) {
+      area = document.createElement('div');
+      area.id = 'app-toasts';
+      area.className = 'app-toasts';
+      document.body.appendChild(area);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'app-toast app-toast--' + tipo;
+    toast.setAttribute('role', 'status');
+    toast.textContent = String(mensagem);
+
+    const fechar = () => {
+      if (!toast.parentNode) return;
+      toast.classList.add('app-toast--hide');
+      setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+    };
+
+    const btn = document.createElement('button');
+    btn.className = 'app-toast__close';
+    btn.setAttribute('aria-label', 'Fechar');
+    btn.textContent = '\u00d7';
+    btn.addEventListener('click', fechar);
+    toast.appendChild(btn);
+
+    area.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('app-toast--show'));
+    setTimeout(fechar, duracao);
+    return toast;
+  } catch (e) {
+    // último recurso: nunca deixar uma UI quebrar por causa de um aviso
+    console.warn('Falha ao exibir toast:', mensagem, e);
+  }
+}
+
+// ====================================================================
 // HASH - Criptografia de senha
 // ====================================================================
 async function hashPassword(password, salt) {
@@ -131,3 +175,4 @@ window.formatarHora = formatarHora;
 window.ModalController = ModalController;
 window.hashPassword = hashPassword;
 window.logDebug = logDebug;
+window.mostrarToast = mostrarToast;

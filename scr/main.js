@@ -119,7 +119,9 @@ function initEventListeners() {
       if (maxDias > 0 && dataInicio && dataFim) {
         const diff = (new Date(dataFim) - new Date(dataInicio)) / (1000 * 60 * 60 * 24);
         if (diff > maxDias) { 
-          alert(`Período máximo de ${maxDias} dias. Ajuste as datas.`); 
+          // Toast em vez de alert(): alert bloqueia a thread dentro do handler
+          // de clique e gera "[Violation] handler took XXXXms"
+          mostrarToast(`Período máximo de ${maxDias} dias. Ajuste as datas.`, 'erro');
           return; 
         }
       }

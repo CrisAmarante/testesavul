@@ -15,21 +15,26 @@ let INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutos padrão (pode ser atualiz
 // ====================================================================
 // CARREGAR TIMEOUT DO BACKEND
 // ====================================================================
-async function carregarTimeoutInatividade() {
-  try {
-    const response = await fetch(`${URL_PLANILHA}?acao=admin_get_config&_=${Date.now()}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    if (data && data.sucesso && data.dados && data.dados.timeout) {
-      INACTIVITY_TIMEOUT = data.dados.timeout;
-      console.log(`✅ Timeout de inatividade carregado: ${INACTIVITY_TIMEOUT / 60000} minutos`);
-    }
-  } catch (err) {
-    // Erro esperado em ambientes sem backend configurado - usa valor padrão silenciosamente
-    // console.warn('⚠️ Falha ao carregar timeout do servidor, usando padrão:', err);
-  }
+function carregarTimeoutInatividade() {
+  return new Promise((resolve) => {
+    // JSONP com partida adiada: nunca bloqueia o handler que o disparou e
+    // falha em silêncio se a rede/extensão bloquear a requisição.
+    criarRequestJSONP(URL_PLANILHA, { acao: 'admin_get_config' }, {
+      callbackPrefix: 'configTimeoutCallback',
+      timeout: 10000,
+      onSuccess: function (data) {
+        if (data && data.sucesso && data.dados && data.dados.timeout) {
+          INACTIVITY_TIMEOUT = data.dados.timeout;
+          console.log(`✅ Timeout de inatividade carregado: ${INACTIVITY_TIMEOUT / 60000} minutos`);
+        }
+        resolve();
+      },
+      onError: function () {
+        // Erro esperado em ambientes sem backend configurado - usa valor padrão
+        resolve();
+      }
+    });
+  });
 }
 
 // ====================================================================
@@ -128,44 +133,47 @@ async function login(e) {
   btnSubmit.disabled = true;
   errorMsg.style.display = 'none';
 
-  const callbackName = 'loginCallback_' + Date.now();
-  
-  window[callbackName] = async function(resposta) {
-    delete window[callbackName];
+  // Restaura o botão e exibe mensagens SEM alert(): o alert bloqueava a thread
+  // enquanto o navegador ainda tratava o erro da requisição, gerando
+  // "[Violation] 'error' handler took 2001ms".
+  const restaurar = function () {
     btnSubmit.innerHTML = textoOriginal;
     btnSubmit.disabled = false;
+  };
 
-    if (resposta && resposta.sucesso) {
-      localStorage.setItem('inspectorLoggedIn', 'true');
-      localStorage.setItem('inspectorName', resposta.nome);
-      localStorage.setItem('inspectorApelido', resposta.apelido);
-      localStorage.setItem('inspectorRole', resposta.funcao);
-      
-      // Limpa o campo de senha após login bem-sucedido
-      getEl('password').value = '';
-      
-      await refreshInspetores();
-      registrarLog(resposta.apelido);
-      
-      window.modals.login.close();
-      checkLoginStatus();
-    } else {
+  criarRequestJSONP(URL_PLANILHA, { acao: 'login', senha: senha }, {
+    callbackPrefix: 'loginCallback',
+    timeout: 20000,
+    onSuccess: function (resposta) {
+      restaurar();
+
+      if (resposta && resposta.sucesso) {
+        localStorage.setItem('inspectorLoggedIn', 'true');
+        localStorage.setItem('inspectorName', resposta.nome);
+        localStorage.setItem('inspectorApelido', resposta.apelido);
+        localStorage.setItem('inspectorRole', resposta.funcao);
+
+        // Limpa o campo de senha após login bem-sucedido
+        getEl('password').value = '';
+
+        refreshInspetores().then(() => registrarLog(resposta.apelido)).catch(() => {});
+
+        window.modals.login.close();
+        checkLoginStatus();
+      } else {
+        errorMsg.textContent = (resposta && resposta.erro) || 'Senha incorreta. Tente novamente.';
+        errorMsg.style.display = 'block';
+        getEl('password').value = '';
+        getEl('password').focus();
+      }
+    },
+    onError: function () {
+      restaurar();
+      errorMsg.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
       errorMsg.style.display = 'block';
-      getEl('password').value = '';
-      getEl('password').focus();
+      mostrarToast('Sem conexão com o servidor. Tente novamente.', 'erro');
     }
-  };
-
-  const script = document.createElement('script');
-  script.src = `${URL_PLANILHA}?acao=login&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
-  
-  script.onerror = () => {
-    delete window[callbackName];
-    btnSubmit.innerHTML = textoOriginal;
-    btnSubmit.disabled = false;
-    alert('Erro de conexão. Verifique sua internet.');
-  };
-  document.body.appendChild(script);
+  });
 }
 
 // ====================================================================
@@ -202,8 +210,9 @@ function resetInactivityTimer() {
   inactivityTimer = setTimeout(() => {
     const apelido = localStorage.getItem('inspectorApelido');
     if (apelido) {
-      alert(`⚠️ Sessão expirada por inatividade.\n\nUsuário: ${apelido}\n\nVocê será deslogado agora.`);
+      // Toast em vez de alert(): não bloqueia a thread nem gera violação de handler
       logoutInspector();
+      mostrarToast(`Sessão de "${apelido}" expirou por inatividade.`, 'aviso');
     }
   }, INACTIVITY_TIMEOUT);
 }

@@ -196,26 +196,26 @@ class TacografoModule {
 
   _executarConsulta(params) {
     return new Promise((resolve, reject) => {
-      const callbackName = 'consultarTacografosCallback_' + Date.now();
-      window[callbackName] = dados => {
-        if (dados && dados.erro) {
-          alert('Erro ao consultar: ' + dados.erro);
-        } else {
-          mostrarModalConferirTacografos(dados || [], currentUserRole, params);
+      // Mesmo padrão do restante da app: JSONP adiado + toast em vez de alert
+      const query = {};
+      params.forEach((v, k) => { query[k] = v; });
+
+      criarRequestJSONP(URL_PLANILHA, query, {
+        callbackPrefix: 'consultarTacografosCallback',
+        timeout: 20000,
+        onSuccess: function (dados) {
+          if (dados && dados.erro) {
+            mostrarToast('Erro ao consultar: ' + dados.erro, 'erro');
+          } else {
+            mostrarModalConferirTacografos(dados || [], currentUserRole, params);
+          }
+          resolve();
+        },
+        onError: function () {
+          mostrarToast('Erro ao consultar. Verifique sua conexão.', 'erro');
+          reject();
         }
-        delete window[callbackName];
-        resolve();
-      };
-      params.append('callback', callbackName);
-      const url = `${URL_PLANILHA}?${params.toString()}`;
-      const script = document.createElement('script');
-      script.src = url;
-      script.onerror = () => {
-        delete window[callbackName];
-        alert('Erro ao consultar. Verifique sua conexão.');
-        reject();
-      };
-      document.body.appendChild(script);
+      });
     });
   }
 }

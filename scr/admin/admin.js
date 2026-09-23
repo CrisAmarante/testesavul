@@ -19,24 +19,22 @@ async function adminGetUsuariosAPI(filtro = '', revelarSenha = false, senhaAdmin
       }
     };
     
-    const script = document.createElement('script');
-    let url = `${URL_PLANILHA}?acao=admin_get_usuarios&callback=${callbackName}&_=${Date.now()}`;
-    
-    if (filtro) {
-      url += `&filtro=${encodeURIComponent(filtro)}`;
-    }
+    const query = { acao: 'admin_get_usuarios' };
+    if (filtro) query.filtro = filtro;
     if (revelarSenha) {
-      url += `&revelarSenha=true&senhaAdmin=${encodeURIComponent(senhaAdmin)}&apelidoAdmin=${encodeURIComponent(apelidoAdmin)}`;
+      query.revelarSenha = 'true';
+      query.senhaAdmin = senhaAdmin;
+      query.apelidoAdmin = apelidoAdmin;
     }
-    
-    script.src = url;
-    script.onerror = () => {
-      delete window[callbackName];
-      reject(new Error('Erro de rede ao buscar usuários'));
-    };
-    document.body.appendChild(script);
+
+    criarRequestJSONP(URL_PLANILHA, query, {
+      callbackPrefix: 'adminGetUsuariosCallback',
+      timeout: 20000,
+      onError: function () {
+        reject(new Error('Erro de rede ao buscar usuários'));
+      }
+    });
   });
-}
 
 async function adminSaveUsuarioAPI(usuario) {
   return new Promise((resolve, reject) => {
