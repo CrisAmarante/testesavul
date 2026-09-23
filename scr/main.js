@@ -176,43 +176,63 @@ function registerServiceWorker() {
 // ====================================================================
 // INICIALIZAÇÃO PRINCIPAL
 // ====================================================================
+// Controle de revalidação em segundo plano (evita chamadas repetidas ao backend)
+let ultimoRefreshFundo = 0;
+const REFRESH_FUNDO_INTERVALO = 5 * 60 * 1000; // no máx. 1 revalidação a cada 5 min
+
 async function inicializar() {
-  // Carrega timeout de inatividade do backend antes de iniciar
-  await carregarTimeoutInatividade();
-  
-  initModals(); 
-  initEventListeners(); 
-  initTheme(); 
+  initModals();
+  initEventListeners();
+  initTheme();
   registerServiceWorker();
-  
-  await refreshInspetores();
-  checkLoginStatus();
-  
-  mostrarBannerAviso(); 
+
+  mostrarBannerAviso();
   aplicarBloqueioDeDatas();
-  
+
+  // Renderização imediata usando o último snapshot conhecido dos inspetores
+  try {
+    const snapshot = localStorage.getItem('inspetoresCache');
+    if (snapshot) INSPETORES = JSON.parse(snapshot);
+  } catch (e) { /* ignora cache corrompido */ }
+  checkLoginStatus();
+
+  // Revalidação com o servidor SEM bloquear a exibição da tela
+  refreshInspetores().then(() => checkLoginStatus()).catch(() => {});
+
+  // Timeout de inatividade e selects de terminais: carregados em paralelo, sem bloquear
+  carregarTimeoutInatividade();
   carregarTerminais().then(() => preencherSelectTerminais());
-  
-  window.addEventListener('pageshow', async (e) => { 
-    if (e.persisted) { 
+  preencherSelectLocal();
+
+  window.addEventListener('pageshow', async (e) => {
+    if (e.persisted) {
       await refreshInspetores();
-      checkLoginStatus(); 
-      await carregarTerminais(true); 
-      preencherSelectTerminais(); 
-    } 
+      checkLoginStatus();
+      await carregarTerminais(true);
+      preencherSelectTerminais();
+    }
   });
-  
-  document.addEventListener('visibilitychange', async () => { 
-    if (document.visibilityState === 'visible') { 
-      await refreshInspetores();
-      checkLoginStatus(); 
-      await carregarTerminais(true); 
-      preencherSelectTerminais(); 
-    } 
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    // Revalida no máximo 1x a cada intervalo, sempre em segundo plano
+    const agora = Date.now();
+    if (agora - ultimoRefreshFundo < REFRESH_FUNDO_INTERVALO) return;
+    ultimoRefreshFundo = agora;
+    Promise.all([refreshInspetores(), carregarTerminais(true)])
+      .then(() => {
+        checkLoginStatus();
+        preencherSelectTerminais();
+      })
+      .catch(() => {});
   });
 }
 
-window.addEventListener('load', inicializar);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializar);
+} else {
+  inicializar();
+}
 
 // Exportar para escopo global
 window.DATA_INICIO_BANNER = DATA_INICIO_BANNER;

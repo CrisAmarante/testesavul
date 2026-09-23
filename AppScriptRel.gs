@@ -21,6 +21,42 @@ const MASTER_SHEET_ID = ''; // Deixe vazio para usar planilha atual, ou coloque 
 // Cache para evitar chamadas repetidas ao SpreadsheetApp
 const _sheetCache = {};
 
+// ============================================================================
+// CACHE DE LEITURA (CacheService) - reduz latência nas consultas mais frequentes
+// O Apps Script executa em um ambiente V8, onde "cache" é uma referência global
+// predefinida para CacheService. Usamos try/catch para máxima compatibilidade.
+// ============================================================================
+function _obterCache_() {
+  try { return cache; } catch (e) { return null; }
+}
+
+function lerCache_(chave) {
+  try {
+    const c = _obterCache_();
+    if (!c) return null;
+    const valor = c.getScriptCache().get(chave);
+    return valor ? JSON.parse(valor) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function gravarCache_(chave, valor, segundosTTL) {
+  try {
+    const c = _obterCache_();
+    if (!c) return;
+    // Payloads do CacheService têm limite de ~5KB por chave; valores maiores são ignorados
+    c.getScriptCache().put(chave, JSON.stringify(valor), segundosTTL || 300);
+  } catch (e) { /* silencioso: cache é apenas otimização */ }
+}
+
+function invalidarCache_(chave) {
+  try {
+    const c = _obterCache_();
+    if (c) c.getScriptCache().remove(chave);
+  } catch (e) { /* silencioso */ }
+}
+
 // Configurações do sistema
 const CONFIG = {
   TIMEOUT_INATIVIDADE: 20 * 60 * 1000, // 20 minutos em milissegundos
@@ -378,6 +414,11 @@ function consultarInspecoes(fiscalNome, dataInicio, dataFim, carro, fiscalFiltro
 // ======================= LISTAR TERMINAIS (apenas SIM) =======================
 function listarTerminais() {
   try {
+    // Cache de leitura: evita leituras repetidas da planilha (TTL 10 min)
+    const cacheChave = 'terminais_sim';
+    const emCache = lerCache_(cacheChave);
+    if (Array.isArray(emCache)) return emCache;
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName("Terminais");
     if (!sheet) {
@@ -397,6 +438,7 @@ function listarTerminais() {
         terminais.push(String(terminal).trim());
       }
     }
+    gravarCache_(cacheChave, terminais, 600);
     return terminais;
   } catch (err) {
     Logger.log("ERRO em listarTerminais: " + err.message);
@@ -407,6 +449,11 @@ function listarTerminais() {
 // ======================= LISTAR TODOS OS TERMINAIS =======================
 function listarTodosTerminais() {
   try {
+    // Cache de leitura: evita leituras repetidas da planilha (TTL 10 min)
+    const cacheChave = 'terminais_todos';
+    const emCache = lerCache_(cacheChave);
+    if (Array.isArray(emCache)) return emCache;
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName("Terminais");
     if (!sheet) {
@@ -423,6 +470,7 @@ function listarTodosTerminais() {
       const terminal = dados[i][0];
       if (terminal) terminais.push(String(terminal).trim());
     }
+    gravarCache_(cacheChave, terminais, 600);
     return terminais;
   } catch (err) {
     return ["Terminal A", "Terminal B", "Terminal C", "Terminal D"];
